@@ -6,7 +6,7 @@ export default function Navbar() {
   return (
     <div className="relative w-full h-[60px] border-b border-slate-800 flex justify-center items-center">
       <MoveTo to="/posts">
-        <h1>은우의 개발자's Blog</h1>
+        <h1>은우의 개발자&#39;s Blog</h1>
       </MoveTo>
 
       <div className="absolute right-1 pr-[80px] flex gap-[30px]">
