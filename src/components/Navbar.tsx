@@ -1,5 +1,5 @@
 import { FaGithub } from "react-icons/fa";
-import { DarkModeBtn } from "./DarkmodeBtn";
+import { DarkModeBtn } from "./DarkModeBtn";
 import MoveTo from "./MoveTo";
 
 export default function Navbar() {
