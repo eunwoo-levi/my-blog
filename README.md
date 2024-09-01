@@ -1,7 +1,7 @@
 < 개인 기술 블로그 > <br/>
 Next.js + MDX
 
-배포:  https://eunwoo-levi.vercel.app
+배포:  https://eunwoo-levi.vercel.app/posts
 
 
 
