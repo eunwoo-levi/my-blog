@@ -1,0 +1,35 @@
+import { getAllPostsMeta } from "@/lib/mdx";
+import Image from "next/image";
+import Link from "next/link";
+
+export default async function page() {
+  const posts = await getAllPostsMeta();
+
+  return (
+    <section className="w-full min-h-screen flex flex-col justify-center items-center">
+      <h1 className="text-3xl font-bold">All Posts</h1>
+      <div className="flex gap-6 mt-6">
+        {posts?.map((post) => (
+          <Link
+            href={`/posts/${post.slug}`}
+            key={post?.title}
+            className="p-8 rounded-xl shadow-md border border-slate-800 dark:hover:border-white hover:shadow-2xl"
+          >
+            <Image
+              width={100}
+              height={100}
+              src={post.thumbnail}
+              alt="thumbnail"
+              className="w-[200px] h-[200px] rounded-[8px] "
+            />
+            <h3 className="text-xl font-semibold pt-[20px]">{post.title}</h3>
+            <p className="mt-4 text-sm">{post.author}</p>
+            <time className="text-[12px] text-gray-400">
+              {post.publishDate}
+            </time>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
