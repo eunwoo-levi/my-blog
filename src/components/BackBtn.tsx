@@ -11,7 +11,10 @@ export default function BackBtn() {
   };
 
   return (
-    <button onClick={onClickBack} className="w-[50px] h-[50px] cursor-pointer">
+    <button
+      onClick={onClickBack}
+      className="w-[40px] h-[40px] flex justify-center items-center rounded-lg cursor-pointer hover:bg-slate-700 transition duration-200"
+    >
       <IoArrowBack size={35} color="white" />
     </button>
   );
