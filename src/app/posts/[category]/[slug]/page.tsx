@@ -11,13 +11,15 @@ interface PostMeta {
 }
 
 interface Params {
+  category: string;
   slug: string;
 }
 
 const getPageContent = async (
+  category: string,
   slug: string
 ): Promise<{ meta: PostMeta; content: ReactElement }> => {
-  const { meta, content } = await getPostBySlug(slug);
+  const { meta, content } = await getPostBySlug(category, slug);
   return { meta, content };
 };
 
@@ -26,12 +28,12 @@ export async function generateMetadata({
 }: {
   params: Params;
 }): Promise<{ title: string }> {
-  const { meta } = await getPageContent(params.slug);
+  const { meta } = await getPageContent(params.category, params.slug);
   return { title: meta.title };
 }
 
 const Page = async ({ params }: { params: Params }) => {
-  const { content } = await getPageContent(params.slug);
+  const { content } = await getPageContent(params.category, params.slug);
 
   return (
     <main className="w-full min-h-screen flex flex-col justify-center items-center">

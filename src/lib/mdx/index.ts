@@ -4,7 +4,7 @@ import { compileMDX } from 'next-mdx-remote/rsc';
 import dayjs from 'dayjs';
 import { ReactElement } from 'react';
 
-const rootDirectory = path.join(process.cwd(), 'src', 'app', 'content');
+
 
 interface PostMeta {
   slug: string;
@@ -21,9 +21,41 @@ interface Frontmatter {
   thumbnail?: string;
 }
 
-export const getPostBySlug = async (slug: string): Promise<{ meta: PostMeta; content: ReactElement }> => {
+
+const contentDirectory = path.join(process.cwd(), 'src', 'app', 'content');
+
+export const getAllCategories = (): string[] => {
+  const categories = fs.readdirSync(contentDirectory).filter((file) => {
+    const fullPath = path.join(contentDirectory, file);
+    return fs.statSync(fullPath).isDirectory(); // 폴더만 선택
+  });
+
+  return categories;
+};
+
+export const getPostsByCategory = (category: string): string[] => {
+  const categoryPath = path.join(contentDirectory, category);
+  const files = fs.readdirSync(categoryPath).filter((file) => file.endsWith('.mdx'));
+
+  return files.map((file) => file.replace(/\.mdx$/, ''));
+};
+
+export const getAllCategoriesWithPosts = (): { category: string, posts: string[] }[] => {
+  const categories = getAllCategories();
+  
+  return categories.map((category) => ({
+    category,
+    posts: getPostsByCategory(category),
+  }));
+};
+
+
+const rootDirectory = path.join(process.cwd(), 'src', 'app', 'content');
+
+// 특정 슬러그의 포스트 가져오기
+export const getPostBySlug = async (category: string, slug: string): Promise<{ meta: PostMeta; content: ReactElement }> => {
   const realSlug = slug.replace(/\.mdx$/, '');
-  const filePath = path.join(rootDirectory, `${realSlug}.mdx`);
+  const filePath = path.join(contentDirectory, category, `${realSlug}.mdx`);
 
   const fileContent = fs.readFileSync(filePath, { encoding: 'utf8' });
 
@@ -33,7 +65,7 @@ export const getPostBySlug = async (slug: string): Promise<{ meta: PostMeta; con
   });
 
   const meta: PostMeta = {
-    slug: realSlug,
+    slug: `${category}/${realSlug}`,
     title: frontmatter.title ?? "Untitled",
     author: frontmatter.author ?? "Unknown Author",
     publishDate: frontmatter.publishDate ?? dayjs().format('YYYY-MM-DD'),
@@ -43,14 +75,24 @@ export const getPostBySlug = async (slug: string): Promise<{ meta: PostMeta; con
   return { meta, content };
 };
 
+// 모든 포스트 메타데이터 가져오기
 export const getAllPostsMeta = async (): Promise<PostMeta[]> => {
-  const files = fs.readdirSync(rootDirectory);
+  const categories = fs.readdirSync(contentDirectory).filter((file) => {
+    const fullPath = path.join(contentDirectory, file);
+    return fs.statSync(fullPath).isDirectory();
+  });
 
   const posts: PostMeta[] = [];
 
-  for (const file of files) {
-    const { meta } = await getPostBySlug(file);
-    posts.push(meta);
+  for (const category of categories) {
+    const files = fs.readdirSync(path.join(contentDirectory, category));
+
+    for (const file of files) {
+      if (file.endsWith('.mdx')) {
+        const { meta } = await getPostBySlug(category, file);
+        posts.push(meta);
+      }
+    }
   }
 
   return posts;
