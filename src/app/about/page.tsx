@@ -68,7 +68,7 @@ export default function Aboutpage() {
               </div>
               <div className="flex flex-col gap-3 text-[20px] ml-[10px]">
                 <h1>● &nbsp;&nbsp; TOEIC - 935 </h1>
-                <h1>● &nbsp;&nbsp; 컴퓨터활용능력 1급</h1>
+                <h1>● &nbsp;&nbsp; Computer Specialist in Spreadsheet & Database (컴퓨터활용능력 1급)</h1>
               </div>
             </div>
 
