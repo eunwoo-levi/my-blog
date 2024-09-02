@@ -31,7 +31,7 @@ export default function Home() {
               I am also expanding my expertise in Backend technologies.
               <br /> <br />
               Additionally, I am fluent in English and capable of collaborating
-              effectively on international projects."
+              effectively on international projects.
             </h3>
           </div>
         </div>
