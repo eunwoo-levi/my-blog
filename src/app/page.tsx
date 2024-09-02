@@ -35,9 +35,9 @@ export default function Home() {
           <Earth className="w-full h-auto" />
         </div>
       </div>
-      <div className="flex flex-col justify-center items-center gap-[30px] my-[150px]">
+      <div className="flex flex-col justify-center items-center gap-[30px] mt-[150px]">
         <Link
-          href={"/posts"}
+          href={"/about"}
           className="flex justify-center items-center w-[300px] lg:w-[500px] h-[50px] border  rounded-3xl transform duration-200 hover:bg-slate-700 hover:bg-opacity-30 hover:scale-110 cursor-pointer"
         >
           About Me
