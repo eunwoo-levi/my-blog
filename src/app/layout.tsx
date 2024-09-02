@@ -18,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.className} pt-[60px]`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -26,7 +26,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Navbar />
-          {children}
+          <main>{children}</main>
         </ThemeProvider>
       </body>
     </html>
