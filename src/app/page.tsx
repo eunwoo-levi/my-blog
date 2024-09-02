@@ -21,13 +21,17 @@ export default function Home() {
               Welcome to My Portfolio.
             </h2>
             <h3 className="text-[20px]">
-              I am committed to growing as a more skilled and professional
-              frontend developer.
-              <br />I dedicate myself to learning new technologies and becoming
-              proficient in them.
+              I am committed to growing as a skilled and professional frontend
+              developer.
               <br />
-              Additionally, I focus not only on frontend development but also on
-              backend technologies, always prioritizing user experience.
+              I dedicate myself to learning new technologies and mastering them,
+              prioritizing User eXperience.
+              <br /> <br />
+              While my primary focus is on Frontend development, <br />
+              I am also expanding my expertise in Backend technologies.
+              <br /> <br />
+              Additionally, I am fluent in English and capable of collaborating
+              effectively on international projects."
             </h3>
           </div>
         </div>

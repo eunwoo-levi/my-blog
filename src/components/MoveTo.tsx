@@ -12,7 +12,7 @@ export default function MoveTo({ to, children }: any) {
   return (
     <div
       onClick={onClick}
-      className="flex justify-center items-center cursor-pointer hover:bg-slate-700 p-[4px] rounded-lg transition duration-200"
+      className="z-10 flex justify-center items-center cursor-pointer hover:bg-slate-700 p-[4px] rounded-lg transition duration-200"
     >
       {children}
     </div>

@@ -1,12 +1,17 @@
 import { AuroraBackground } from "@/components/ui/aurora-background";
-import { CiLocationOn } from "react-icons/ci";
+
 import Image from "next/image";
+import { CiLocationOn } from "react-icons/ci";
+import { IoPersonOutline } from "react-icons/io5";
+import { MdOutlineEmail } from "react-icons/md";
+import { MdOutlineWork } from "react-icons/md";
+import { FaUniversity } from "react-icons/fa";
 
 export default function Aboutpage() {
   return (
     <main className="relative w-full min-h-screen">
       <AuroraBackground>
-        <div className="w-full h-[300px] flex flex-col justify-center items-center gap-[30px]">
+        <div className="w-full min-h-[300px] flex flex-col justify-center items-center gap-[30px] mt-[600px]">
           <h1 className="z-10 p-[10px] dark:text-white text-[65px] font-bold items-center shadow-md shadow-purple-500 rounded-md">
             About
           </h1>
@@ -14,7 +19,7 @@ export default function Aboutpage() {
             항상 도전하는 정신을 가진 개발자
           </h2>
         </div>
-        <div className="w-[230px] h-[400px] flex flex-col justify-start items-center pt-[20px] bg-gray-700 z-20 absolute left-[180px] top-[180px] rounded-2xl">
+        <div className="hidden lg:flex w-[230px] min-h-[400px] flex-col justify-start items-center pt-[20px] bg-gray-700 z-20 absolute left-[100px] top-[180px] rounded-2xl">
           <Image
             width={200}
             height={130}
@@ -30,9 +35,61 @@ export default function Aboutpage() {
             </div>
           </div>
         </div>
-        <div className="text-white flex justify-center items-center z-10 w-full flex-grow bg-gray-900">
-          <h1>저에 대한 페이지</h1>
-        </div>
+        <article className="text-white flex flex-col items-center z-10 w-full pt-[40px] bg-gray-900">
+          <section className="flex flex-col p-[60px] bg-gray-500 w-full max-w-[900px] lg:ml-[380px] mx-auto rounded-lg gap-[150px]">
+            <div className="flex flex-col justify-center gap-y-[40px]">
+              <div className="flex items-center gap-[20px] mb-[35px]">
+                <IoPersonOutline size={30} />
+                <h1 className="text-black text-[30px] font-bold">Profile</h1>
+              </div>
+              <div className="flex items-center gap-3">
+                <IoPersonOutline size={25} />
+                <h1 className="text-[20px]">Seong, Eunwoo</h1>
+              </div>
+              <div className="">
+                <h1 className="text-[20px]">● &nbsp;&nbsp; 2001. 01. 01</h1>
+              </div>
+              <div className="flex items-center gap-3">
+                <CiLocationOn size={25} />
+                <h1 className="text-[20px]">
+                  Republic of Korea, Daegu (Seoul)
+                </h1>
+              </div>
+              <div className="flex items-center gap-3">
+                <MdOutlineEmail size={25} />
+                <h1 className="text-[20px]">Eunwoo1341@gmail.com</h1>
+              </div>
+              <div className="flex gap-3">
+                <FaUniversity size={25} />
+                <div className="flex flex-col">
+                  <h1 className="text-[20px]">Kyungbook National University</h1>
+                  <h2 className="text-[20px]"> - Computer Science</h2>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3 text-[20px] ml-[10px]">
+                <h1>● &nbsp;&nbsp; TOEIC - 935 </h1>
+                <h1>● &nbsp;&nbsp; 컴퓨터활용능력 1급</h1>
+              </div>
+            </div>
+
+            <div className="flex flex-col justify-center gap-y-[40px]">
+              <div className="flex items-center gap-[20px] mb-[35px]">
+                <MdOutlineWork size={30} />
+                <h1 className="text-black text-[30px] font-bold">Experience</h1>
+              </div>
+              <ul className="flex items-center gap-3 text-[20px]">
+                <li className="flex flex-col">
+                  <h1>
+                    ● &nbsp;&nbsp; Korean Augmentation To the United States Army
+                  </h1>
+                  <h1 className="text-center">
+                    KATUSA, 2020.09.06 - 2023.03.06
+                  </h1>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </article>
       </AuroraBackground>
     </main>
   );
