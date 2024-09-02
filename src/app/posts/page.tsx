@@ -6,9 +6,9 @@ export default async function page() {
   const posts = await getAllPostsMeta();
 
   return (
-    <section className="w-full min-h-screen flex flex-col justify-center items-center">
+    <section className="w-full min-h-screen flex flex-col justify-center items-center px-[5px] lg:px-0">
       <h1 className="text-3xl font-bold">All Posts</h1>
-      <div className="flex gap-6 mt-6">
+      <div className="flex gap-[20px] mt-6">
         {posts?.map((post) => (
           <Link
             href={`/posts/${post.slug}`}
@@ -20,7 +20,7 @@ export default async function page() {
               height={100}
               src={post.thumbnail}
               alt="thumbnail"
-              className="w-[200px] h-[200px] rounded-[8px] "
+              className="w-[180px] h-[190px] rounded-[8px] "
             />
             <h3 className="text-xl font-semibold pt-[20px]">{post.title}</h3>
             <p className="mt-4 text-sm">{post.author}</p>
