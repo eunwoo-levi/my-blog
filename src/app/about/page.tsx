@@ -68,7 +68,10 @@ export default function Aboutpage() {
               </div>
               <div className="flex flex-col gap-3 text-[20px] ml-[10px]">
                 <h1>● &nbsp;&nbsp; TOEIC - 935 </h1>
-                <h1>● &nbsp;&nbsp; Computer Specialist in Spreadsheet & Database (컴퓨터활용능력 1급)</h1>
+                <h1>
+                  ● &nbsp;&nbsp; Computer Specialist in Spreadsheet & Database
+                  (컴퓨터활용능력 1급)
+                </h1>
               </div>
             </div>
 
@@ -78,12 +81,17 @@ export default function Aboutpage() {
                 <h1 className="text-black text-[30px] font-bold">Experience</h1>
               </div>
               <ul className="flex items-center gap-3 text-[20px]">
-                <li className="flex flex-col">
+                <li className="flex flex-col gap-2">
                   <h1>
-                    ● &nbsp;&nbsp; Korean Augmentation To the United States Army
+                    ● &nbsp;&nbsp; Korean Augmentation To the United States
+                    Army, KATUSA,
+                    <br /> &nbsp;&nbsp; &nbsp;&nbsp; 2020.09.06 - 2023.03.06
                   </h1>
-                  <h1 className="text-center">
-                    KATUSA, 2020.09.06 - 2023.03.06
+                  <h1>
+                    ● &nbsp;&nbsp; 대구 지방환경청 팀 프로젝트 - Frontend &
+                    Backend 담당
+                    <br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2024.07.01 ~
                   </h1>
                 </li>
               </ul>
