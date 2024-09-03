@@ -11,7 +11,7 @@ export default function Aboutpage() {
   return (
     <main className="relative w-full min-h-screen">
       <AuroraBackground>
-        <div className="w-full min-h-[300px] flex flex-col justify-center items-center gap-[30px] mt-[600px]">
+        <div className="w-full min-h-[300px] flex flex-col justify-center items-center gap-[30px] mt-[850px]">
           <h1 className="z-10 p-[10px] dark:text-white text-[65px] font-bold items-center shadow-md shadow-purple-500 rounded-md">
             About
           </h1>
@@ -19,16 +19,16 @@ export default function Aboutpage() {
             항상 도전하는 정신을 가진 개발자
           </h2>
         </div>
-        <div className="hidden lg:flex w-[230px] min-h-[400px] flex-col justify-start items-center pt-[20px] bg-gray-700 z-20 absolute left-[100px] top-[180px] rounded-2xl">
+        <div className="flex lg:w-[230px] lg:min-h-[400px] w-[180px] min-h-[180px] flex-col justify-start items-center pt-[20px] bg-gray-700 z-20 absolute right-[10px] top-[300px] md:right-[80px] md:top-[380px] lg:left-[100px] lg:top-[180px] rounded-2xl">
           <Image
             width={200}
             height={130}
             src={"/profile.jpg"}
             alt="profile pictrue"
-            className="rounded-full object-cover"
+            className="rounded-full object-cover w-[140px] h-[140px] lg:w-[200px] lg:h-[200px]"
           />
           <div className="mt-[10px] flex flex-col items-center gap-[8px]">
-            <h1 className="text-white text-[24px] font-bold">S. Eun Woo</h1>
+            <h1 className="text-white text-[24px] font-bold">S. EunWoo</h1>
             <h1 className="text-[18px] text-gray-300">Frontend Developer</h1>
             <div className="flex gap-[10px] text-gray-300 items-center text-[15px]">
               <CiLocationOn size={20} color="gray" /> Seoul , Daegu
