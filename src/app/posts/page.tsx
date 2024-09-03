@@ -12,7 +12,7 @@ export default async function PostsPage() {
 
       <section>
         <h1 className="text-3xl font-bold">All Posts</h1>
-        <div className="flex gap-[20px] mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[20px] mt-6">
           {posts?.map((post) => (
             <Link
               href={`/posts/${post.slug}`}
@@ -24,7 +24,7 @@ export default async function PostsPage() {
                 height={100}
                 src={post.thumbnail}
                 alt="thumbnail"
-                className="w-[180px] h-[190px] rounded-[8px] "
+                className="w-[200px] h-[200px] rounded-[8px] "
               />
               <h3 className="text-xl font-semibold pt-[20px]">{post.title}</h3>
               <p className="mt-4 text-sm">{post.author}</p>

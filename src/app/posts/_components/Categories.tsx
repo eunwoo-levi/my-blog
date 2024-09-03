@@ -5,8 +5,8 @@ export default async function Categories() {
   const categoriesWithPosts = await getAllCategoriesWithPosts();
 
   return (
-    <section className="mb-[50px]">
-      <div className="flex gap-[30px]">
+    <section className="w-full max-w-[1200px] mx-auto my-[50px]">
+      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[30px]">
         {categoriesWithPosts.map(({ category, posts }) => (
           <Link
             href={`/posts/${category}`}

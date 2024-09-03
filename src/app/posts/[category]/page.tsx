@@ -1,5 +1,5 @@
-import { getPostsByCategory } from "@/lib/mdx"; // Ensure correct import path
-import Image from "next/image"; // If you want to use Next.js Image component
+import { getPostsByCategory } from "@/lib/mdx";
+import Image from "next/image";
 import Link from "next/link";
 import { ReactElement } from "react";
 
@@ -35,7 +35,7 @@ export default async function CategoryPage({
               key={post.slug}
               className="mb-8 hover:bg-neutral-800"
             >
-              <div className="w-[800px] h-[210px] flex items-center border border-gray-300 rounded-lg p-4">
+              <div className="w-full lg:w-[800px] h-[210px] flex items-center border border-gray-300 rounded-lg p-4">
                 <Image
                   src={post.thumbnail}
                   alt={`${post.title} thumbnail`}
