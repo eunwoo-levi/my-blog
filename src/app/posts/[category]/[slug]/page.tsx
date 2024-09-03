@@ -32,7 +32,7 @@ export async function generateMetadata({
   return { title: meta.title };
 }
 
-const Page = async ({ params }: { params: Params }) => {
+const SlugPage = async ({ params }: { params: Params }) => {
   const { content } = await getPageContent(params.category, params.slug);
 
   return (
@@ -47,4 +47,4 @@ const Page = async ({ params }: { params: Params }) => {
   );
 };
 
-export default Page;
+export default SlugPage;

@@ -33,24 +33,33 @@ export const getAllCategories = (): string[] => {
   return categories;
 };
 
-export const getPostsByCategory = (category: string): string[] => {
+export const getPostsByCategory = async (category: string): Promise<PostMeta[]> => {
   const categoryPath = path.join(contentDirectory, category);
   const files = fs.readdirSync(categoryPath).filter((file) => file.endsWith('.mdx'));
 
-  return files.map((file) => file.replace(/\.mdx$/, ''));
+  const posts = await Promise.all(
+    files.map(async (file) => {
+      const { meta } = await getPostBySlug(category, file.replace(/\.mdx$/, ''));
+      return meta;
+    })
+  );
+
+  return posts;
 };
 
-export const getAllCategoriesWithPosts = (): { category: string, posts: string[] }[] => {
+export const getAllCategoriesWithPosts = async (): Promise<{ category: string, posts: PostMeta[] }[]> => {
   const categories = getAllCategories();
   
-  return categories.map((category) => ({
-    category,
-    posts: getPostsByCategory(category),
-  }));
+  const categoriesWithPosts = await Promise.all(
+    categories.map(async (category) => ({
+      category,
+      posts: await getPostsByCategory(category), // Await the posts for each category
+    }))
+  );
+
+  return categoriesWithPosts;
 };
 
-
-const rootDirectory = path.join(process.cwd(), 'src', 'app', 'content');
 
 // 특정 슬러그의 포스트 가져오기
 export const getPostBySlug = async (category: string, slug: string): Promise<{ meta: PostMeta; content: ReactElement }> => {

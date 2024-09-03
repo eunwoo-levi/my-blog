@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Categories from "./_components/Categories";
 
-export default async function page() {
+export default async function PostsPage() {
   const posts = await getAllPostsMeta();
 
   return (
