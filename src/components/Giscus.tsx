@@ -44,5 +44,5 @@ export default function Giscus() {
     );
   }, [theme]);
 
-  return <section ref={ref} className="w-[80%] h-[500px]" />;
+  return <section ref={ref} className="w-[80%]" />;
 }
