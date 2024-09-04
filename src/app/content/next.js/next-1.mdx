@@ -1,0 +1,19 @@
+---
+title: "< useRouter VS redirect >"
+author: "eunwoo"
+thumbnail: "/next.svg"
+
+---
+
+# useRouter
+useRouter 는 클라이언트 컴포넌트에서 사용가능 <br/>
+useParams, usePathname 등을 사용해서  URL로 부터 정보를 가져올 수 있음 (쿼리 등..) <br/>
+push는 뒤로가기(back()) 가능, replace 불가능 - 보통 뒤로가기 하기 싫은 페이지 (로그인)
+
+# redirect
+(permanentRedriect 혹은 )redirect는 서버 컴포넌트에서 사용가능함    (next.js 공식문서 참고)
+
+<br/>
+
+
+export default ({children}) => <div className="prose">{children}</div>

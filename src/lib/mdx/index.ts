@@ -78,7 +78,7 @@ export const getPostBySlug = async (category: string, slug: string): Promise<{ m
     title: frontmatter.title ?? "Untitled",
     author: frontmatter.author ?? "Unknown Author",
     publishDate: frontmatter.publishDate ?? dayjs().format('YYYY-MM-DD'),
-    thumbnail: frontmatter.thumbnail ?? "/thumbnails/default.jpg",
+    thumbnail: frontmatter.thumbnail ?? "/next.svg",
   };
 
   return { meta, content };
