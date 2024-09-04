@@ -24,7 +24,8 @@ export default async function PostsPage() {
                 height={100}
                 src={post.thumbnail}
                 alt="thumbnail"
-                className="w-[200px] h-[200px] rounded-[8px] "
+                className="w-[200px] h-[200px] rounded-[8px]"
+                loading="lazy"
               />
               <h3 className="text-xl font-semibold pt-[20px]">{post.title}</h3>
               <p className="mt-4 text-sm">{post.author}</p>
