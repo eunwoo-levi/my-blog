@@ -1,3 +1,4 @@
+import Giscus from "@/components/Giscus";
 import { getPostBySlug } from "@/lib/mdx";
 import { ReactElement } from "react";
 
@@ -43,6 +44,7 @@ const SlugPage = async ({ params }: { params: Params }) => {
       <div className="w-[70%] py-[200px] flex flex-col justify-center items-center border border-slate-700 rounded-xl">
         {content}
       </div>
+      <Giscus />
     </main>
   );
 };
