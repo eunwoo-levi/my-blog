@@ -9,6 +9,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import Link from "next/link";
 
 interface PaginationComponentProps {
   posts: any[]; // 포스트 데이터 배열
@@ -49,7 +50,8 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
       {/* 포스트 리스트를 렌더링할 수 있습니다. */}
       <div className="flex flex-col gap-[20px] mt-6">
         {currentPosts?.map((post) => (
-          <div
+          <Link
+            href={`/posts/${post.slug}`}
             key={post.title}
             className="flex items-center w-full lg:w-[800px] h-[280px] p-8 rounded-xl shadow-md border border-slate-800 dark:hover:border-white hover:shadow-2xl"
           >
@@ -65,7 +67,7 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
                 {post.publishDate}
               </time>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 

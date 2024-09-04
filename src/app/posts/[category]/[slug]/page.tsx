@@ -34,14 +34,14 @@ export async function generateMetadata({
 }
 
 const SlugPage = async ({ params }: { params: Params }) => {
-  const { content } = await getPageContent(params.category, params.slug);
+  const { meta, content } = await getPageContent(params.category, params.slug);
 
   return (
     <main className="w-full min-h-screen flex flex-col justify-center items-center">
       <div className="mb-[40px]">
-        <h1 className="text-[30px] font-bold">{params.slug}</h1>
+        <h1 className="text-[35px] mt-[50px] font-bold">{meta.title}</h1>{" "}
       </div>
-      <div className="w-[70%] py-[200px] flex flex-col justify-center items-center border border-slate-700 rounded-xl">
+      <div className="w-[70%] py-[200px] flex flex-col justify-center pl-[80px] mb-[80px] border border-slate-700 rounded-xl prose-lg ">
         {content}
       </div>
       <Giscus />

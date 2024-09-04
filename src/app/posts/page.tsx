@@ -12,6 +12,7 @@ export default async function PostsPage() {
         <h1 className="text-3xl font-bold">All Posts</h1>
         <PaginationComponent posts={posts} postsPerPage={4} />
       </section>
+      <div></div>
     </main>
   );
 }
