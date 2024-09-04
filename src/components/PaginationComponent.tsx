@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Pagination,
   PaginationContent,
@@ -22,9 +22,12 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
 }) => {
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  const totalPages = Math.ceil(posts.length / postsPerPage);
+  // 최신 글이 먼저 오도록 역순 정렬
+  const sortedPosts = [...posts].reverse();
 
-  const currentPosts = posts.slice(
+  const totalPages = Math.ceil(sortedPosts.length / postsPerPage);
+
+  const currentPosts = sortedPosts.slice(
     (currentPage - 1) * postsPerPage,
     currentPage * postsPerPage
   );

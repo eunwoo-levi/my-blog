@@ -6,7 +6,7 @@ export default async function Categories() {
 
   return (
     <section className="w-full max-w-[1200px] mx-auto my-[50px]">
-      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[30px]">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[30px]">
         {categoriesWithPosts.map(({ category, posts }) => (
           <Link
             href={`/posts/${category}`}
