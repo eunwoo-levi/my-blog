@@ -104,5 +104,8 @@ export const getAllPostsMeta = async (): Promise<PostMeta[]> => {
     }
   }
 
+   // publishDate 기준으로 최신순으로 정렬
+   posts.sort((a, b) => dayjs(a.publishDate).unix() - dayjs(b.publishDate).unix() );
+
   return posts;
 };

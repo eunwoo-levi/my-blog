@@ -23,7 +23,7 @@ export default function Aboutpage() {
           <Image
             width={200}
             height={130}
-            src={"/profile.jpg"}
+            src={"/profile.webp"}
             alt="profile pictrue"
             className="rounded-full object-cover w-[140px] h-[140px] lg:w-[200px] lg:h-[200px]"
           />
