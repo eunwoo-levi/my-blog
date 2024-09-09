@@ -11,6 +11,7 @@
 
 
 
+
 <br/><br/><br/>
 
 # < 개인 기술 블로그를 만든 이유? > 
@@ -56,6 +57,47 @@ velog 블로그 플랫폼과 같이 mdx를 사용하여 markdown형식의 기능
 - Posts 페이지에서 렉이 걸림 -> getAllPostsMeta 함수는 모든 게시물의 메타데이터를 가져오는 비동기 함수 때문이라고 예상
   <br/> 해결법 -> 페이지네이션
 
+  <br/>
+
+
+- Posts 메인 페이지에서 매번 새로고침할때마다 리랜더링 되는 것을 방지하기 위해서  Incremental Static Regeneration (ISR) 방식을 이용하여 정적 페이지로 바꿈 (SSG - Static Site Generation) <br/>
+
+ISR 에 대한 공식문서 - https://nextjs.org/docs/app/building-your-application/data-fetching/incremental-static-regeneration
+
+![image](https://github.com/user-attachments/assets/de5f5d59-7a1c-411f-9691-1c019763f668)
+
+
+
+
+```js
+import { getAllPostsMeta } from "@/lib/mdx";
+import Categories from "./_components/Categories";
+import PaginationComponent from "@/components/PaginationComponent";
+
+export const revalidate = 7200; // ISR
+
+export default async function PostsPage() {
+  const posts = await getAllPostsMeta();
+
+  // 서버에서 페이지가 렌더링된 시간을 저장
+  const now = new Date().toLocaleString();
+
+  return (
+    <main className="w-full min-h-screen flex flex-col justify-center items-center px-[5px] lg:px-0">
+      <Categories />
+      <section>
+        <h1 className="text-3xl font-bold">All Posts</h1>
+        <PaginationComponent posts={posts} postsPerPage={4} />
+        {/* 서버에서 생성된 시간 표시 */}
+        <p className="mt-4 text-sm">Page generated at: {now}</p>
+      </section>
+      <div></div>
+    </main>
+  );
+}
+```
+
+revalidate를 사용하여 7200초 즉, 2시간마다 랜더링이 되도록 하여 서버 과부화를 줄임
 
 <br/>
 <br/>
