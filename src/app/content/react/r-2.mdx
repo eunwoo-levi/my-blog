@@ -1,0 +1,55 @@
+---
+title: "Redux - 상태관리 라이브러리"
+author: "eunwoo"
+
+---
+
+# Redux
+
+Redux는 React뿐만 아니라 Vue, Angular 등 여러 view 라이브러리와 사용될 수 있는 또 하나의 라이브러리일 뿐입니다.
+
+context가 데이터를 글로벌하게 뿌려준다면, redux는 데이터를 글로벌하게 관리해 줍니다.
+Redux는 Action, Store, Reducer, Dispatch를 통해 상태를 관리합니다.
+각 역할은 아래와 같습니다.
+
+
+Store : 상태를 저장하는 장소입니다. <br/>
+Action : 상태를 변경시키고 싶을 때 생성하는 객체입니다.<br/>
+Reducer : 현재 Store의 상태와, 발생한 Action의 payload를 받아 새로운 상태를 반환합니다.<br/>
+Dispatch : Action을 발생시킵니다.
+
+
+어떤 식으로 활용할 수 있을까요?
+
+Store를 생성하고 Reducer를 Store에 등록한다. <br/>
+App이 실행되면 Store를 적절하게 초기화한다. <br/>
+사용자 행동에 따라 Action이 Dispatch 되고, Store가 업데이트된다. <br/>
+Store를 구독하는 컴포넌트는 새로운 데이터를 전달받는다. <br/>
+
+
+
+Store를 생성하고 Reducer를 Store에 등록한다. <br/>
+Store를 생성하고 Reducer를 Store에 등록할 수 있는데요.<br/>
+
+Store는 App 당 하나 존재할 수 있지만 Reducer는 여러 개 존재할 수 있기 때문에  <br/>
+보통 combineReducers API를 통해 Reducer 들을 묶어 Store에 등록합니다.
+
+```js
+const store = configureStore({
+    reducer: combineReducers({
+         ...여러 가지 reducer들...
+    })
+})
+```
+
+- createStore : Store를 만드는 API
+- configureStore : createStore을 단순화하고 여러 기능을 추가한 API (redux-thunk, devtools 등)
+- combineReducers : 여러 개의 reducer를 하나의 rootReducer로 만드는 API
+
+
+***
+
+// 출처: 네이버페이 기술블로그
+
+
+export default ({children}) => <div className="prose">{children}</div>

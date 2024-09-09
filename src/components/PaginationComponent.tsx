@@ -61,7 +61,7 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
             <img
               src={post.thumbnail}
               alt="thumbnail"
-              className="w-[250px] h-[220px] rounded-[8px] mr-[80px]"
+              className="w-[250px] h-[220px] rounded-[8px] mr-[80px] p-[3px]"
             />
             <div className="flex flex-col">
               <h3 className="text-xl font-semibold pt-[35px]">{post.title}</h3>
