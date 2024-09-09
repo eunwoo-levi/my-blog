@@ -2,13 +2,16 @@ import { getAllPostsMeta } from "@/lib/mdx";
 import Categories from "./_components/Categories";
 import PaginationComponent from "@/components/PaginationComponent";
 
-export const revalidate = 7200; // ISR
+export const revalidate = 3600; // ISR
 
 export default async function PostsPage() {
   const posts = await getAllPostsMeta();
 
-  // 서버에서 페이지가 렌더링된 시간을 저장
-  const now = new Date().toLocaleString();
+  // 서버에서 페이지가 렌더링된 시간을 저장 (초 제외)
+  const now = `${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString(
+    [],
+    { hour: "2-digit", minute: "2-digit" }
+  )}`;
 
   return (
     <main className="w-full min-h-screen flex flex-col justify-center items-center px-[5px] lg:px-0">
