@@ -62,6 +62,10 @@ velog 블로그 플랫폼과 같이 mdx를 사용하여 markdown형식의 기능
 
 - Posts 메인 페이지에서 매번 새로고침할때마다 리랜더링 되는 것을 방지하기 위해서  Incremental Static Regeneration (ISR) 방식을 이용하여 정적 페이지로 바꿈 (SSG - Static Site Generation) <br/>
 
+
+![image](https://github.com/user-attachments/assets/540a9261-623f-48e8-be54-be11d72315f7)
+
+<br/>
 ISR 에 대한 공식문서 - https://nextjs.org/docs/app/building-your-application/data-fetching/incremental-static-regeneration
 
 ![image](https://github.com/user-attachments/assets/de5f5d59-7a1c-411f-9691-1c019763f668)
