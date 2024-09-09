@@ -1,6 +1,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+@media (prefers-color-scheme: dark) {
+  img {
+    background-color: white !important;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
