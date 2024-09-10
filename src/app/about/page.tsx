@@ -15,11 +15,11 @@ export default function Aboutpage() {
           <h1 className="z-10 p-[10px] dark:text-white text-[65px] font-bold items-center shadow-md shadow-purple-500 rounded-md">
             About
           </h1>
-          <h2 className="text-transparent text-[30px] font-semibold bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text">
+          <h2 className="text-transparent lg:text-[30px] text-[25px] font-semibold bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text">
             항상 도전하는 정신을 가진 개발자
           </h2>
         </div>
-        <div className="flex lg:w-[230px] lg:min-h-[400px] w-[180px] min-h-[180px] flex-col justify-start items-center pt-[20px] bg-gray-700 z-20 absolute right-[10px] top-[300px] md:right-[80px] md:top-[380px] lg:left-[100px] lg:top-[180px] rounded-2xl">
+        <div className="flex lg:w-[230px] lg:min-h-[400px] w-[180px] min-h-[180px] flex-col justify-start items-center pt-[20px] bg-gray-700 z-20 lg:absolute right-[10px] top-[300px] md:right-[80px] md:top-[380px] lg:left-[100px] lg:top-[180px] rounded-2xl">
           <Image
             width={200}
             height={130}
