@@ -19,7 +19,7 @@ export default function Aboutpage() {
             항상 도전하는 정신을 가진 개발자
           </h2>
         </div>
-        <div className="flex lg:w-[230px] lg:min-h-[400px] w-[180px] min-h-[180px] flex-col justify-start items-center pt-[20px] bg-gray-700 z-20 lg:absolute right-[10px] top-[300px] md:right-[80px] md:top-[380px] lg:left-[100px] lg:top-[180px] rounded-2xl">
+        <div className="flex lg:w-[230px] lg:min-h-[400px] w-[180px] min-h-[300px] flex-col justify-start items-center pt-[20px] bg-gray-700 z-20 lg:absolute right-[10px] top-[300px] md:right-[80px] md:top-[380px] lg:left-[100px] lg:top-[180px] rounded-2xl">
           <Image
             width={200}
             height={130}
