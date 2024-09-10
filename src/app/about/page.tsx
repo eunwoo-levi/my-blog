@@ -11,7 +11,7 @@ export default function Aboutpage() {
   return (
     <main className="relative w-full min-h-screen">
       <AuroraBackground>
-        <div className="w-full min-h-[300px] flex flex-col justify-center items-center gap-[30px] mt-[850px]">
+        <div className="w-full min-h-[300px] flex flex-col justify-center items-center gap-[30px] mt-[1100px] lg:mt-[850px]">
           <h1 className="z-10 p-[10px] dark:text-white text-[65px] font-bold items-center shadow-md shadow-purple-500 rounded-md">
             About
           </h1>
