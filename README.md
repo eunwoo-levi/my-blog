@@ -109,7 +109,13 @@ revalidate를 사용하여 7200초 즉, 2시간마다 랜더링이 되도록 하
 
 # < 최적화 >
 1. Image 파일 -> webp 로 변환하여 번들 사이즈 줄임
+2. Google chrome에서 제공하는 lighthouse 사용
+-2024-09-10 기준-
 
+   ![image](https://github.com/user-attachments/assets/a650b169-698d-43bf-98af-7893e784c12d)
+
+
+   TBT(총 차단 시간) : 메인 스레드가 입력 응답을 막을 만큼 오래 차단되어있을 때 시간 측정
 
 
 
