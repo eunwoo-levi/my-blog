@@ -41,7 +41,7 @@ const SlugPage = async ({ params }: { params: Params }) => {
       <div className="mb-[40px]">
         <h1 className="text-[35px] mt-[50px] font-bold">{meta.title}</h1>{" "}
       </div>
-      <div className="w-full lg:w-[75%] py-[180px] flex flex-col justify-center px-[10px] lg:px-[80px] mb-[80px] border border-slate-700 rounded-xl prose-lg object-cover">
+      <div className="w-full lg:w-[75%] py-[180px] flex flex-col justify-center px-[10px] lg:px-[80px] mb-[80px] border border-slate-700 rounded-xl prose-lg overflow-x-auto">
         {content}
       </div>
       <Giscus />
