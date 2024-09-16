@@ -89,10 +89,15 @@ export default function Aboutpage() {
                   </h1>
                   <h1>
                     ● &nbsp;&nbsp; 대구 지방환경청 팀 프로젝트 - Frontend &
-                    Backend 담당
+                    Backend (FullStack) 담당
                     <br />
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2024.07.01 ~
                   </h1>
+                  <h1>
+                    ● &nbsp;&nbsp; GDSC (Google Developer Student Clubs) KNU 4기
+                    2024.09.15 ~
+                  </h1>
+                  <h1>● &nbsp;&nbsp; 다수 공공데이터 대회 및 해커톤</h1>
                 </li>
               </ul>
             </div>
