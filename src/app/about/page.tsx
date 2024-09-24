@@ -78,26 +78,52 @@ export default function Aboutpage() {
             <div className="flex flex-col justify-center gap-y-[40px]">
               <div className="flex items-center gap-[20px] mb-[35px]">
                 <MdOutlineWork size={30} />
+                <h1 className="text-black text-[30px] font-bold">
+                  Extracurricular Activities
+                </h1>
+              </div>
+              <ul className="flex items-center gap-3 text-[20px]">
+                <li className="flex flex-col gap-2">
+                  <h1>
+                    ● &nbsp;&nbsp; GDSC (Google Developer Student Clubs) KNU 4기
+                    - Frontend
+                    <br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; , 2024/09 ~
+                  </h1>
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex flex-col justify-center gap-y-[40px]">
+              <div className="flex items-center gap-[20px] mb-[35px]">
+                <MdOutlineWork size={30} />
                 <h1 className="text-black text-[30px] font-bold">Experience</h1>
               </div>
               <ul className="flex items-center gap-3 text-[20px]">
                 <li className="flex flex-col gap-2">
                   <h1>
                     ● &nbsp;&nbsp; Korean Augmentation To the United States
-                    Army, KATUSA,
-                    <br /> &nbsp;&nbsp; &nbsp;&nbsp; 2020.09.06 - 2023.03.06
+                    Army, KATUSA
+                    <br />
+                    &nbsp;&nbsp; &nbsp;&nbsp; , 2020.09.06 - 2023.03.06
+                  </h1>
+                  <h1>
+                    ● &nbsp;&nbsp; 2024 고용노동 공공데이터 활용 대회 - Frontend
+                    <br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; , 2024/07
                   </h1>
                   <h1>
                     ● &nbsp;&nbsp; 대구 지방환경청 팀 프로젝트 - Frontend &
                     Backend (FullStack) 담당
                     <br />
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2024.07.01 ~
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; , 2024/07/01 ~
                   </h1>
+
                   <h1>
-                    ● &nbsp;&nbsp; GDSC (Google Developer Student Clubs) KNU 4기
-                    2024.09.15 ~
+                    ● &nbsp;&nbsp; 대구를 빛내는 해커톤 - Frontend
+                    <br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; , 2024/09
                   </h1>
-                  <h1>● &nbsp;&nbsp; 다수 공공데이터 대회 및 해커톤</h1>
                 </li>
               </ul>
             </div>
