@@ -88,7 +88,7 @@ export default function Aboutpage() {
                     ● &nbsp;&nbsp; GDSC (Google Developer Student Clubs) KNU 4기
                     - Frontend
                     <br />
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; , 2024/09 ~
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; , 2024/09 ~ ongoing
                   </h1>
                 </li>
               </ul>
