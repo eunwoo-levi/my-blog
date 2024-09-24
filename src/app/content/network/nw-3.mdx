@@ -1,0 +1,46 @@
+---
+title: "URI (URL,URN)"
+author: "eunwoo"
+thumbnail: "/next.svg"
+publishDate: "2024-09-23"
+---
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/c2349043-f5af-48da-ba99-38ed514faab5/image.png)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/20972fde-a0a0-4911-a249-05c345066bc1/image.png)
+
+
+
+## HTTP 요청 메시지
+
+ex: https://www.google.com:443/search?q=hello&hl=ko
+
+GET /search?q=hello&hl=ko HTTP/1.1 
+Host: www.google.com
+
+***
+
+## HTTP 메시지 전송
+![](https://velog.velcdn.com/images/eunwoo1341/post/2d71161e-338a-453e-be45-bc0824c0af0c/image.png)
+
+***
+
+## 패킷 생성
+![](https://velog.velcdn.com/images/eunwoo1341/post/249d41b5-a6f4-448d-bcc7-b95cb653f627/image.png)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/78dabcb0-0103-4058-b0e7-92db8190f2fb/image.png)
+
+***
+## HTTP 응답 메시지
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/efbfc22d-e26f-4284-bae1-abd2eb357b84/image.png)
+
+Content-Type을 보고 이 응답이 text 타입의 html형식임을 알 수 있다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/b81b4f25-20b7-43e7-879d-eac2a3c51541/image.png)
+![](https://velog.velcdn.com/images/eunwoo1341/post/f4d63dae-ac6c-441f-b048-e042c5d43048/image.png)
+
+
+export default function Layout({children}) {
+  return <div className="prose">{children}</div>;
+}
