@@ -116,7 +116,7 @@ export default function Aboutpage() {
                     ● &nbsp;&nbsp; 대구 지방환경청 팀 프로젝트 - Frontend &
                     Backend (FullStack) 담당
                     <br />
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; , 2024/07 - 2024/08
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; , 2024/07 - 2024/09
                   </h1>
 
                   <h1>

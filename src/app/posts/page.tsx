@@ -24,3 +24,5 @@ export default async function PostsPage() {
     </main>
   );
 }
+
+// 성능 최적화: Suspense를 사용하여 컴포넌트 로딩을 최적화, 이를 통해 페이지의 일부가 로딩되는 동안 다른 부분을 먼저 표시
