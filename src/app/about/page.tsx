@@ -110,13 +110,13 @@ export default function Aboutpage() {
                   <h1>
                     ● &nbsp;&nbsp; 2024 고용노동 공공데이터 활용 대회 - Frontend
                     <br />
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; , 2024/07
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; , 2024/07 - 2024/08
                   </h1>
                   <h1>
                     ● &nbsp;&nbsp; 대구 지방환경청 팀 프로젝트 - Frontend &
                     Backend (FullStack) 담당
                     <br />
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; , 2024/07 ~
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; , 2024/07 - 2024/08
                   </h1>
 
                   <h1>
