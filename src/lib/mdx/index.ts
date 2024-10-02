@@ -4,6 +4,12 @@ import { compileMDX } from 'next-mdx-remote/rsc';
 import dayjs from 'dayjs';
 import { ReactElement } from 'react';
 
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
+import rehypePrettyCode from 'rehype-pretty-code';
+import type { Options } from 'rehype-pretty-code';
+import type { Element } from 'hast';
+
 
 
 interface PostMeta {
@@ -68,9 +74,35 @@ export const getPostBySlug = async (category: string, slug: string): Promise<{ m
 
   const fileContent = fs.readFileSync(filePath, { encoding: 'utf8' });
 
+  const rehypePrettyCodeOptions: Partial<Options> = {
+    theme: 'github-dark',
+    onVisitLine(node: Element) {
+      if (node.children.length === 0) {
+        node.children = [{type: 'text', value: ' '}];
+      }
+    },
+    onVisitHighlightedLine(node) {
+      (node.properties.className as string[]) = ((node.properties.className as string[]) || []).concat('highlighted');
+    },
+    onVisitHighlightedChars(node) {
+      (node.properties.className as string[]) = ['word'];
+    },
+  };
+
   const { frontmatter = {} as Frontmatter, content } = await compileMDX<Frontmatter>({
     source: fileContent,
-    options: { parseFrontmatter: true },
+    options: { 
+      parseFrontmatter: true,
+      mdxOptions: {
+        remarkPlugins: [
+          remarkGfm,
+          remarkBreaks,
+        ],
+        rehypePlugins: [
+          [rehypePrettyCode, rehypePrettyCodeOptions],
+        ],
+      },
+    },
   });
 
   const meta: PostMeta = {
