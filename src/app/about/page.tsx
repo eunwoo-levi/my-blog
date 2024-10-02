@@ -120,7 +120,12 @@ export default function Aboutpage() {
                   </h1>
 
                   <h1>
-                    ● &nbsp;&nbsp; 대구를 빛내는 해커톤 - Frontend
+                    ● &nbsp;&nbsp; 2024 대구를 빛내는 해커톤 - Frontend
+                    <br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; , 2024/09
+                  </h1>
+                  <h1>
+                    ● &nbsp;&nbsp; 건축사 웹페이지 외주 제작 - FullStack
                     <br />
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; , 2024/09
                   </h1>
