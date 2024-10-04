@@ -170,4 +170,6 @@ useQueries는 React Query의 훅으로, 여러 쿼리를 동시에 처리하고 
 
 
 
-export default ({children}) => <div className="prose">{children}</div>
+export default function Layout({children}) {
+  return <div className="prose">{children}</div>;
+}
