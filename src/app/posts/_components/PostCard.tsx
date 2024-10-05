@@ -15,7 +15,7 @@ export default function PostCard({ post }: postProps) {
     <Link
       href={`/posts/${post.slug}`}
       key={post.title}
-      className="flex items-center w-full lg:w-[800px] h-[280px] p-8 rounded-xl shadow-md border border-slate-800 dark:hover:border-white hover:shadow-2xl"
+      className="flex items-center w-full lg:w-[800px] h-[280px] p-8 rounded-xl shadow-md border border-slate-800 dark:hover:border-white dark:hover:bg-gray-900 transition-all duration-300  hover:shadow-2xl"
     >
       <img
         src={post.thumbnail}
