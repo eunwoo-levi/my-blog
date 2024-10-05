@@ -9,7 +9,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import PostCard from "@/app/posts/_components/PostCard";
+import PostCard from "./PostCard";
 
 interface PaginationComponentProps {
   posts: any[]; // 포스트 데이터 배열
@@ -52,8 +52,8 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
     <div>
       {/* 포스트 리스트를 렌더링할 수 있습니다. */}
       <div className="flex flex-col gap-[20px] mt-6">
-        {currentPosts?.map((post) => (
-          <PostCard post={post} />
+        {currentPosts?.map((post, idx) => (
+          <PostCard key={idx} post={post} />
         ))}
       </div>
 

@@ -1,6 +1,6 @@
+import PostCard from "@/components/PostCard";
 import { getPostsByCategory } from "@/lib/mdx";
 import { Suspense } from "react";
-import PostCard from "../_components/PostCard";
 
 interface Props {
   params: {
