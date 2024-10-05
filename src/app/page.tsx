@@ -38,7 +38,8 @@ export const metadata = {
   title: "My Portfolio - Frontend Web Developer",
   description:
     "Portfolio of a skilled Frontend Web Developer, showcasing projects and expertise in web development.",
-  keywords: "Frontend, Web Developer, Portfolio, React, Next.js, TypeScript",
+  keywords:
+    "Frontend, Web Developer, Portfolio, React, Next.js, TypeScript, tech blog, Next.js blog",
 };
 
 export default function Home() {
@@ -52,14 +53,18 @@ export default function Home() {
             PORTFOLIO <br />
             Frontend Web Developer
           </h1>
-          <div className="">
+          <section>
             <div className="border border-slate-800 mb-[50px]" />
             <h2 className="text-[25px] mb-[20px] font-semibold">
               Welcome to My Portfolio.
             </h2>
             <div className="lg:text-[22px] space-y-4 font-semibold">
+              <p className="lg:text-[20px] mb-[40px]">
+                My name is Eunwoo and I decided to make my own Portfolio & Tech
+                Blog with Next.JS
+              </p>
               <p>
-                I am committed to growing as a skilled and professional frontend
+                I am committed to growing as a skilled and professional Frontend
                 developer.
               </p>
               <p>
@@ -75,7 +80,7 @@ export default function Home() {
                 collaborating effectively on international projects.
               </p>
             </div>
-          </div>
+          </section>
         </div>
         <div className="relative flex flex-col items-center justify-between lg:flex-row w-full overflow-hidden lg:pl-[40px]">
           <Earth className="w-full h-auto" />
