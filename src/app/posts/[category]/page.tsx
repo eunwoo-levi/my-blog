@@ -13,7 +13,7 @@ export default async function CategoryPage({ params }: Props) {
 
   return (
     <div className="w-full min-h-screen flex flex-col items-center">
-      <div className="flex justify-center items-center border border-blue-500 w-[200px] h-[50px] text-[35px] font-bold rounded-3xl mt-[80px] mb-[200px]">
+      <div className="inline-flex items-center border border-blue-500 text-[35px] font-bold rounded-3xl mt-[80px] mb-[200px] p-2">
         {params.category}
       </div>
       {posts.length > 0 ? (
