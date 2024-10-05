@@ -17,7 +17,7 @@ export interface ProfileProps {
   export const profileData: ProfileProps = {
     name: "Seong, Eunwoo",
     birthDate: "2001. 01. 01",
-    location: "Republic of Korea, Daegu (Seoul)",
+    location: "Republic of Korea, Seoul (Daegu)",
     email: "Eunwoo1341@gmail.com",
     university: "Kyungbook National University",
     major: " - Computer Science",
