@@ -31,7 +31,7 @@ interface SectionTitleProps {
 
 const SectionTitle: React.FC<SectionTitleProps> = ({ icon: Icon, title }) => (
   <div className="flex items-center gap-[20px] mb-[35px]">
-    <Icon size={30} />
+    <Icon size={30} color="blue" />
     <h1 className="text-indigo-900 text-[30px] font-bold">{title}</h1>
   </div>
 );

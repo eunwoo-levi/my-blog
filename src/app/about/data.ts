@@ -33,8 +33,8 @@ export interface ProfileProps {
         period: "2020.09.06 - 2023.03.06"
     },
     {
-      title: "GDSC (Google Developer Student Clubs) KNU 4기 - Frontend",
-      period: "2024/09 ~ ongoing"
+        title: "GDSC (Google Developer Student Clubs) KNU 4기 - Frontend",
+        period: "2024/09 ~ ongoing"
     }
   ];
   
