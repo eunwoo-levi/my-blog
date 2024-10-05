@@ -41,7 +41,7 @@ interface ProfileSectionProps {
 }
 
 const ProfileSection: React.FC<ProfileSectionProps> = ({ data }) => (
-  <div className="flex flex-col justify-center gap-y-[40px] bg-white p-8 rounded-lg shadow-lg">
+  <div className="flex flex-col justify-center gap-y-[40px] bg-white p-4 md:p-8 rounded-lg shadow-lg">
     <SectionTitle icon={IoPersonOutline} title="Profile" />
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="flex items-center gap-3">
@@ -86,7 +86,7 @@ interface ActivitySectionProps {
 }
 
 const ActivitySection: React.FC<ActivitySectionProps> = ({ data, title }) => (
-  <div className="flex flex-col justify-center gap-y-[40px] bg-white p-8 rounded-lg shadow-lg">
+  <div className="flex flex-col justify-center gap-y-[40px] bg-white p-4 md:p-8 rounded-lg shadow-lg">
     <SectionTitle icon={MdOutlineWork} title={title} />
     <table className="min-w-full divide-y divide-gray-200" aria-label={title}>
       <thead className="bg-gray-50">
@@ -150,7 +150,7 @@ const AboutPage: React.FC = () => {
           </h2>
         </div>
         <div className="flex flex-col lg:flex-row justify-center items-start gap-8 px-4 lg:px-0 mb-20 z-20">
-          <div className="mx-auto lg:w-1/4 bg-white p-6 rounded-lg shadow-lg self-start">
+          <div className="mx-auto lg:w-1/4 bg-white p-6 rounded-lg shadow-lg">
             <Image
               width={200}
               height={200}
