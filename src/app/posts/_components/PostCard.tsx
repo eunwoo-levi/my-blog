@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 
 interface postProps {
@@ -13,20 +12,20 @@ interface postProps {
 
 export default function PostCard({ post }: postProps) {
   return (
-    <Link href={`/posts/${post.slug}`} className="mb-8 hover:bg-neutral-800">
-      <div className="w-full lg:w-[800px] h-[210px] flex items-center border border-gray-300 rounded-lg p-4">
-        <Image
-          src={post.thumbnail}
-          alt={`${post.title} thumbnail`}
-          width={200}
-          height={200}
-          className="mb-4 rounded h-[150px]"
-        />
-        <div className="ml-[100px] flex flex-col">
-          <h2 className="text-xl font-bold">{post.title}</h2>
-          <p className="text-gray-500">{post.author}</p>
-          <p className="text-gray-400 text-sm">{post.publishDate}</p>
-        </div>
+    <Link
+      href={`/posts/${post.slug}`}
+      key={post.title}
+      className="flex items-center w-full lg:w-[800px] h-[280px] p-8 rounded-xl shadow-md border border-slate-800 dark:hover:border-white hover:shadow-2xl"
+    >
+      <img
+        src={post.thumbnail}
+        alt="thumbnail"
+        className="w-[140px] h-[120px] lg:w-[250px] lg:h-[220px] rounded-[8px] mr-[10px] lg:mr-[80px] p-[3px]"
+      />
+      <div className="flex flex-col">
+        <h3 className="text-xl font-semibold pt-[35px]">{post.title}</h3>
+        <p className="mt-4 mb-2 text-[20px]">{post.author}</p>
+        <time className="text-[12px] text-gray-400">{post.publishDate}</time>
       </div>
     </Link>
   );
