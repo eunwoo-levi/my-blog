@@ -11,7 +11,7 @@ publishDate: "2024-10-05"
 
 <img src="https://velog.velcdn.com/images/eunwoo1341/post/72bf92d7-bf80-4c84-9956-4d4b5e49ce81/image.png" className="w-[800px] h-[500px]"/>
 
-Software layer between **users applications and computer hardware**
+<u>Software layer between **users applications and computer hardware**</u>
 ㄴ Interfacing with computer hardware and user applications software
 ㄴ Very large (systemm) program or suite of programs executed by the processor
 
@@ -21,7 +21,7 @@ Software layer between **users applications and computer hardware**
 
 ***
 # Interface?
-We can use functions even without knowing the  underlying complexity of device (or hardware)
+<u>We can use functions even without knowing the  underlying complexity of device (or hardware)</u>
 ㄴ Provides convenient functionality to higher levels
 ㄴ Permits an efficient implementation at lower levels
 
@@ -55,12 +55,75 @@ We can use functions even without knowing the  underlying complexity of device (
 ▫	Can improve an overall performance
 ▫	Unix, Mainframe, Windows NT, Linux …
 
+⊙ A single tasking system can only run one program or application at a
+time.
+▫	MS-DOS, Windows cmd
+⊙ A multi tasking system can run (or handle) multiple applications and  programs at once.
+▫	Most modern OS such as Linux, Unix, Windows, …
+
+***
+
+⊙ Monolithic Kernel
+-Single large process running entirely in a single address space.
+-All kernel services exist and execute in the kernel address space.
+-Each component can efficiently communicate: Faster
+-Difficult to add/delete disk drivers & Difficult to maintain (why? Big)
+-UNIX, Linux
+
+⊙ Micro Kernel
+-The kernel is broken down into separate processes, known as servers.
+-All servers are kept separate and run in different address spaces.
+-Servers invoke "services" from each other by sending messages via IPC  (Inter Process Communication)
+-Mac OS X, Windows NT, MINIX
+
+⊙ Hybrid Kernel
+
+
+<img src="https://velog.velcdn.com/images/eunwoo1341/post/01f3709e-7ca9-48eb-858b-1df7998eee6a/image.png" className="w-[800px] h-[500px]"/>
 
 
 <br/>
 
+***
 
+# History of Operating System
 
+## (Single) Batch processing ~1960s : As computers became faster
+
+⊙ <u> Grab all types of programs and data in the batch form then proceed to  process together</u>
+▫	Collects similar jobs, executes them automatically **without manual intervention**
+▫	Special programming language, JCL (Job Control Language) in monitor
+▫	Decrease the setup and takedown time -> **improve CPU utilization**
+
+⊙ Monitor -> Simple scheduler
+⊙ Single batch possesses all resources of system -> Difficult to predict run  time for a job (e.g., if any job fails)
+⊙ Beneficial to a large number of jobs
+▫	Mainframe (Payroll or Bank systems …)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/47934227-f85b-483a-86f7-274c88a6e09f/image.png)
+
+배치 처리 시스템에서 작업(Job) 간에 I/O 작업이 발생하면, CPU는 I/O 작업이 완료될 때까지 대기해서 비효율적
+-> I/O 작업이 실행될 때, 다른 작업을 동시에 처리하는 방식이 제안. 
+-> 이는 Overlapping 을 통해 I/O와 CPU 작업이 동시에 진행되도록 하는 방식
+-> CPU utilization 향상
+
+***
+
+# Multiprogramming batch processing	1960s ~ 1970s
+
+⊙ Multiple users shared the system
+▫	Degree of multiprogramming ≥ 1
+▫ Multiple batch programs running at the same time on a single processor  machine to keep the system as busy as possible 
+-> processor can switch  between jobs
+
+⊙ Job spooled on disk or drum
+▫	Simultaneous Peripheral Operations Online (SPOOL)
+▫	Can hide slow (costly) I/O machines (ex. printer spool)
+▫	Overlap of computation with asynchronous I/O
+⊙ Buffering and interrupt handling added to OS
+⊙ Memory protection & relocation
+⊙ Concurrent programming become necessary
+⊙ Job schedulers select jobs to run according to a variety of criteria, including priority, memory size, etc.
 
 export default function Layout({children}) {
   return <div className="prose">{children}</div>;

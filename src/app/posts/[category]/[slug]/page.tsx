@@ -39,9 +39,11 @@ const SlugPage = async ({ params }: { params: Params }) => {
   return (
     <main className="w-full min-h-screen flex flex-col justify-center items-center">
       <div className="mb-[40px]">
-        <h1 className="text-[35px] mt-[50px] font-bold">{meta.title}</h1>{" "}
+        <h1 className=" px-10 py-4 rounded-xl text-[35px] mt-[50px] font-bold">
+          {meta.title}
+        </h1>{" "}
       </div>
-      <div className="w-full lg:w-[75%] py-[180px] flex flex-col justify-center px-[10px] lg:px-[80px] mb-[80px] border border-slate-700 rounded-xl prose-lg overflow-x-auto">
+      <div className="w-full lg:w-[75%] py-[120px] flex flex-col justify-center px-[10px] lg:px-[80px] mb-[80px] border border-slate-700 rounded-xl prose-lg overflow-x-auto">
         {content}
       </div>
       <Giscus />
