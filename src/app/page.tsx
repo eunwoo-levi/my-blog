@@ -1,11 +1,23 @@
-import { ShootingStars } from "@/components/ui/shooting-stars";
-import { StarsBackground } from "@/components/ui/stars-background";
 import { MdOutlineEmail } from "react-icons/md";
 import Link from "next/link";
-import { lazy, Suspense } from "react";
-import Head from "next/head";
+import dynamic from "next/dynamic";
 
-const Earth = lazy(() => import("@/components/Earth"));
+const ShootingStars = dynamic(
+  () =>
+    import("@/components/ui/shooting-stars").then((mod) => mod.ShootingStars),
+  { ssr: false }
+);
+const StarsBackground = dynamic(
+  () =>
+    import("@/components/ui/stars-background").then(
+      (mod) => mod.StarsBackground
+    ),
+  { ssr: false }
+);
+const Earth = dynamic(() => import("@/components/Earth"), {
+  loading: () => <div>Loading...</div>,
+  ssr: false,
+});
 
 interface CustomLinkProps {
   href: string;
@@ -22,75 +34,70 @@ const CustomLink: React.FC<CustomLinkProps> = ({ href, children }) => (
   </Link>
 );
 
+export const metadata = {
+  title: "My Portfolio - Frontend Web Developer",
+  description:
+    "Portfolio of a skilled Frontend Web Developer, showcasing projects and expertise in web development.",
+  keywords: "Frontend, Web Developer, Portfolio, React, Next.js, TypeScript",
+};
+
 export default function Home() {
   return (
-    <>
-      <Head>
-        <title>My Portfolio - Frontend Web Developer</title>
-        <meta
-          name="description"
-          content="Portfolio of a skilled Frontend Web Developer, showcasing projects and expertise in web development."
-        />
-        <meta
-          name="keywords"
-          content="Frontend, Web Developer, Portfolio, React, Next.js, TypeScript, tech blog"
-        />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-      <main className="relative w-full min-h-screen flex flex-col">
-        <StarsBackground />
-        <ShootingStars />
-        <div className="relative flex flex-col items-center justify-between px-[50px] lg:flex-row">
-          <div className="flex flex-col">
-            <h1 className="font-bold text-[50px] pl-[60px] mb-[40px] bg-gradient-to-r from-purple-400 via-pink-500 to-red-700 rounded-lg text-transparent bg-clip-text">
-              PORTFOLIO <br />
-              Frontend Web Developer
-            </h1>
-            <div className="">
-              <div className="border border-slate-800 mb-[50px]" />
-              <h2 className="text-[25px] mb-[20px] font-semibold">
-                Welcome to My Portfolio.
-              </h2>
-              <h3 className="text-[20px]">
+    <main className="relative w-full min-h-screen flex flex-col">
+      <StarsBackground />
+      <ShootingStars />
+      <div className="relative flex flex-col items-center justify-between px-[50px] lg:flex-row">
+        <div className="flex flex-col">
+          <h1 className="font-bold text-[50px] pl-[60px] mb-[40px] bg-gradient-to-r from-purple-400 via-pink-500 to-red-700 rounded-lg text-transparent bg-clip-text">
+            PORTFOLIO <br />
+            Frontend Web Developer
+          </h1>
+          <div className="">
+            <div className="border border-slate-800 mb-[50px]" />
+            <h2 className="text-[25px] mb-[20px] font-semibold">
+              Welcome to My Portfolio.
+            </h2>
+            <div className="lg:text-[22px] space-y-4 font-semibold">
+              <p>
                 I am committed to growing as a skilled and professional frontend
                 developer.
-                <br />
+              </p>
+              <p>
                 I dedicate myself to learning new technologies and mastering
                 them, prioritizing User eXperience.
-                <br /> <br />
-                While my primary focus is on Frontend development, <br />
-                I am also expanding my expertise in Backend technologies.
-                <br /> <br />
+              </p>
+              <p>
+                While my primary focus is on Frontend development, I am also
+                expanding my expertise in Backend technologies.
+              </p>
+              <p>
                 Additionally, I am fluent in English and capable of
                 collaborating effectively on international projects.
-              </h3>
+              </p>
             </div>
           </div>
-          <div className="relative flex flex-col items-center justify-between lg:flex-row w-full overflow-hidden lg:pl-[40px]">
-            <Suspense fallback={<div>Loading...</div>}>
-              <Earth className="w-full h-auto" />
-            </Suspense>
-          </div>
         </div>
-        <div className="flex flex-col justify-center items-center gap-[30px] mt-[150px]">
-          <CustomLink href="/about">About Me</CustomLink>
-          <CustomLink href="/posts">Blog</CustomLink>
-          <CustomLink href="/board">Board</CustomLink>
+        <div className="relative flex flex-col items-center justify-between lg:flex-row w-full overflow-hidden lg:pl-[40px]">
+          <Earth className="w-full h-auto" />
         </div>
-        <div className="z-10 text-white  w-full h-[200px] bg-slate-900 mt-[200px] flex flex-col justify-center items-start pl-[20px] gap-[10px]">
-          <div className="flex gap-[20px]">
-            <MdOutlineEmail size={25} />
-            <a
-              href="mailto:eunwoo1341@gmail.com"
-              className="text-[15px] hover:underline"
-            >
-              eunwoo1341@gmail.com
-            </a>
-          </div>
-          <h1 className="text-[15px]">Copyright ⓒ S. Eunwoo</h1>
+      </div>
+      <div className="flex flex-col justify-center items-center gap-[30px] mt-[150px]">
+        <CustomLink href="/about">About Me</CustomLink>
+        <CustomLink href="/posts">Blog</CustomLink>
+        <CustomLink href="/board">Board</CustomLink>
+      </div>
+      <div className="z-10 text-white  w-full h-[200px] bg-slate-900 mt-[200px] flex flex-col justify-center items-start pl-[20px] gap-[10px]">
+        <div className="flex gap-[20px]">
+          <MdOutlineEmail size={25} />
+          <a
+            href="mailto:eunwoo1341@gmail.com"
+            className="text-[15px] hover:underline"
+          >
+            eunwoo1341@gmail.com
+          </a>
         </div>
-      </main>
-    </>
+        <h1 className="text-[15px]">Copyright ⓒ S. Eunwoo</h1>
+      </div>
+    </main>
   );
 }
