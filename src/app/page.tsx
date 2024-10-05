@@ -62,7 +62,12 @@ export default function Home() {
       <div className="z-10 text-white  w-full h-[200px] bg-slate-900 mt-[200px] flex flex-col justify-center items-start pl-[20px] gap-[10px]">
         <div className="flex gap-[20px]">
           <MdOutlineEmail size={25} />
-          <h1 className="text-[15px]">eunwoo1341@gmail.com</h1>
+          <a
+            href="mailto:eunwoo1341@gmail.com"
+            className="text-[15px] hover:underline"
+          >
+            eunwoo1341@gmail.com
+          </a>
         </div>
         <h1 className="text-[15px]">Copyright ⓒ S. Eunwoo</h1>
       </div>
