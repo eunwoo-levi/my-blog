@@ -1,5 +1,13 @@
 import Giscus from "@/components/Giscus";
-import { AuroraBackground } from "@/components/ui/aurora-background";
+import dynamic from "next/dynamic";
+
+const AuroraBackground = dynamic(
+  () =>
+    import("@/components/ui/aurora-background").then(
+      (mod) => mod.AuroraBackground
+    ),
+  { ssr: false, loading: () => <div>Loading...</div> }
+);
 
 export default function Aboutpage() {
   return (
