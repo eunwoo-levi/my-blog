@@ -39,7 +39,7 @@ const SlugPage = async ({ params }: { params: Params }) => {
   return (
     <main className="w-full min-h-screen flex flex-col justify-center items-center">
       <div className="mb-[40px]">
-        <h1 className=" px-10 py-4 rounded-xl text-[35px] mt-[50px] font-bold">
+        <h1 className="bg-gradient-to-r from-purple-500 via-pink-400 to-blue-300 px-10 py-4 rounded-xl text-[35px] mt-[50px] font-bold">
           {meta.title}
         </h1>{" "}
       </div>
