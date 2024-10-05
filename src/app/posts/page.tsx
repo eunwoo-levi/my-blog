@@ -4,10 +4,11 @@ import PaginationComponent from "@/components/PaginationComponent";
 import { Suspense } from "react";
 import { ServerTime } from "./_components/ServerTime";
 
-export const revalidate = 3600; // ISR
+export const revalidate = 3600; // ISR: revalidate every hour
 
 export default async function PostsPage() {
   const posts = await getAllPostsMeta();
+  const serverGeneratedTime = new Date().toISOString();
 
   return (
     <main className="w-full min-h-screen flex flex-col justify-center items-center px-[5px] lg:px-0">
@@ -19,7 +20,7 @@ export default async function PostsPage() {
         <Suspense fallback={<div>Loading posts...</div>}>
           <PaginationComponent posts={posts} postsPerPage={4} />
         </Suspense>
-        <ServerTime />
+        <ServerTime generatedTime={serverGeneratedTime} />
       </section>
     </main>
   );
