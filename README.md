@@ -16,7 +16,6 @@
 - **Framework**: React + Next.js with MDX Option
 - **Language**: TypeScript
 - **Styling**: TailwindCSS
-- **Comments**: Giscus
 
 ## 🌟 주요 기능
 
@@ -31,8 +30,14 @@
 4. **상세 게시물 페이지**: 
    - MDX를 활용한 마크다운 형식의 글 작성
    - 댓글 기능 (Giscus 활용)
+  
+5. 페이지들을 SSR를 통해 빠른 초기 로딩 속도 + SEO 최적화
 
-5. **SEO 최적화**: Next.js의 메타데이터 API를 활용한 검색 엔진 최적화
+6. **SEO 최적화**: Next.js의 메타데이터 API를 활용한 검색 엔진 최적화
+
+7. light/dark 모드 지원
+
+8. 모든 페이지 반응형 UI (Responsive UI)
 
   
 ## 💡 < 개인 기술 블로그를 만든 이유? > 
