@@ -183,7 +183,7 @@ const AboutPage: React.FC = () => {
               data={extracurricularData}
               title="Extracurricular Activities"
             />
-            <ActivitySection data={experienceData} title="Experience" />
+            <ActivitySection data={experienceData} title="Project Experience" />
           </div>
         </div>
       </AuroraBackground>
