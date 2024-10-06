@@ -85,34 +85,41 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ data }) => (
       <h1 className="text-indigo-900 text-[24px] md:text-[30px] font-bold">
         ⚡ Main Stack ⚡
       </h1>
-      <div className="flex gap-1">
+      <div className="flex flex-wrap gap-2 justify-center items-center">
         <img
           src="https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB"
           alt="React"
+          className="lg:flex-shrink-0"
         />
         <img
           src="https://img.shields.io/badge/Next-black?style=for-the-badge&logo=next.js&logoColor=white"
           alt="Next JS"
+          className="lg:flex-shrink-0"
         />
         <img
           src="https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white"
           alt="TypeScript"
+          className="lg:flex-shrink-0"
         />
         <img
           src="https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white"
           alt="TailwindCSS"
+          className="lg:flex-shrink-0"
         />
         <img
           src="https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB"
           alt="Express.js"
+          className="lg:flex-shrink-0"
         />
         <img
           src="https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=for-the-badge&logo=mongodb&logoColor=white"
           alt="MongoDB"
+          className="lg:flex-shrink-0"
         />
         <img
           src="https://img.shields.io/badge/zustand-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB"
           alt="Zustand"
+          className="lg:flex-shrink-0"
         />
       </div>
     </div>
