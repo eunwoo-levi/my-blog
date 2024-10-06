@@ -125,6 +125,111 @@ time.
 ⊙ **Concurrent** programming become necessary
 ⊙ Job schedulers select jobs to run according to a variety of criteria, including priority, memory size, etc.
 
+![](https://velog.velcdn.com/images/eunwoo1341/post/fdf557a0-7087-4b61-a5a8-3be337c0bb8e/image.png)
+
+## 주요 차이점
+
+- 처리 방식:
+Batch Processing: 작업들이 순차적으로 처리됨.
+Multiprogramming: 여러 프로그램이 동시에 메모리에 로드되어, CPU가 프로그램들 사이를 빠르게 전환하며 처리.
+
+
+- CPU 활용도:
+Batch Processing: I/O 작업 중에는 CPU가 유휴 상태로 대기하게 되므로 CPU 활용도가 낮음.
+Multiprogramming: 한 작업이 I/O를 기다릴 때 다른 작업을 처리하므로 CPU 활용도가 높음.
+
+- 자원 관리:
+Batch Processing: 한 번에 하나의 작업만 자원을 독점적으로 사용.
+Multiprogramming: 여러 작업이 자원을 공유하며 동시에 실행.
+
+- 요약
+Batch Processing은 작업을 순차적으로 처리하는 방식이며, 주로 대규모 일괄 처리가 필요할 때 사용됩니다.
+Multiprogramming은 여러 프로그램을 동시에 실행하여 자원을 최대한 효율적으로 사용하는 방식으로, 현대 운영 체제의 기본적인 기능입니다.
+
+***
+# Operating System 필요성
+
+## Memory relocation
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/6fb5ede5-48e9-4f88-833c-205af259fbbf/image.png)
+
+다 사용한 job은 빼고 다음 job을 Memory에 넣으면  Memory relocation이 발생함 (주소가 dynamic함) 
+Operating system 에서 모든 job들에 대해서 계속 tracking해야함
+
+**-> Memory relocation**
+
+
+
+## Memory Protection
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/01428025-fb15-4242-8d3d-52264d277751/image.png)
+
+MultiProgramming Batch system을 하기 때문에 개별 job들이 
+Memory에 올라와 있으니 Memory Protection이 필요함
+
+
+## Base/bound registers
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/9f366b41-76f9-41a0-962c-71b06d03dc67/image.png)
+
+- Base 레지스터:
+프로세스가 사용할 수 있는 메모리 영역의 시작 주소를 저장하는 레지스터입니다. 각 프로세스는 메모리 상의 특정 영역을 할당받는데, 그 시작 주소가 Base 레지스터에 저장됩니다.
+프로세스가 메모리에 접근할 때, 이 Base 레지스터를 기준으로 상대적인 주소를 계산하여 물리적 메모리 주소를 생성합니다.
+- Bound 레지스터:
+프로세스가 사용할 수 있는 메모리 영역의 최대 크기를 저장하는 레지스터입니다. Base 레지스터에서 시작한 메모리 범위 내에서, Bound 레지스터에 설정된 크기만큼의 범위에서만 접근이 허용됩니다.
+프로세스가 메모리에 접근할 때, 이 Bound 레지스터를 사용해 접근하려는 주소가 할당된 메모리 범위를 벗어나는지 확인합니다.
+
+***
+
+## Concurrency & Synchronization
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/29ddd6ba-08fd-49aa-83b4-62d3dec6160a/image.png)
+
+< Parallel 와 Concurrency 차이 >
+Parallel: 실질적으로 병렬 코어에서 동시에 일어나는 것 (물리적으로)
+Concurrency :싱글코어에서 동시에 일어나는 것처럼 보이는 것
+
+***
+
+## Time-sharing processing (1970s ~ 1980s)
+
+- Hardware cheap, humans expensive -> Make efficient use of people's time
+
+- A logical extension of **Batch-multiprogramming** systems - the CPU switches  jobs so frequently that multiple users can interact with each job while it is  running, creating interactive computing
+▫	Each user has at least one program executing in memory  process
+▫	Response time < 1 sec.
+
+- System clock generates interrupt
+▫	At each clock, the system regained control and assigned the processor to another job  -> time slicing
+▫	Job & process scheduling (Round-robin)
+
+- If processes don't fit in memory, swapping moves them in and out to run
+▫	Virtual memory and disk management
+
+<table>
+  <thead>
+    <tr>
+      <th></th>
+      <th>Batch Multiprogramming</th>
+      <th>Time sharing</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Objective</td>
+      <td>Maximize CPU utilization</td>
+      <td>Minimize response time</td>
+    </tr>
+    <tr>
+      <td>Source of directives to OS</td>
+      <td>Job control language commands provided with the job</td>
+      <td>Commands entered at the terminal</td>
+    </tr>
+  </tbody>
+</table>
+
+
+
 export default function Layout({children}) {
   return <div className="prose">{children}</div>;
 }
