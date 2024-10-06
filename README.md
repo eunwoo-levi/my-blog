@@ -121,8 +121,6 @@ revalidate를 사용하여 7200초 즉, 2시간마다 랜더링이 되도록 하
 
 
 
-
-# SSR 페이지에서 dynamic import를 통해 라이브러리를
 ```js
 import { getAllPostsMeta } from "@/lib/mdx";
 import Categories from "./_components/Categories";
@@ -167,7 +165,7 @@ revalidate를 사용하여 7200초 즉, 2시간마다 랜더링이 되도록 하
 
    TBT(총 차단 시간) : 메인 스레드가 입력 응답을 막을 만큼 오래 차단되어있을 때 시간 측정
 
-
+***
 
 
 # SSR 페이지에서 dynamic import를 통해 라이브러리를 import함
