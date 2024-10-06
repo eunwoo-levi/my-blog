@@ -35,9 +35,9 @@
 
 6. **SEO 최적화**: Next.js의 메타데이터 API를 활용한 검색 엔진 최적화
 
-7. light/dark 모드 지원
+7. **Light/Dark MODE** 지원
 
-8. 모든 페이지 반응형 UI (Responsive UI)
+8. 모든 페이지에서 **반응형 UI (Responsive UI)**
 
   
 ## 💡 < 개인 기술 블로그를 만든 이유? > 
