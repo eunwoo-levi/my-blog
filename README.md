@@ -1,5 +1,5 @@
-# < 개인 기술 블로그 > 
-배포:  https://eunwoo-levi.vercel.app/posts
+# < 개인 포트폴리오 및 기술 블로그 > 
+배포:  https://eunwoo-levi.blog
 
 <br/><br/>
 
@@ -122,7 +122,60 @@ revalidate를 사용하여 7200초 즉, 2시간마다 랜더링이 되도록 하
 
 
 
+# SSR 페이지에서 dynamic import를 통해 라이브러리를
+```js
+import { getAllPostsMeta } from "@/lib/mdx";
+import Categories from "./_components/Categories";
+import PaginationComponent from "@/components/PaginationComponent";
 
+export const revalidate = 7200; // ISR
+
+export default async function PostsPage() {
+  const posts = await getAllPostsMeta();
+
+  // 서버에서 페이지가 렌더링된 시간을 저장
+  const now = new Date().toLocaleString();
+
+  return (
+    <main className="w-full min-h-screen flex flex-col justify-center items-center px-[5px] lg:px-0">
+      <Categories />
+      <section>
+        <h1 className="text-3xl font-bold">All Posts</h1>
+        <PaginationComponent posts={posts} postsPerPage={4} />
+        {/* 서버에서 생성된 시간 표시 */}
+        <p className="mt-4 text-sm">Page generated at: {now}</p>
+      </section>
+      <div></div>
+    </main>
+  );
+}
+```
+
+revalidate를 사용하여 7200초 즉, 2시간마다 랜더링이 되도록 하여 서버 과부화를 줄임
+
+<br/>
+<br/>
+<br/>
+
+# < 최적화 >
+1. Image 파일 -> webp 로 변환하여 번들 사이즈 줄임
+2. Google chrome에서 제공하는 lighthouse 사용
+-2024-09-10 기준-
+
+   ![image](https://github.com/user-attachments/assets/a650b169-698d-43bf-98af-7893e784c12d)
+
+
+   TBT(총 차단 시간) : 메인 스레드가 입력 응답을 막을 만큼 오래 차단되어있을 때 시간 측정
+
+
+
+
+# SSR 페이지에서 dynamic import를 통해 라이브러리를 import함
+
+- 초기 로딩 시간 감소: 필요한 컴포넌트만 로드하므로 초기 페이지 로드 시간이 줄어듭니다.
+- 코드 분할: 애플리케이션을 더 작은 청크로 나눠 필요할 때만 로드할 수 있습니다.
+- 리소스 효율성: 서버와 클라이언트 모두에서 필요한 리소스만 사용합니다.
+- 유연성: 조건부로 컴포넌트를 로드할 수 있어 상황에 따라 다른 컴포넌트를 렌더링할 수 있습니다.
 
 
 
