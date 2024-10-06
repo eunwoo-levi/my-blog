@@ -81,6 +81,41 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ data }) => (
         ))}
       </ul>
     </div>
+    <div className="bg-gray-700/20 flex flex-col items-center gap-4 p-4 rounded-lg mt-8">
+      <h1 className="text-indigo-900 text-[24px] md:text-[30px] font-bold">
+        ⚡ Main Stack ⚡
+      </h1>
+      <div className="flex gap-1">
+        <img
+          src="https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB"
+          alt="React"
+        />
+        <img
+          src="https://img.shields.io/badge/Next-black?style=for-the-badge&logo=next.js&logoColor=white"
+          alt="Next JS"
+        />
+        <img
+          src="https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white"
+          alt="TypeScript"
+        />
+        <img
+          src="https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white"
+          alt="TailwindCSS"
+        />
+        <img
+          src="https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB"
+          alt="Express.js"
+        />
+        <img
+          src="https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=for-the-badge&logo=mongodb&logoColor=white"
+          alt="MongoDB"
+        />
+        <img
+          src="https://img.shields.io/badge/zustand-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB"
+          alt="Zustand"
+        />
+      </div>
+    </div>
   </div>
 );
 
