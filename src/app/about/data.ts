@@ -50,6 +50,11 @@ export interface ProfileProps {
       role: "FullStack"
     },
     {
+      title: "개인 포트폴리오 및 기술 블로그 제작 with Next.JS",
+      period: "2024/08",
+      role: "Frontend"
+    },
+    {
       title: "2024 대구를 빛내는 해커톤",
       period: "2024/09 - 2024/09",
       role: "Frontend"
@@ -61,7 +66,7 @@ export interface ProfileProps {
     },
     {
       title: "경매 웹페이지 제작 Team 프로젝트",
-      period: "2024/09 - ongoing",
+      period: "2024/10 - ongoing",
       role: "Frontend"
     }
   ];
