@@ -193,6 +193,13 @@ Concurrency :싱글코어에서 동시에 일어나는 것처럼 보이는 것
 
 ## Time-sharing processing (1970s ~ 1980s)
 
+<span className="text-red-600">time-sharing 시스템은 CPU가 작업을 매우 빠르게 전환하여 여러 사용자가 동시에 상호작용할 수 있도록 했습니다.</span>
+
+시스템 clock & interrup: 시스템 clock이 주기적으로 interrupt를 생성하여 CPU가 현재 실행 중인 작업을 중단하고 다른 작업으로 전환하도록 합니다. 이 과정을 통해 여러 작업이 동시에 수행되는 것처럼 보이게 합니다.
+
+타임 슬라이싱: CPU는 각 프로세스에 대해 짧은 시간 동안만 할당되며, 이를 통해 각 프로세스가 빠르게 전환됩니다. 이 방식은 시스템 자원의 공평한 분배를 돕습니다.
+
+
 - Hardware cheap, humans expensive -> Make efficient use of people's time
 
 - A logical extension of **Batch-multiprogramming** systems - the CPU switches  jobs so frequently that multiple users can interact with each job while it is  running, creating interactive computing
