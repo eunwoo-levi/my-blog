@@ -33,7 +33,7 @@ export interface ProfileProps {
         period: "2020.09.06 - 2023.03.06"
     },
     {
-        title: "GDSC (Google Developer Student Clubs) KNU 4기 - Frontend",
+        title: "Google Developers Group - KNU 4기 - Frontend",
         period: "2024/09 ~ ongoing"
     }
   ];
@@ -45,7 +45,7 @@ export interface ProfileProps {
       role: "Frontend"
     },
     {
-      title: "대구 지방환경청 팀 프로젝트",
+      title: "대구 지방환경청 Team 프로젝트",
       period: "2024/07 - 2024/09",
       role: "FullStack"
     },
@@ -60,7 +60,7 @@ export interface ProfileProps {
       role: "FullStack"
     },
     {
-      title: "경매 웹페이지 제작 팀 프로젝트",
+      title: "경매 웹페이지 제작 Team 프로젝트",
       period: "2024/09 - ongoing",
       role: "Frontend"
     }
