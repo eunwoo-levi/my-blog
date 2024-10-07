@@ -27,12 +27,27 @@ Latency , Throughput  -> 역수 관계! 하지만 그렇지 않은 경우도 있
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/441caedd-7257-49e3-9975-f0062a0272ca/image.png)
 
-Pipelining(파이프라이닝)은 여러 단계로 나누어진 작업을 동시에 실행할 수 있도록 만드는 구조이다. 
+**Pipelining(파이프라이닝)**은 여러 단계로 나누어진 작업을 동시에 실행할 수 있도록 만드는 구조이다. 
 예를 들어, 하나의 명령어가 끝날 때까지 기다리지 않고, 다음 명령어를 동시에 실행하는 방식이다.
 이 경우 Latency는 여전히 명령어 하나를 처리하는 데 걸리는 시간이므로 변하지 않는다. 그러나 파이프라인 덕분에 여러 명령어를 동시에 처리할 수 있기 때문에 Throughput은 크게 증가한다. (Overlapping을 해서 능률을 높임)
+
 즉, Latency는 거의 변동이 없거나 일부 증가하더라도 Throughput이 증가할 수 있어, 역수 관계가 성립하지 않는다.
 
 ***
+
+## Time – The First Type Of Performance
+
+- Wall-clock (잘 안씀), response time (latency), or elapsed time
+ㄴ Actual time from start to completion: the time that user experience in real world
+ㄴ Includes everything so unpredictable    
+like ...
+▫ CPU time for other programs as well as for itself
+▫ Memory and disk access time
+▫ Communication channel delay
+▫ Operating system overhead …
+
+- **CPU (execution) time**
+
 
 
 
