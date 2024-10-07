@@ -1,0 +1,41 @@
+---
+title: "Performance in Computer Structure"
+author: "eunwoo"
+thumbnail: "/next.svg"
+publishDate: "2024-10-08"
+---
+
+Performance metrics:
+How do we conclude that System A	is  better (faster) than System B ?
+
+## How to measure the performance of computer system
+- Latency vs. Throughput
+- CPU time / MIPS / Benchmark
+- How to summarize the performance?
+
+## Importance Of Performance Measurement
+When designing the architecture of computer systems, we need to know which system (or design methodology) is better
+
+***
+
+## Throughput = (1/Latency) ?    -> No
+
+If it takes T sec to do N tasks, throughput = N/T;  latency = T/N ?
+If it takes t sec to do 1 task, latency = t;  throughput = 1/t ?
+
+Latency , Throughput  -> 역수 관계! 하지만 그렇지 않은 경우도 있다. (not always)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/441caedd-7257-49e3-9975-f0062a0272ca/image.png)
+
+Pipelining(파이프라이닝)은 여러 단계로 나누어진 작업을 동시에 실행할 수 있도록 만드는 구조이다. 
+예를 들어, 하나의 명령어가 끝날 때까지 기다리지 않고, 다음 명령어를 동시에 실행하는 방식이다.
+이 경우 Latency는 여전히 명령어 하나를 처리하는 데 걸리는 시간이므로 변하지 않는다. 그러나 파이프라인 덕분에 여러 명령어를 동시에 처리할 수 있기 때문에 Throughput은 크게 증가한다. (Overlapping을 해서 능률을 높임)
+즉, Latency는 거의 변동이 없거나 일부 증가하더라도 Throughput이 증가할 수 있어, 역수 관계가 성립하지 않는다.
+
+***
+
+
+
+export default function Layout({children}) {
+  return <div className="prose">{children}</div>;
+}
