@@ -7,6 +7,7 @@ interface postProps {
     title: string;
     author: string;
     publishDate: string;
+    category: string;
   };
 }
 
@@ -24,6 +25,9 @@ export default function PostCard({ post }: postProps) {
       />
       <div className="flex flex-col">
         <h3 className="text-xl font-semibold pt-[35px]">{post.title}</h3>
+        <h3 className="text-xl pt-[30px] font-semibold text-neutral-600">
+          cagegory: {post.category}
+        </h3>
         <p className="mt-4 mb-2 text-[20px]">{post.author}</p>
         <time className="text-[12px] text-gray-400">{post.publishDate}</time>
       </div>

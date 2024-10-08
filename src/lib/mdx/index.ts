@@ -18,6 +18,7 @@ interface PostMeta {
   author: string;
   publishDate: string;
   thumbnail: string;
+  category: string;
 }
 
 interface Frontmatter {
@@ -25,6 +26,7 @@ interface Frontmatter {
   author?: string;
   publishDate?: string;
   thumbnail?: string;
+  category?: string;
 }
 
 
@@ -46,9 +48,11 @@ export const getPostsByCategory = async (category: string): Promise<PostMeta[]> 
   const posts = await Promise.all(
     files.map(async (file) => {
       const { meta } = await getPostBySlug(category, file.replace(/\.mdx$/, ''));
-      return meta;
+      return {...meta, category};
     })
   );
+
+  posts.sort((a, b) => dayjs(b.publishDate).unix() - dayjs(a.publishDate).unix());
 
   return posts;
 };
@@ -111,6 +115,7 @@ export const getPostBySlug = async (category: string, slug: string): Promise<{ m
     author: frontmatter.author ?? "Unknown Author",
     publishDate: frontmatter.publishDate ?? dayjs().format('YYYY-MM-DD'),
     thumbnail: frontmatter.thumbnail ?? "/next.svg",
+    category: frontmatter.category ?? "Uncategorized"
   };
 
   return { meta, content };
@@ -131,7 +136,10 @@ export const getAllPostsMeta = async (): Promise<PostMeta[]> => {
     for (const file of files) {
       if (file.endsWith('.mdx')) {
         const { meta } = await getPostBySlug(category, file);
-        posts.push(meta);
+        posts.push({
+          ...meta,
+          category  
+        });
       }
     }
   }
