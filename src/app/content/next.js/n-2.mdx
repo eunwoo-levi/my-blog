@@ -52,4 +52,6 @@ revalidate를 사용하여 7200초 즉, 2시간마다 랜더링이 되도록 하
 
 
 
-export default ({children}) => <div className="prose">{children}</div>
+export default function Layout({children}) {
+  return <div className="prose">{children}</div>;
+}
