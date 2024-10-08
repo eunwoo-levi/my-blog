@@ -10,7 +10,9 @@ export default function Navbar() {
         <BackBtn />
       </div>
       <MoveTo to="/">
-        <div className="text-white text-[22px]">은우&#39;s 개발자 Blog</div>
+        <div className="text-white text-[22px]">
+          은우&#39;s Portfolio & Tech Blog
+        </div>
       </MoveTo>
 
       <div className="lg:absolute right-1 pr-[80px] flex gap-[20px] items-center">
