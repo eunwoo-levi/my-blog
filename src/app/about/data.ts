@@ -55,7 +55,7 @@ export interface ProfileProps {
       role: "Frontend"
     },
     {
-      title: "2024 대구를 빛내는 해커톤",
+      title: "2024 대구를 빛내는 해커톤 장려상",
       period: "2024/09 - 2024/09",
       role: "Frontend"
     },
