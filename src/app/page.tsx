@@ -87,7 +87,7 @@ export default function Home() {
         </div>
       </div>
       <div className="flex flex-col justify-center items-center gap-[30px] mt-[150px]">
-        <CustomLink href="/about">About Me</CustomLink>
+        <CustomLink href="/about">Portfolio</CustomLink>
         <CustomLink href="/posts">Blog</CustomLink>
         <CustomLink href="/board">Board</CustomLink>
       </div>
