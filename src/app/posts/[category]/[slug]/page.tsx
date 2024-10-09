@@ -49,7 +49,7 @@ const SlugPage = async ({ params }: { params: Params }) => {
           {params.category}
         </h2>
       </div>
-      <div className="w-full lg:w-3/4 max-w-[1800px] py-[120px] flex flex-col justify-center px-[10px] lg:px-[80px] mb-[80px] border border-slate-700 rounded-xl prose dark:prose-invert lg:prose-2xl overflow-hidden break-words">
+      <div className="w-full lg:w-3/4 max-w-[1800px] py-[120px] flex flex-col justify-center px-[10px] lg:px-[80px] mb-[80px] border border-slate-700 rounded-xl prose dark:prose-invert lg:prose-lg overflow-hidden break-words">
         {content}
       </div>
       <Giscus />
