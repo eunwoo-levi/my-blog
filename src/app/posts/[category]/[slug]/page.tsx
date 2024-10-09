@@ -43,7 +43,7 @@ const SlugPage = async ({ params }: { params: Params }) => {
           {meta.title}
         </h1>
       </div>
-      <div className="bg-gray-400/30 py-2 px-[50px] rounded-xl my-[40px] flex items-center gap-3">
+      <div className="bg-gray-400/30 py-2 px-[50px] rounded-xl mt-[50px] mb-[70px] flex items-center gap-3">
         <h2 className="text-[16px] lg:text-[28px]">category: </h2>
         <h2 className="text-[18px] lg:text-[30px] font-semibold text-purple-500">
           {params.category}
