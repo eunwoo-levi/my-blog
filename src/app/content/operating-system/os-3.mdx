@@ -1,0 +1,162 @@
+---
+title: "Three Main Features of Operating Systems"
+author: "eunwoo"
+thumbnail: "/next.svg"
+publishDate: "2024-10-10"
+
+---
+
+
+# Schematic Overview of Computer System
+
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/1cf12b76-08d2-41f9-89be-02c4801d4f63/image.png)
+
+운영체제(Operating System)라는 interface를 통해서 컴퓨터의 복잡한 원리를 모르더라도 사용 가능
+지금 현재 컴퓨터(CPU)는 모든 data와 cpu가 수행해야하는 명령어 등은 Memory를 통해서 수행 이후 I/O devices들이 Memory에서 읽어서 보여줌
+
+
+
+
+***
+
+# Von Neumann Machine
+
+### Stored-program computer
+(프로그램 명령어와 데이터를 같은 메모리에 저장)
+
+- Processing unit can communicate with **main memory** only.
+▫	**A processing unit** that contains an arithmetic logic unit and processor registers
+▫	**A control unit** that contains an instruction register and program counter
+▫	**Memory** that stores data and instructions
+▫	External mass storage
+▫	Input and output mechanisms
+
+- Von Neumann bottleneck (폰노이만 병목 현상)
+▫	Cache
+▫	Modified Harvard architecture
+▫	On-chip scratchpad memory
+▫	Memory hierarchy
+▫	DMA …
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/0009d030-ea2b-435b-9bc4-e0d87e8ce647/image.png)
+
+### 작동 원리
+
+- **메모리**에서 명령어를 가져와 해독하고 실행하는 순차적 처리
+- **프로그램 카운터 (PC)**가 다음 실행할 명령어의 주소를 가리킴
+
+***
+
+
+# Instruction Set Architecture (ISA)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/4500edf4-8923-4e64-9bd4-9f4da7e12f08/image.png)
+- ISA는 컴퓨터 아키텍처의 중요한 개념으로, 하드웨어와 소프트웨어 사이의 인터페이스를 정의
+
+"the attributes of a [computing] system as seen by the  programmer, i.e. the conceptual structure (**state**) and  functional behavior (**operations**), as distinct from the  organization of the data flow and controls, the logical design,  and the physical implementation"
+
+
+
+- 중앙의 빨간 박스는 "Registers + Memory"를 나타냅니다. 이는 ISA의 'state' 부분을 표현
+- 박스 주변의 "instruction"들은 시스템이 수행할 수 있는 연산들을 나타냅니다. 이는 ISA의 'operations' 부분을 표현
+
+<br/><br/>
+
+### Register와 State:
+
+Register는 CPU 내부의 고속 저장 장치로, 현재 처리 중인 데이터와 프로그램의 즉각적인 실행 상태를 저장합니다. 
+이는 state의 가장 즉각적이고 빠르게 변화하는 부분을 나타냅니다.
+
+Register는 이름으로 접근
+
+### Memory와 State:
+
+Memory는 더 큰 용량의 저장소로, 실행 중인 프로그램의 전체 코드와 데이터를 포함합니다.
+이는 프로그램의 전반적인 상태와 더 장기적인 state 정보를 저장합니다.
+
+Memory는 주소로 접근
+
+<br/>
+
+**즉, register와 memory는 함께 ISA에서 정의하는 시스템의 전체 state를 구성하며, 프로그래머가 이해하고 조작할 수 있는 시스템의 현재 상태를 나타냅니다.**
+
+
+### ISA의 중요성
+
+ISA는 하드웨어와 소프트웨어 사이의 계약과 같은 역할을 합니다.
+프로그래머는 ISA를 통해 하드웨어의 세부 구현을 알 필요 없이 시스템을 프로그래밍할 수 있습니다.
+하드웨어 설계자는 ISA 규격을 준수하면서 다양한 방식으로 하드웨어를 최적화할 수 있습니다.
+
+***
+# ISA 예제
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/e6140b59-81cb-4d8b-99f0-b351736a6cd8/image.png)
+PC를 통해 다음 명령어를 수행
+
+lw(Load Word) -  MIPS 아키텍처: 메모리에서 32비트 워드를 레지스터로 로드하는 명령
+
+lw r1, 1(r0) 에서 1은 r0 레지스터 값에 더할 Offset (바이트 단위)
+즉, 1(r0) 은 1 + 1 = 2 
+Memory의 주소 2에 해당되는 값을 r1 레지스터에 저장.
+
+<br/>
+이후에 PC 레지스터에 명령어에 의해서 메모리의 주소 22에 해당되는 명령어를 수행
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/647e5387-6630-418b-b91e-7d91a7f5e473/image.png)
+
+### lw r2,2(r0) 명령어의 실행 과정
+
+- 명령어 해석:
+
+lw: Load Word (메모리에서 레지스터로 데이터 로드)
+r2: 목적지 레지스터
+2(r0): 메모리 주소 계산 (r0의 값 + 2)
+
+<br/>
+- 메모리 주소 계산:
+
+r0의 값 = 1
+Offset = 2
+실제 메모리 주소 = 1 + 2 = 3
+
+<br/>
+- 데이터 로드:
+
+메모리 주소 3의 값 = 7
+이 값(7)을 r2 레지스터에 로드
+
+<br/>
+- 결과:
+
+r2 레지스터의 새 값 = 7
+
+<br/>
+
+### 변경된 상태
+
+r2 레지스터: 빈 상태에서 7로 변경
+PC (Program Counter): 21에서 22로 증가 (다음 명령어 위치)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/94aaf620-9180-4eee-95be-85aaf084367b/image.png)
+
+
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/88c186d9-9dbc-4773-80ce-e4246c918b5c/image.png)
+
+**SW: Store Word**
+목적: 레지스터의 내용을 메모리에 저장
+즉 0 + 1 = 1 이므로 메모리 주소 1에 해당되는 곳에 r3 레지스터 값(9)을 저장. 
+
+
+
+
+
+<br/><br/>
+
+
+
+
+export default function Layout({children}) {
+  return <div className="prose">{children}</div>;
+}
