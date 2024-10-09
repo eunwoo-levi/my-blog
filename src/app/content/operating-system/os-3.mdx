@@ -149,7 +149,160 @@ PC (Program Counter): 21에서 22로 증가 (다음 명령어 위치)
 즉 0 + 1 = 1 이므로 메모리 주소 1에 해당되는 곳에 r3 레지스터 값(9)을 저장. 
 
 
+***
 
+![](https://velog.velcdn.com/images/eunwoo1341/post/a770b35c-4082-4ac2-a9e9-4cf88feeff28/image.png)
+
+# Computer System (1): Mode Bit
+
+
+- Dual mode (or multi-mode) in OS by setting “mode bit”
+	- Mode bit is a flag in hardware (stored in a register called Program  Status Word (PSW) register)
+	- Indicates the current mode of execution
+	▫ **Mode bit 0 -> The system is in kernel mode** (monitor mode, privileged  mode, supervisor mode, system mode) -> The **OS** gains control of the  processor (computer)
+	▫ **Mode bit 1 -> The system is in user mode** -> The user application is  running
+	- **Interrupt or system call -> changing mode bit from 1 to 0** -> mode transition from user mode to kernel mode (explained in later slides)
+
+- Why dual mode (or multi-mode)?
+	- Protect OS itself and other system components (ex. memory protection) from incorrect or illegal program execution
+▫	A running user program can accidentally wipe out the operating system by  overwriting it with user data.
+▫	Multiple processes can write in the same system at the same time, with  disastrous results
+
+***
+
+# Computer System (2): Timer
+
+- The main task of a timer is to interrupt the CPU after a specific period  of time (-> It is determined by hardware design)
+- Whenever the clock ticks, the counter is decremented
+	▫	When the value of this counter reaches “zero”, an interrupt occurs and control is transferred back to the operating system (**timer interrupt**)
+- Used to prevent a user program from monopolizing(독점) CPU  (ex. running too long)
+- Used to implement time-sharing system
+  (Example)
+  . Program with 7 minutes time limit
+  . Its counter initialized to 420
+  . For every clock tick, the counter is decremented by 1
+
+  -> After 420 ticks, the control is  automatically transferred back to  the operating system
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/15be6f67-dcf5-4993-adde-9ebb9ea456ca/image.png)
+
+
+***
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/15be6f67-dcf5-4993-adde-9ebb9ea456ca/image.png)
+
+### 모드 전환 순서
+
+(1) Program 1 실행 (User 모드)
+프로그램 1의 main() 함수 실행 중
+
+(2) 타이머 인터럽트 발생 → Kernel 모드로 전환
+인터럽트 처리를 위해 OS의 schedule() 함수로 제어 이동
+
+(3) OS의 schedule() 함수 실행 (Kernel 모드)
+다음 실행할 프로그램 결정
+
+(4) Program 2로 전환 → User 모드로 전환
+Program 2의 main() 함수 실행 시작
+
+(5) Program 2 실행 중 타이머 인터럽트 발생 → Kernel 모드로 전환
+다시 OS의 schedule() 함수로 제어 이동
+
+(6) OS의 schedule() 함수 실행 (Kernel 모드)
+다음 실행할 프로그램 결정
+
+(7) Program 1로 재전환 → User 모드로 전환
+Program 1의 main() 함수 실행 재개 (k+1 지점부터)
+
+(8) 다시 타이머 인터럽트 발생 → Kernel 모드로 전환
+OS의 schedule() 함수로 제어 이동
+
+***
+
+
+# Computer System (3): I/O Device
+
+### I/O device controller
+- **Hardware unit** which is attached to the input/output bus of the computer and provides a hardware **interface between the computer  and the I/O devices**
+
+- **Another type of small CPU** -> control register, status register
+
+- Local buffer (like memory)
+After finishing I/O processing, the device controller sends an interrupt  signal to the CPU
+
+- **Device driver**
+▫	Computer program that operates or controls a particular type of device  that is attached to a computer
+▫	**Another type of small operating system for I/O devices**
+(Firmware/Middleware)
+▫	**Software interface** to hardware devices, enabling operating systems and  other computer programs to access hardware functions without needing  to know precise details  provide abstraction by acting as a translator  between a hardware device and the applications or operating systems
+▫	(ex) .sys in Window or .ko in Linux
+
+***
+
+<h1 className="text-red-600 font-bold">Computer System (4):  Exception (Interrupt)</h1>
+
+- An **interrupt** (or exception) is a transfer of control to the OS  in response to some event	(i.e., change in processor state)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/7d6dbfc5-8453-4f79-8756-e68746e0f41a/image.png)
+
+### Exception 처리 과정
+(1) Exception 발생 (주로 User 모드)
+
+(2) 모드 전환: User 모드 → Kernel 모드
+	- CPU가 자동으로 특권 수준 변경
+
+(3) Kernel 모드에서 Exception 처리
+- Exception 핸들러 실행
+- 상황 분석 및 적절한 조치 결정
+
+(4) 처리 완료 후 모드 전환: Kernel 모드 → User 모드
+- 프로그램 재개 또는 종료
+
+<br/>
+
+## Asynchronous Exceptions : **Interrupt**
+
+- Caused by events **external** to the processor (e.g., I/O devices)
+  - Indicated by setting the processor’s interrupt pin (IRQ)
+  - **Unpredictable**
+  - Handler returns to “**next**” instruction
+
+- Examples:
+  - **Timer interrupt**
+    ▫	Every few ms, an external timer triggers an interrupt
+    ▫	Used by the kernel to take back control from user programs
+  - **I/O interrupt from external device**
+    ▫	Hitting Ctrl-C at the keyboard
+    ▫	Arrival of a packet from a network
+    ▫	Arrival of data to memory from I/O devices such as disk (HDD or SSD)
+
+***
+
+***
+
+## Synchronous Exceptions
+
+- Caused by events that occur as a result of executing an  instruction, and **triggered by the CPU itself**   
+(“software interrupt”  or “internal interrupt”)
+
+## Traps
+▫	**Intentional**
+▫	Examples: system calls, breakpoint traps, special instructions
+▫	Returns control to “next” instruction
+
+## Faults
+▫	**Unintentional but possibly recoverable**
+▫	Examples: page faults (recoverable), protection faults (unrecoverable), floating
+point exceptions (divide by 0), invalid memory access …
+▫	Either re-executes faulting (“current”) instruction or aborts
+
+## Aborts
+▫	**Unintentional and unrecoverable**
+▫	Examples: illegal instruction, parity error, machine check
+▫	Aborts current program
+
+***
+![](https://velog.velcdn.com/images/eunwoo1341/post/8655f5b6-201d-479d-b2d1-140c6f3c2d7b/image.png)
 
 
 <br/><br/>
