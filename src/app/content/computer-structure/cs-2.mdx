@@ -1,0 +1,61 @@
+---
+title: "Performance questions in Computer Structure"
+author: "eunwoo"
+thumbnail: "/next.svg"
+publishDate: "2024-10-11"
+---
+
+
+
+### < Important! >
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/abdadeff-68a6-46c1-8ae5-473d78cccbe5/image.png)
+
+***
+
+# 문제 1
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/23487206-ce1a-4bb5-adf6-293bd2c111ba/image.png)
+
+# 문제 2
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/396f38df-f988-4db0-996a-2a65cc2ecc4f/image.png)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/30c04737-fd12-49ab-8c56-e02147944723/image.png)
+
+***
+
+# 문제 3 (중요)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/947e2d6d-27df-4733-9fe1-f275e0e31265/image.png)
+
+CPU time = (IC x CPI) / Clock rate  이므로..
+10 = IC x CPI / ( 400 MHz ) = IC x CPI / ( 400 x 10^6 Hz )
+
+즉, IC x CPI = 400 x 10^7 Hz
+
+
+다음으로, 6 = IC x ( CPI x 1.2 ) / Clock Rate
+
+Clock Rate = IC x CPI x 0.2   , 이 식에 이전에 구한걸 대입하면
+Clock Rate = 800 x 10^6 = 800 MHz
+
+답은 800 MHz
+
+***
+
+# 문제 4
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/272f6b7f-7546-464b-bfcb-248e3ed1c352/image.png)
+
+
+
+
+
+
+
+
+
+export default function Layout({children}) {
+  return <div className="prose">{children}</div>;
+}
