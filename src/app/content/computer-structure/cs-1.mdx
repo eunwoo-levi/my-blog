@@ -102,14 +102,94 @@ CPU execution time per 1 Instruction
 ㄴ Average clock cycles per instructions
 ㄴ CPU clock cycles (# of clock cycles) = IC X CPI
 
+
 ### < Important! >
+
 ![](https://velog.velcdn.com/images/eunwoo1341/post/abdadeff-68a6-46c1-8ae5-473d78cccbe5/image.png)
 
-(ex) Examples
-![](https://velog.velcdn.com/images/eunwoo1341/post/03167a46-9ebe-487f-b7ce-40fd96af0b66/image.png)
 
-Clock rate = 1 / clock cycle time   - 역수 관계!
+ex: 예제문제
+
 ![](https://velog.velcdn.com/images/eunwoo1341/post/23487206-ce1a-4bb5-adf6-293bd2c111ba/image.png)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/396f38df-f988-4db0-996a-2a65cc2ecc4f/image.png)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/30c04737-fd12-49ab-8c56-e02147944723/image.png)
+
+***
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/947e2d6d-27df-4733-9fe1-f275e0e31265/image.png)
+
+CPU time = (IC x CPI) / Clock rate  이므로..
+10 = IC x CPI / ( 400 MHz ) = IC x CPI / ( 400 x 10^6 Hz )
+
+즉, IC x CPI = 400 x 10^7 Hz
+
+
+다음으로, 6 = IC x ( CPI x 1.2 ) / Clock Rate
+
+Clock Rate = IC x CPI x 0.2   , 이 식에 이전에 구한걸 대입하면
+Clock Rate = 800 x 10^6 = 800 MHz
+
+답은 800 MHz
+
+***
+
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/272f6b7f-7546-464b-bfcb-248e3ed1c352/image.png)
+
+CPU time(초단위) = IC x CPI / Clock Rate  이므로
+
+-> Clock Rate / CPI  =  IC / CPU Time
+
+<br/>
+
+#### (1) 
+
+P1:  3GHz / 1.5  = 3 x 10^9 / 1.5 = **2 x 10^9**      (2 billion instructions per second)
+
+P2:  2.5GHz / 1.0 = 2.5 x 10^9 / 1.0 = **2.5 x 10^9**    (2.5 billion instructions per second)
+
+P3:  4.0GHz / 2.2 = **4 x 10^9 / 2.2**  	(1.82 billion instructions per second)
+
+
+#### (2) P1:
+
+P1:
+Number of cycles: 3 GHz x 10 seconds = 30 billion cycles
+Number of instructions: 30 billion cycles / 1.5 CPI = 20 billion instructions
+P2:
+Number of cycles: 2.5 GHz x 10 seconds = 25 billion cycles
+Number of instructions: 25 billion cycles / 1.0 CPI = 25 billion instructions
+P3:
+Number of cycles: 4.0 GHz x 10 seconds = 40 billion cycles
+Number of instructions: 40 billion cycles / 2.2 CPI = 18.18 billion instructions
+
+ CPI는 "Cycles Per Instruction"의 약자로, 한 명령어를 실행하는 데 필요한 평균 클럭 사이클 수를 의미, 그래서 총 사이클에서 CPI를 나누면 instruction 의 총 개수가 나옴.
+
+***
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/e9f688da-6263-453b-973b-f384574b05b4/image.png)
+
+***
+
+# Rate – The Second Types Of Performance
+
+## MIPS (Million Instructions Per Seconds)
+:1초당 몇 백만개의 명령어들을 처리했는가?
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/5b5747ae-91c5-4386-8f89-ad7c590aae81/image.png)
+
+
+- Specifies performance (roughly) inversely to execution time
+- Easy to understand; faster machines means bigger MIPS
+- Problems; (-> See examples in following slides)
+▫	It does not take into account the capabilities of the instructions
+▫	It varies between programs on the same computer
+▫	It can even vary inversely with performance!!
+
+
+
 
 export default function Layout({children}) {
   return <div className="prose">{children}</div>;
