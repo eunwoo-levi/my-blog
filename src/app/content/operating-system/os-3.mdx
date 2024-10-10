@@ -507,6 +507,17 @@ DMA 컨트롤러는 이 정보를 사용하여 메모리와 I/O 장치 간 데�
 - Cycle steal 모드: CPU와 DMA가 버스 사용을 번갈아 가며 데이터 전송
 - Transparent 모드: CPU가 버스를 사용하지 않을 때만 DMA가 데이터 전송
 
+***
+
+### Advantages of DMA
+- **Transferring the data without the involvement of the processor will speed up the read-write task**
+- DMA reduces the clock cycle requires to read or write a block of data.
+- Implementing DMA also reduces the overhead of the processor
+
+### Disadvantages of DMA
+- As it is a hardware unit, it would cost to implement a DMA controller in the system.
+- Cache coherence problem can occur while using DMA controller.
+(캐시와 실제 메모리 간의 데이터 불일치 문제)
 
 
 <br/><br/>
