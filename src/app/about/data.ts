@@ -35,7 +35,11 @@ export interface ProfileProps {
     {
         title: "Google Developers Group - KNU 4기 - Frontend",
         period: "2024/09 ~ ongoing"
-    }
+    },
+    {
+      title: "React Team Study - Deep Dive",
+      period: "2024/09 ~ ongoing"
+  }
   ];
   
   export const experienceData: ActivityProps[] = [
