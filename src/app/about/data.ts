@@ -40,12 +40,12 @@ export interface ProfileProps {
   
   export const experienceData: ActivityProps[] = [
     {
-      title: "2024 고용노동 공공데이터 활용 대회",
+      title: "AI 산재 챗봇 Team Project- 2024 고용노동 공공데이터 활용 대회",
       period: "2024/07 - 2024/08",
       role: "Frontend"
     },
     {
-      title: "대구 지방환경청 Team 프로젝트",
+      title: "재활용 홈페이지 Team Project- 대구 환경청 협업 프로젝트",
       period: "2024/07 - 2024/09",
       role: "FullStack"
     },
@@ -55,7 +55,7 @@ export interface ProfileProps {
       role: "Frontend"
     },
     {
-      title: "2024 대구를 빛내는 해커톤 장려상",
+      title: "대구 상권 부루마블 게임 서비스 Team Project- 2024 대구를 빛내는 해커톤 장려상",
       period: "2024/09 - 2024/09",
       role: "Frontend"
     },
