@@ -317,8 +317,25 @@ SpeedUp = 1 / ((1 - 0.50) + 0.50/1.6) = 1 / 0.8125 ≈ 1.23
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/f21eb230-9e30-44df-af55-50adb4ab80b6/image.png)
 
+Gustafson의 법칙의 핵심은 프로세서 수가 증가함에 따라 병렬화 가능한 작업의 크기도 증가할 수 있다는 것입니다. 
+이는 Amdahl의 법칙과 달리, 병렬 시스템의 확장성에 대해 더 낙관적인 견해를 제시합니다.
+
+## Amdahl's Law:
+
+고정된 크기의 문제에 적용
+병렬화 불가능한 부분이 성능 향상의 한계를 결정
+프로세서 수 증가에 따른 성능 향상의 한계를 보여줌
 
 
+## Gustafson's Law:
+
+문제 크기가 프로세서 수에 따라 확장 가능함을 가정
+더 많은 프로세서로 더 큰 문제를 더 빠르게 해결 가능
+병렬 시스템의 확장성에 대해 더 낙관적인 관점 제시
+
+
+두 법칙은 서로 상반되는 것이 아니라, 다른 상황과 가정에 기반한 보완적인 모델입니다. 
+Amdahl's Law는 고정된 작업에서의 한계를, Gustafson's Law는 확장 가능한 작업에서의 가능성을 설명합니다.
 
 export default function Layout({children}) {
   return <div className="prose">{children}</div>;
