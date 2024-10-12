@@ -1,3 +1,5 @@
 src/app/content/{Computer-Structure,Operating-System}/**/*.mdx linguist-detectable=false
 
+src/app/content/**/*.mdx linguist-detectable=false
+
 
