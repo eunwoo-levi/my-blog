@@ -1,0 +1,161 @@
+---
+title: "Process"
+author: "eunwoo"
+thumbnail: "/next.svg"
+publishDate: "2024-10-03"
+
+---
+
+# CPU Virtualization
+
+:실제 사용자에게 CPU는 1개 밖에 없지만 무한개의 CPU를 제공하는 것 같이 illusion을 제공하는 것
+
+## How to provide the illusion of many CPU’s
+- The OS can promote the **illusion** that many virtual(logical) CPUs exist
+▫	The number of physical CPU is “one” (We assume a single-core system)
+▫	Individual users have the illusion of monopolizing computing resources
+- **Time-sharing** (e.g., Time-division multiplexing)
+▫	Allows users to run as many concurrent processes as they would like
+▫	Running one process, then stopping it and running another by round-robin  fashion
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/b6f6ee7d-cf0b-48f6-93cf-0857b4ba964e/image.png)
+
+## CPU Scheduling - Round Robin Scheduling 방식
+
+1) "돌려가면서 time-sharing 구현": 이미지의 원형 화살표는 CPU가 여러 프로세스(P1, P2, P3)를 돌아가면서 실행하는 것을 나타냅니다.
+
+2) "Timer가 처리": CPU 중앙의 타이머를 의미합니다.
+
+3) "time-slice: 1초가 지나면 멈춤": 각 프로세스에 일정 시간(타임 슬라이스)을 할당하고, 그 시간이 지나면 다음 프로세스로 전환합니다.
+
+4) "다음 꺼 수행": 타임 슬라이스가 끝나면 다음 프로세스로 전환됩니다.
+
+5) "Illusion 제공": 이 방식으로 여러 프로세스가 동시에 실행되는 것처럼 보이는 환상(illusion)을 제공합니다.
+
+이 방식은 멀티태스킹을 구현하고, 여러 프로세스에 공평하게 CPU 시간을 분배하는 데 사용됩니다. 각 프로세스가 짧은 시간 동안 번갈아 실행되어 동시에 실행되는 것처럼 보이게 합니다.
+
+
+# Von Neumann Machine
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/bb750d2b-0e86-43e2-953f-8d10dceb1f36/image.png)
+
+- 중앙 처리 장치(Central Processing Unit, CPU):
+  - 제어 장치(Control Unit)
+  - 산술/논리 장치(Arithmetic/Logic Unit)
+  - 레지스터(Registers): PC(Program Counter), CIR(Current Instruction Register), AC(Accumulator), MAR(Memory Address Register), MDR(Memory Data Register)
+
+- 메모리 장치(Memory Unit): 프로그램과 데이터를 저장
+
+- 입력 장치(Input Device)와 출력 장치(Output Device)
+- 2차 저장장치(Secondary Storage): 입출력 기능을 겸함
+
+이 구조의 핵심 특징은 프로그램과 데이터를 동일한 **메모리**에 저장.
+이를 통해 프로그램의 유연성과 범용성이 크게 향상됨.
+폰 노이만 아키텍처는 대부분의 현대 컴퓨터 시스템의 기본이 되는 구조로, 컴퓨터 과학과 운영체제의 근간을 이루는 중요한 개념.
+
+***
+
+# How to Our Program Can Work on Processor
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/79e7c7b4-3103-414e-a974-55c7cf7ae595/image.png)
+
+### Code: 
+소스 코드 파일들 (main.c, swap.c)로 시작합니다.
+
+### Executable Object File (= Program): 
+컴파일러와 링커가 소스 코드를 변환하여 실행 가능한 파일을 만듭니다.
+ELF 헤더, 세그먼트 헤더, 다양한 섹션(.init, .text, .data 등)을 포함합니다.
+
+### Process: 
+로더가 실행 파일을 메모리에 로드하여 프로세스를 생성합니다.
+가상 주소 공간이 할당되며, 다음 영역들을 포함합니다: 
+User stack: 함수 호출, 지역 변수 등을 위한 공간
+Heap: 동적 메모리 할당을 위한 공간
+Read/write segment: 변경 가능한 데이터
+Read-only segment: 코드와 상수 데이터
+
+### Instructions: 
+프로세서가 프로세스의 명령어들을 실행합니다.
+시작(startup)부터 종료(shutdown)까지의 명령어 시퀀스를 따릅니다.
+  
+이 과정은 소스 코드가 어떻게 컴파일되고, 실행 파일로 변환되며, 메모리에 로드되어 프로세스가 되고, 최종적으로 프로세서에서 실행되는지를 보여줍니다. 이는 프로그램 실행의 전체 생명주기를 나타내며, 운영체제와 컴퓨터 구조의 핵심 개념을 설명합니다.
+
+  프로세스는 메모리에 로드되어 실행 중인 프로그램입니다. 하나의 프로그램은 여러 개의 프로세스로 실행될 수 있습니다. 예를 들어, 웹 브라우저 프로그램을 여러 번 실행하면 각각 독립적인 프로세스가 됩니다.
+
+# program vs process
+Storage들을 실행할 수 없다
+실행하려면 memory에 올라와야 함
+Process 는 memory에 올라와있음
+
+-> 프로그램은 먼저 Storage에 저장되어 있다가 실행될 때 Memory에 로드되어 프로세스가 됩니다
+
+***
+
+# What Is “Process”?
+
+- The abstraction provided by the OS of a **running program**
+  - A process is an **instance of a running program**
+  - Reside in memory -> ready to be executed by a processor (CPU)
+  ▫	An entity that is registered and being managed by kernel
+  ▫	An entity that is allocated the PCB (Process Control Block)  later slides
+  - An active (or executing) entity
+  ▫	It means the process can have different states
+  ▫	Request/allocate/release system resources during execution
+  - Not the same as “program” or “processor”
+
+- What is “Program”
+  - The sequence of “codes (instructions)” and “a set of data associated  with that code” to be executed
+  - An entity before submission for execution
+  - Reside in disk -> not ready to be run yet
+  - Passive entity
+  ▫	It means the program cannot have different states
+  
+***
+
+정리하자면,
+ 
+**프로그램**은 디스크에 저장된 실행 가능한 코드(예: *.exe 파일)이다. 아직 메모리에 로드되거나 실행되지 않은 상태.
+
+**프로세스**는 프로그램이 실제로 실행되어 메모리에 로드된 후, 운영체제에 의해 관리되는 실행 중인 상태이다. 이때, 프로세스는 자신의 **코드, 데이터, 메모리 공간, 시스템 리소스(CPU, I/O 등)**를 할당받는다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/5742b5b2-b825-4691-81d8-1ca4742b1c19/image.png)
+
+***
+
+# Process States  (Process 생명주기)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/ab7f5dc8-3650-465a-9134-05b20b5cb09d/image.png)
+
+## Running 상태:
+CPU에 대한 권한을 가지고 있음
+실행에 필요한 모든 자원을 가지고 있음
+현재 CPU에서 실제로 명령어를 실행 중인 상태
+
+
+## Ready 상태:
+CPU에 대한 권한은 없음
+실행에 필요한 다른 모든 자원은 가지고 있음
+CPU 할당을 기다리는 상태로, 즉시 실행될 수 있음
+
+
+## Blocked 상태:
+CPU에 대한 권한이 없음
+실행에 필요한 일부 자원이 부족한 상태
+주로 I/O 작업이나 다른 이벤트 완료를 기다리는 상태
+
+<br/>
+
+이 모델은 운영체제의 프로세스 관리를 이해하는 데 매우 유용함. 운영체제는 이러한 상태를 기반으로 프로세스 스케줄링과 자원 할당을 수행함. 예를 들어:
+
+Running 상태의 프로세스가 I/O를 요청하면 Blocked 상태로 전환됨.
+Ready 상태의 프로세스 중 하나를 선택하여 Running 상태로 전환함(스케줄링).
+Blocked 상태의 프로세스가 필요한 자원을 얻으면 Ready 상태로 전환됨.
+
+***
+
+
+
+
+export default function Layout({children}) {
+  return <div className="prose">{children}</div>;
+}
