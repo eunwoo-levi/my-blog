@@ -153,6 +153,56 @@ Blocked 상태의 프로세스가 필요한 자원을 얻으면 Ready 상태로 
 
 ***
 
+# Running state
+- There can be only one process that is “running state” at a time because we assume a single processor system
+- Own “processors”
+- **Own “all resources” necessary**
+
+- Preemption
+  ▫	Transition from running state to ready state
+  ▫	Due to the expiration of time quantum (time slice) or appearance of higher  priority process
+
+- Block/Wait/Sleep
+  ▫	Transition from running state to blocked (wait, asleep) state
+  ▫	Due to the resource request, such as waiting for I/O or system call  completion, during execution (running)
+
+
+# Ready state
+- The “ready state” process is ready to be executed
+- It owns all resources to be run **except processors**
+- It is placed in the “ready queue” and waits until being scheduled by OS
+	▫	Can execute immediately when the processor is allocated
+
+# Blocked (Wait, Sleep) state
+- The “blocked state” process is **not ready to be executed** because it does  not have all resources to be run (e.g., I/O request)
+  ▫	Requested resources other than processor or memory and waiting for them
+  ▫	Resource request through system call : Kernel provides application processes
+  with system call interface so that they can request resources
+  ▫	Processes also commonly block when they require access to a “critical section” which must be executed atomically
+- It is not placed in the “ready queue”, but in the “blocked queue”
+- When it obtains resources to be run, it is transferred from “blocked
+queue” to “ready queue”, and it will wait for being scheduled by OS
+	▫	Wakeup
+
+***
+
+## Terminated state
+**Completing process execution**
+It removed from all queues
+It releases all resources allocated and all those resources are returned  back to OS.
+▫	It is removed from main memory and all queue
+▫	Its PCB is also deleted.
+
+## Zombie / Orphan state
+사람이 죽었는데 아직 주민등록증이 살아있는 개념
+folk를 해서 호출한 애가 parent, folk로 인해서 생성된게 child process
+
+Parent process가 child process 정보를 관리하는 경우가 있다.
+
+Parent process가 안끝났는데 child process가 끝나서 child process를 계속 모니터링 해야하는데 일이 멈추면 안되니까 Child process 정보를 남기는 것
+
+
+
 
 
 
