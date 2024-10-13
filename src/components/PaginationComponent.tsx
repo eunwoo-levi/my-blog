@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 import {
   Pagination,
   PaginationContent,
@@ -12,32 +11,29 @@ import {
 } from "@/components/ui/pagination";
 import PostCard from "./PostCard";
 
-interface PostMeta {
-  slug: string;
-  title: string;
-  author: string;
-  publishDate: string;
-  thumbnail: string;
-  category: string;
-}
-
 interface PaginationComponentProps {
-  posts: PostMeta[];
-  postsPerPage: number;
-  currentPage: number;
-  totalPages: number;
+  posts: any[]; // 포스트 데이터 배열
+  postsPerPage?: number; // 페이지당 포스트 수 (기본값: 9)
 }
 
 const PaginationComponent: React.FC<PaginationComponentProps> = ({
   posts,
-  postsPerPage,
-  currentPage,
-  totalPages,
+  postsPerPage = 9,
 }) => {
-  const router = useRouter();
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // 최신 글이 먼저 오도록 역순 정렬
+  const sortedPosts = [...posts].reverse();
+
+  const totalPages = Math.ceil(sortedPosts.length / postsPerPage);
+
+  const currentPosts = sortedPosts.slice(
+    (currentPage - 1) * postsPerPage,
+    currentPage * postsPerPage
+  );
 
   const handlePageChange = (page: number) => {
-    router.push(`?page=${page}`);
+    setCurrentPage(page);
   };
 
   const handlePrevious = () => {
@@ -54,8 +50,9 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
 
   return (
     <div>
+      {/* 포스트 리스트를 렌더링할 수 있습니다. */}
       <div className="flex flex-col gap-[20px] mt-6">
-        {posts.map((post, idx) => (
+        {currentPosts?.map((post, idx) => (
           <PostCard key={idx} post={post} />
         ))}
       </div>
@@ -64,7 +61,7 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
         <PaginationContent>
           <PaginationItem>
             <PaginationPrevious
-              href={`?page=${currentPage - 1}`}
+              href="#"
               onClick={(e) => {
                 e.preventDefault();
                 handlePrevious();
@@ -80,7 +77,7 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
             return (
               <PaginationItem key={page}>
                 <PaginationLink
-                  href={`?page=${page}`}
+                  href="#"
                   isActive={page === currentPage}
                   onClick={(e) => {
                     e.preventDefault();
@@ -95,7 +92,7 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
 
           <PaginationItem>
             <PaginationNext
-              href={`?page=${currentPage + 1}`}
+              href="#"
               onClick={(e) => {
                 e.preventDefault();
                 handleNext();

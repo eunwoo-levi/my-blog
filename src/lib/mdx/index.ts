@@ -41,25 +41,33 @@ export const getAllCategories = (): string[] => {
   return categories;
 };
 
-export const getPostsByCategory = async (category: string, page: number, postsPerPage: number): Promise<{ posts: PostMeta[], totalPages: number }> => {
+export const getPostsByCategory = async (category: string): Promise<PostMeta[]> => {
   const categoryPath = path.join(contentDirectory, category);
   const files = fs.readdirSync(categoryPath).filter((file) => file.endsWith('.mdx'));
 
-  const allPosts = await Promise.all(
+  const posts = await Promise.all(
     files.map(async (file) => {
       const { meta } = await getPostBySlug(category, file.replace(/\.mdx$/, ''));
       return {...meta, category};
     })
   );
 
-  allPosts.sort((a, b) => dayjs(b.publishDate).unix() - dayjs(a.publishDate).unix());
+  posts.sort((a, b) => dayjs(b.publishDate).unix() - dayjs(a.publishDate).unix());
 
-  const startIndex = (page - 1) * postsPerPage;
-  const endIndex = startIndex + postsPerPage;
-  const paginatedPosts = allPosts.slice(startIndex, endIndex);
-  const totalPages = Math.ceil(allPosts.length / postsPerPage);
+  return posts;
+};
 
-  return { posts: paginatedPosts, totalPages };
+export const getAllCategoriesWithPosts = async (): Promise<{ category: string, posts: PostMeta[] }[]> => {
+  const categories = getAllCategories();
+  
+  const categoriesWithPosts = await Promise.all(
+    categories.map(async (category) => ({
+      category,
+      posts: await getPostsByCategory(category), // Await the posts for each category
+    }))
+  );
+
+  return categoriesWithPosts;
 };
 
 
@@ -137,39 +145,7 @@ export const getAllPostsMeta = async (): Promise<PostMeta[]> => {
   }
 
    // publishDate 기준으로 최신순으로 정렬
-   posts.sort((a, b) => dayjs(b.publishDate).unix() - dayjs(a.publishDate).unix());
+   posts.sort((a, b) => dayjs(a.publishDate).unix() - dayjs(b.publishDate).unix() );
 
   return posts;
-};
-
-
-// 페이지네이션을 위한 포스트 메타데이터 가져오기
-export const getPagedPostsMeta = async (page: number, postsPerPage: number): Promise<{posts: PostMeta[], totalPages: number}> => {
-  const allPosts = await getAllPostsMeta();
-  const startIndex = (page - 1) * postsPerPage;
-  const endIndex = startIndex + postsPerPage;
-  const pagedPosts = allPosts.slice(startIndex, endIndex);
-  const totalPages = Math.ceil(allPosts.length / postsPerPage);
-
-  return {
-    posts: pagedPosts,
-    totalPages
-  };
-};
-
-export const getAllCategoriesWithPostCounts = async (): Promise<{ category: string, postCount: number }[]> => {
-  const categories = getAllCategories();
-  
-  const categoriesWithCounts = await Promise.all(
-    categories.map(async (category) => {
-      const categoryPath = path.join(contentDirectory, category);
-      const files = fs.readdirSync(categoryPath).filter((file) => file.endsWith('.mdx'));
-      return {
-        category,
-        postCount: files.length,
-      };
-    })
-  );
-
-  return categoriesWithCounts;
 };

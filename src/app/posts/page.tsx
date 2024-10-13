@@ -1,4 +1,4 @@
-import { getPagedPostsMeta } from "@/lib/mdx";
+import { getAllPostsMeta } from "@/lib/mdx";
 import Categories from "./_components/Categories";
 import PaginationComponent from "@/components/PaginationComponent";
 import { Suspense } from "react";
@@ -6,17 +6,8 @@ import { ServerTime } from "./_components/ServerTime";
 
 export const revalidate = 3600; // ISR: revalidate every hour
 
-export default async function PostsPage({
-  searchParams,
-}: {
-  searchParams: { page: string };
-}) {
-  const currentPage = Number(searchParams.page) || 1;
-  const postsPerPage = 4; // 페이지당 포스트 수
-  const { posts, totalPages } = await getPagedPostsMeta(
-    currentPage,
-    postsPerPage
-  );
+export default async function PostsPage() {
+  const posts = await getAllPostsMeta();
   const serverGeneratedTime = new Date().toISOString();
 
   return (
@@ -27,15 +18,12 @@ export default async function PostsPage({
       <section>
         <h1 className="text-3xl font-bold">All Posts</h1>
         <Suspense fallback={<div>Loading posts...</div>}>
-          <PaginationComponent
-            posts={posts}
-            postsPerPage={postsPerPage}
-            currentPage={currentPage}
-            totalPages={totalPages}
-          />
+          <PaginationComponent posts={posts} postsPerPage={4} />
         </Suspense>
         <ServerTime generatedTime={serverGeneratedTime} />
       </section>
     </main>
   );
 }
+
+// 성능 최적화: Suspense를 사용하여 컴포넌트 로딩을 최적화, 이를 통해 페이지의 일부가 로딩되는 동안 다른 부분을 먼저 표시
