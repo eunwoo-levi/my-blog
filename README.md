@@ -5,6 +5,13 @@
 ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
 
+## 리팩토링 예정
+1) 서버 부담 줄이기
+2) 다양한 언어 지원
+3) 렌더링 최적화
+4) Post 마다 Profile
+5) 더 효율적인 검색 최적화
+
 ## 📌 프로젝트 개요
 
 **배포 URL**: [https://eunwoo-levi.blog](https://eunwoo-levi.blog)
