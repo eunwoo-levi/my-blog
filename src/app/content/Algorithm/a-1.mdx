@@ -41,6 +41,29 @@ return 값은 문제에서 "return 하는 배열은 id_list에 담긴 id 순서�
 id_list를 map 함수를 통해 한 바퀴 돌면서 reporter 객체에 해당 키에 해당되는 value 가 있으면 그 value 값을 가져오고 없으면 0을 반환한다.
 
 
+```javascript
+
+function solution(id_list, report, k) {
+    const reports = [...new Set(report)].map((a)=>a.split(" "))
+    
+    const bad= new Map();
+    const reporter = new Map();
+
+    reports.forEach((v)=>{
+        bad.set(v[1], bad.get(v[1])+1 || 1);      // v[1]: 신고 당한 사람
+    })
+    
+    reports.forEach((v)=>{
+        if(bad.get(v[1])>=k){
+            reporter.set(v[0], reporter.get(v[0])+1 || 1)
+        }
+    })
+    
+    return id_list.map((a)=>reporter.get(a) || 0)
+    
+}
+
+```
 
 
 
