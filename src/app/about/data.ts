@@ -39,7 +39,7 @@ export interface ProfileProps {
     {
       title: "React Team Study - Deep Dive",
       period: "2024/09 ~ ongoing"
-  }
+    }
   ];
   
   export const experienceData: ActivityProps[] = [
