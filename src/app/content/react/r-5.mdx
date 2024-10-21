@@ -1,0 +1,346 @@
+---
+title: "리액트의 메모이제이션(Memoization)"
+author: "eunwoo"
+thumbnail: "/next.svg"
+publishDate: "2024-10-21"
+
+---
+
+# 컴포넌트와 함수의 무거운 연산을 기억해 두는 메모이제이션
+
+리액트에서 제공하는 API 중 useMemo, useCallback 훅과 고차 컴포넌트인 React.memo는 리액트에서 발생하는 렌더링을 최소한으로 줄이기 위해서 제공
+
+### 문제점..
+
+많은 사람들이 이 세 가지가 모두 최적화 기법에 사용된다는 것은 알지만 정확히 언제 사용하는지에 대해서는 명확하게 답변하기 어려움
+
+이러한 메모이제이션 기법은 언제 사용하는 것이 좋을까?
+
+-렌더링이 자주 일어나는 컴포넌트?
+-의존성 배열 이 생략된 useEffect를 모든 컴포넌트에 추가해서 실제로 렌더링이 돌아가는지 확인해 봐야 할까? 
+-무거운 연산의 기준은 무엇일까?
+
+등..
+
+### 메모이제이션 최적화는 리액트 커뮤니티에서 오랜 논쟁 주제 중 하나
+-> ‘무조건 메모이제이션은 필요하다’ 와 ‘메모이제이션을 섣불리 해서는 안 된다’)을 살펴보고, 현명하고 효율적으로 리액트에서 메모이제이션하는 법에 대해 알아보자.
+
+***
+
+# 주장 1： 섣부른 최적화는 독이다, 꼭 필요한 곳에만 메모이제이션을 추가하자
+- 먼저 꼭 필요한 곳을 신중히 골라서 메모이제이션해야 한다는 입장
+
+```javascript
+function sum(a, b) {
+  return a + b;
+}
+
+```
+
+이 예제와 같이 매우 간단한 연산을 수행하는 함수가 있다고 가정해 보자. 이 결과를 메모이제이션해 두는 게 좋을까?
+
+-> 대부분의 가벼운 작업 자체는 메모이제이션해서 자바스크립트 메모리 어딘가에 두었다가 그것을 다시 꺼내오는 것보다는 매번 이 작업을 수행해 결과를 반환하는 것이 더 빠를 수도 있다.
+
+
+# 메모이제이션의 2가지 비용
+(1) 값을 비교하고 렌더링 또는 재계산이 필요한지 확인하는 작업
+
+(2) 이전에 결과물을 저장해 두었다가 다시 꺼내와야 함
+
+-> 과연 이 비용이 리렌더링 비용보다 저렴하다고 할 수 있을까? 에 대해 고민해 봐야함
+-> 항상 메모이제이션은 신중하게 접근해야 하며 섣부른 최적화는 항상 경계할 필요가 있음.
+
+
+***
+
+# 주장 2: 렌더링 과정의 비용은 비싸다, 모조리 메모이제이션해 버리자
+
+섣부른 최적화의 옳고 그름을 이야기하기 전에, 먼저 두 가지 주장에서 모두 공통으로 깔고 가는 전제는 다음과 같다. 
+
+일부 컴포넌트에서는 메모이제이션을 하는 것이 성능에 도움이 된다. 섣부른 최적화인지 여부와는 관계없이, 만약 해당 컴포넌트가 렌더링이 자주 일어나며 그 렌더링 사이에 비싼 연산이 포함돼 있고. 심지어 
+그 컴포넌트가 자식 컴포넌트 또한 많이 가지고 있다면 memo나 다른 메모이제이션 방법을 사용하는 것이 이 점이 있을 때가 분명히 있다.
+
+
+## 2가지 선택권
+
+1) Memo를 컴포넌트의 사용에 따라 잘 살펴보고 일부에만 적용하는 방법
+2) memo를 일단 그냥 다 적용하는 방법
+
+리액트 애플리케이션의 규모가 커지고, 개발자는 많아지고, 컴포넌트의 복잡성이 증가하는 상황에서도 전자의 기조를 유지할 수 있을까? 
+
+실무에 임하는 모든 개발자들은 생각보다 최적화나 성능 향상에 쏟을 시간이 많지 않다는 사실에 모두 공감할 것이다. 따라서 일단 memo로 감싼 뒤에 생각해 보는 건 어떨까? 이렇게 감싸는 것이 괜찮은지 생각해 보려면 잘못된 컴포넌트에 이뤄진 최적화, 즉 렌더링 비용이 저렴하거나 사실 별로 렌더링이 안 되는 컴포넌 트에 memo를 썼을 때 역으로 지불해야 하는 비용을 생각해 보자.
+
+***
+
+### 잘못된 memo로 지불해야 하는 비용
+- props에 대한 얕은 비교가 발생하면서 지불해야 하는 비용
+-> 메모이제이션을 위해서는 CPU와 메모리를 사용해 이전 렌더링 결과물을 저장해 둬야 하고, 리렌더링할 필요가 없다면 이전 결과물을 사용해야 함
+
+### 반면 memo를 하지 않았을 때 발생할 수 있는 문제
+- 렌더링을 함으로써 발생하는 비용 
+- 컴포넌트 내부의 복잡한 로직의 재실행  
+- 그리고 위 두 가지 모두가 모든 자식 컴포넌트에서 반복해서 일어남
+- 리액트가 구 트리와 신규 트리를 비교 
+
+-> 얼핏 살펴보더라도 memo를 하지 않았을 때 치러야 할 잠재적인 위험 비용이 더 크다는 사실을 알 수 있다
+
+***
+
+#  useMemo와 useCallback
+
+
+```javascript
+function useMath(number: number) {
+  const [double, setDouble] = useState(0);
+  const [triple, setTriple] = useState(0);
+
+  useEffect(() => {
+    setDouble(number * 2);
+    setTriple(number * 3);
+  }, [number]);
+
+  return { double, triple };
+}
+
+export default function App() {
+  const [counter, setCounter] = useState(0);
+  const value = useMath(10);
+
+  useEffect(() => {
+    console.log(value.double, value.triple);
+  }, [value]); // 값이 실제로 변한 건 없는데 계속해서 console.log가 출력된다.
+
+  function handleClick() {
+    setCounter((prev) => prev + 1);
+  }
+
+  return (
+    <>
+      <hl>{counter}</hl>
+      <button onClick={handleClick}>+</button>
+    </>
+  );
+}
+
+```
+
+위 useMath 훅을 살펴보자. 이 훅은 인수로 넘겨주는 값이 변하지 않는 이상 같은 값을 가지고 있어야 하는데, 실제로 handleclick으로 렌더링을 강제로 일으켜 보면 console, log가 출력되는 것을 볼 수 있다. 
+
+왜 그럴까? 함수형 컴포넌트인 App이 호출되면서 useMath가 계속해서 호출되고, 객체 내부의 값 같지만 참조가 변경되기 때문이다
+
+
+```javascript
+function useMath(number: number) {
+  const [double, setDouble] = 니seState(0);
+  const [triple, setTriple] = useState(0);
+  useEffect(() => {
+    setDouble(number * 2);
+    setTriple(number * 3);
+  }, [number]);
+  return useMemo(() => ({ double, triple }), [double, triple]);
+}
+
+```
+
+useMath의 반환값을 useMemo로 감싼다면 값이 변경되지 않는 한 같은 결과물을 가질 수 있고, 그 덕분에 사용하는 쪽에서도 참조의 투명성을 유지할 수 있게 된다. 
+
+즉, 메모이제이션은 컴포넌트 자신의 리렌더링뿐만 아니라 이를 사용하는 쪽에서도 변하지 않는 고정된 값을 사용할 수 있다는 믿음을 줄 수 있다.
+
+정리하자면, 메모이제이션은 하지 않는 것보다 메모이제이션했을 때 더 많은 이점을 누릴 수 있다. <br/>
+이것이 비록 섣부른 초기화라 할지라도 했을 때 누릴 수 있는 이점, 그리고 이를 실수로 빠트렸을 때 치러야 할 위험 비용이 더 크기 때문에 최적화에 대한 확신이 없다면 
+가능한 한 모든 곳에 메모이제이션을 활용한 최적화를 하는 것이 좋다.
+
+***
+# React 에서 useMemo(), useCallBack() 함수 예제
+
+```javascript
+import React, { useState, useMemo, useCallback, useEffect } from "react";
+
+const MemoizationExample = () => {
+  const [numbers, setNumbers] = useState([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  const [refreshCounter, setRefreshCounter] = useState(0);
+  const [lastOperation, setLastOperation] = useState("");
+
+  // 메모이제이션되지 않은 함수
+  const filterEvenNumbers = (nums: any) => {
+    console.log("Filtering even numbers without memoization");
+    return nums.filter((num: number) => num % 2 === 0);
+  };
+
+  // useMemo를 사용한 메모이제이션된 함수
+  const memoizedFilterEvenNumbers = useMemo(() => {
+    console.log("Filtering even numbers with useMemo");
+    return numbers.filter((num) => num % 2 === 0);
+  }, [numbers]);
+
+  // useCallback을 사용한 메모이제이션된 함수
+  const callbackFilterEvenNumbers = useCallback(() => {
+    console.log("Filtering even numbers with useCallback");
+    return numbers.filter((num) => num % 2 === 0);
+  }, [numbers]);
+
+  const handleRefresh = () => {
+    setRefreshCounter((prev) => prev + 1);
+    setLastOperation("Refreshed");
+  };
+
+  const handleAddNumber = () => {
+    setNumbers((prev) => [...prev, prev.length + 1]);
+    setLastOperation("Number Added");
+  };
+
+  // 렌더링 횟수를 추적하기 위한 useEffect
+  useEffect(() => {
+    console.log("Component re-rendered");
+  });
+
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">Memoization Comparison</h1>
+
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold">Numbers: {numbers.join(", ")}</h2>
+        <button
+          onClick={handleAddNumber}
+          className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
+        >
+          Add Number
+        </button>
+        <button
+          onClick={handleRefresh}
+          className="bg-green-500 text-white px-4 py-2 rounded"
+        >
+          Refresh (No Change)
+        </button>
+      </div>
+
+      <div className="mb-4">
+        <p className="text-lg">Refresh Counter: {refreshCounter}</p>
+        <p className="text-lg">Last Operation: {lastOperation}</p>
+      </div>
+
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">Without Memoization:</h3>
+        <p>{filterEvenNumbers(numbers).join(", ")}</p>
+      </div>
+
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">With useMemo:</h3>
+        <p>{memoizedFilterEvenNumbers.join(", ")}</p>
+      </div>
+
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">With useCallback:</h3>
+        <p>{callbackFilterEvenNumbers().join(", ")}</p>
+      </div>
+
+      <p className="text-sm text-gray-600">
+        Check the console for logs to see when each function is called and when
+        the component re-renders.
+      </p>
+    </div>
+  );
+};
+
+export default MemoizationExample;
+
+```
+
+
+![image](https://github.com/user-attachments/assets/ffb08081-9d3b-47cd-9b26-29aa1f231c4e)
+
+
+- useMemo: 계산 비용이 높은 값을 메모이제이션(캐싱)하여 불필요한 재계산을 방지. 
+- useCallback: 함수를 메모이제이션하여 불필요한 리렌더링을 방지하고 참조 안정성을 제공. 
+
+
+
+***
+# React.memo() 예시
+
+```javascript
+import React, { useState, useCallback } from "react";
+
+// 자식 컴포넌트의 props 타입 정의
+interface ChildProps {
+  name: string;
+  onClick: () => void;
+}
+
+// 메모이제이션된 자식 컴포넌트
+const MemoizedChildComponent: React.FC<ChildProps> = React.memo(
+  ({ name, onClick }) => {
+    console.log(`Child component "${name}" rendered`);
+    return (
+      <div className="p-4 m-2 bg-gray-100 rounded">
+        <p>Hello, {name}!</p>
+        <button
+          onClick={onClick}
+          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Click me
+        </button>
+      </div>
+    );
+  }
+);
+
+// 부모 컴포넌트
+const ParentComponent: React.FC = () => {
+  const [count1, setCount1] = useState<number>(0);
+  const [count2, setCount2] = useState<number>(0);
+
+  const incrementCount1 = useCallback(() => {
+    setCount1((c) => c + 1);
+  }, []);
+
+  const incrementCount2 = useCallback(() => {
+    setCount2((c) => c + 1);
+  }, []);
+
+  console.log("Parent component rendered");
+
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">React.memo Example</h1>
+      <p className="mb-2">Parent Count 1: {count1}</p>
+      <p className="mb-4">Parent Count 2: {count2}</p>
+
+      <MemoizedChildComponent name="Child 1" onClick={incrementCount1} />
+      <MemoizedChildComponent name="Child 2" onClick={incrementCount2} />
+
+      <div className="mt-4 p-4 bg-yellow-100 rounded">
+        <p className="font-semibold">설명:</p>
+        <ul className="list-disc list-inside">
+          <li>각 자식 컴포넌트는 React.memo로 래핑되어 있습니다.</li>
+          <li>버튼을 클릭하면 해당 자식 컴포넌트의 카운터만 증가합니다.</li>
+          <li>콘솔을 확인하여 어떤 컴포넌트가 리렌더링되는지 관찰하세요.</li>
+          <li>
+            한 자식의 상태가 변경되어도 다른 자식은 리렌더링되지 않습니다.
+          </li>
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+export default ParentComponent;
+
+
+```
+
+![image](https://github.com/user-attachments/assets/5d0ece51-0b16-428a-99a5-67652dc2c012)
+
+- React.memo는 컴포넌트의 불필요한 리렌더링을 방지하여 성능을 최적화하는 고차 컴포넌트(Higher-Order Component)입니다.
+
+
+- 주요 포인트
+1. React.memo는 props의 변화를 체크합니다.
+2. count (자식 컴포넌트에서) 상태 변경은 부모 컴포넌트의 리렌더링을 유발합니다.
+
+***
+
+
+
+
+export default ({children}) => <div className="prose">{children}</div>
