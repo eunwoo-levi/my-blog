@@ -149,6 +149,80 @@ JSDoc은 문서화와 코드 설명에만 초점이 맞춰져 있으며, 코드�
 즉, JSDoc은 개발자가 코드를 이해하고 유지보수하는 데 유용한 정보를 제공하지만, 코드의 로직이나 실행에는 영향을 주지 않는 설명용 도구입니다.
 
 
+***
+
+# 클래스형 컴포넌트 vs 함수형 컴포넌트
+
+#### 리액트 컴포넌트의 종류에는 클래스형 컴포넌트와 함수형 컴포넌트가 있습니다. 
+
+클래스형 컴포넌트는 ES6의 클래스 문법을 사용하며, 상태와 생명주기 메서드를 가집니다. 
+따라서 클래스형 컴포넌트는 생명주기와 관련된 복잡한 로직을 구현할 때 장점이 있지만, 자칫 코드가 길어져 가독성이 떨어지고 재사용성이 낮아질 수 있습니다.
+
+
+##  클래스 기반 컴포넌트
+
+```javascript
+class Counter extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { count: 0 };
+    }
+
+    increment() {
+        this.setState({ count: this.state.count + 1 });
+    }
+
+    render() {
+        return (
+            <div>
+                <p>Count: {this.state.count}</p>
+                <button onClick={() => this.increment()}>Increment</button>
+            </div>
+        );
+    }
+}
+```
+
+ 
+반면, 함수형 컴포넌트는 간단한 함수로 정의됩니다. 
+기존의 자바스크립트 함수 표현식으로 쓸 수 있고, ES6 문법인 화살표 함수를 사용해서 정의할 수도 있습니다. 
+함수형 컴포넌트 자체로는 상태와 생명주기 메서드를 사용할 수 없지만, 리액트 훅을 통해 상태나 생명주기와 관련된 기능을 사용할 수 있습니다. 
+ 
+
+
+함수형 컴포넌트
+
+```javascript
+import React, { useState } from 'react';
+
+const Counter = () => {
+    const [count, setCount] = useState(0);
+
+    const increment = () => {
+        setCount(prevCount => prevCount + 1);
+    };
+
+    return (
+        <div>
+            <p>Count: {count}</p>
+            <button onClick={increment}>Increment</button>
+        </div>
+    );
+};
+
+export default Counter;
+```
+
+두 코드는 동일한 기능을 하지만, 작성 방식이 다릅니다. 
+함수형 컴포넌트가 더 현대적인 React 방식이며, Hooks를 사용하여 더 간결하고 읽기 쉬운 코드를 작성할 수 있습니다.​​​​​​​​​​​​​​​​
+
+
+
+함수형 컴포넌트는 클래스형 컴포넌트에 비해 코드가 간결하고, 테스트와 디버깅이 용이하다는 장점이 있습니다. 
+이러한 이유로 현재 리액트 공식 문서에서는 클래스 컴포넌트 대신 함수형 컴포넌트를 사용할 것을 권장하고 있습니다.
+
+
+
 
 
 
