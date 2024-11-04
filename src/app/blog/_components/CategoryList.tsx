@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const CATEGORIES = [
-  { id: '1', name: 'JavaScript' },
-  { id: '2', name: 'React' },
-  { id: '3', name: 'Next.js' },
-  { id: '4', name: 'TypeScript' },
-  // ... 추가 카테고리
+  { id: '1', name: 'acivities' },
+  { id: '2', name: 'algorithm' },
+  { id: '3', name: 'javascript' },
+  { id: '4', name: 'network' },
+  { id: '5', name: 'next.js' },
+  { id: '6', name: 'react' },
 ];
 
 export default function CategoryList() {
