@@ -10,6 +10,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
+import { PostPagination } from './PostPagination';
 
 interface BlogFrontMatter {
   title: string;
@@ -79,67 +80,13 @@ export default function PostGrid({ posts, postsPerPage = 6 }: PostGridProps) {
         <div className='col-span-full text-center py-12 text-gray-600 dark:text-gray-400'>
           No posts found.
         </div>
-      ) : totalPages > 1 ? (
-        <Pagination className='mt-8'>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                href='#'
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (currentPage > 1) handlePageChange(currentPage - 1);
-                }}
-                className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-              />
-            </PaginationItem>
-
-            {[...Array(totalPages)].map((_, i) => {
-              const page = i + 1;
-              // 현재 페이지 주변의 페이지들만 표시
-              if (
-                page === 1 ||
-                page === totalPages ||
-                (page >= currentPage - 2 && page <= currentPage + 2)
-              ) {
-                return (
-                  <PaginationItem key={page}>
-                    <PaginationLink
-                      href='#'
-                      isActive={page === currentPage}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handlePageChange(page);
-                      }}
-                    >
-                      {page}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-              }
-              // 생략 부호 표시
-              if (page === currentPage - 3 || page === currentPage + 3) {
-                return (
-                  <PaginationItem key={page}>
-                    <span className='px-4 py-2'>...</span>
-                  </PaginationItem>
-                );
-              }
-              return null;
-            })}
-
-            <PaginationItem>
-              <PaginationNext
-                href='#'
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (currentPage < totalPages) handlePageChange(currentPage + 1);
-                }}
-                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      ) : null}
+      ) : (
+        <PostPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
     </div>
   );
 }
