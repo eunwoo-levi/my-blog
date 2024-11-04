@@ -1,4 +1,3 @@
-// app/blog/category/[id]/page.tsx
 import { getPostsByCategory } from '@/lib/mdx/getBlog';
 import { notFound } from 'next/navigation';
 import PostGrid from '../../_components/PostGrid';

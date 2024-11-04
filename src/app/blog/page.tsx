@@ -1,4 +1,3 @@
-// app/blog/page.tsx
 import { getAllPosts } from '@/lib/mdx/getBlog';
 import PostGrid from './_components/PostGrid';
 
