@@ -2,7 +2,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useState } from 'react';
 import {
   Pagination,
@@ -54,19 +53,14 @@ export default function PostGrid({ posts, postsPerPage = 6 }: PostGridProps) {
           <Link
             key={`${post.category}-${post.slug}`}
             href={`/blog/${post.category}/${post.slug}`}
-            className='group'
+            className='group h-full' // h-full 추가
           >
-            <article className='border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow'>
-              <div className='relative h-48 w-full'>
-                <Image
-                  src={post.frontmatter.thumbnail}
-                  alt={post.frontmatter.title}
-                  fill
-                  loading='lazy'
-                  className='object-contain p-[5px]'
-                />
-              </div>
-              <div className='p-6'>
+            <article className='border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col'>
+              {' '}
+              {/* h-full과 flex flex-col 추가 */}
+              <div className='p-6 flex flex-col flex-1'>
+                {' '}
+                {/* flex flex-col과 flex-1 추가 */}
                 <div className='flex items-center gap-4 mb-4'>
                   <span className='text-sm text-gray-600 dark:text-gray-400'>
                     {post.frontmatter.publishDate}
@@ -75,10 +69,12 @@ export default function PostGrid({ posts, postsPerPage = 6 }: PostGridProps) {
                     {post.category}
                   </span>
                 </div>
-                <h2 className='text-xl font-semibold mb-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors'>
+                <h2 className='text-xl font-semibold mb-4 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors'>
                   {post.frontmatter.title}
                 </h2>
-                <p className='text-gray-600 dark:text-gray-400 text-sm'>
+                <p className='text-gray-600 dark:text-gray-400 text-sm mt-auto'>
+                  {' '}
+                  {/* mt-auto 추가 */}
                   By {post.frontmatter.author}
                 </p>
               </div>
@@ -86,7 +82,6 @@ export default function PostGrid({ posts, postsPerPage = 6 }: PostGridProps) {
           </Link>
         ))}
       </div>
-
       {posts.length === 0 ? (
         <div className='col-span-full text-center py-12 text-gray-600 dark:text-gray-400'>
           No posts found.
