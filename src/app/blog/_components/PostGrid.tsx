@@ -62,6 +62,7 @@ export default function PostGrid({ posts, postsPerPage = 6 }: PostGridProps) {
                   src={post.frontmatter.thumbnail}
                   alt={post.frontmatter.title}
                   fill
+                  loading='lazy'
                   className='object-contain p-[5px]'
                 />
               </div>
