@@ -14,7 +14,7 @@ export default function Navbar() {
         <Title />
       </MoveTo>
 
-      <div className='lg:absolute right-1 pr-[80px] flex gap-[20px] items-center'>
+      <div className='lg:absolute right-1 pr-[60px] lg:pr-[80px] flex gap-[20px] items-center'>
         <MoveTo to='https://github.com/eunwoo-levi'>
           <FaGithub size={34} color='white' className='cursor-pointer' />
         </MoveTo>
