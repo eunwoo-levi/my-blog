@@ -2,6 +2,7 @@ import { FaGithub } from 'react-icons/fa';
 import { DarkModeBtn } from './DarkModeBtn';
 import MoveTo from './MoveTo';
 import BackBtn from './BackBtn';
+import { Title } from './getTitle';
 
 export default function Navbar() {
   return (
@@ -10,9 +11,7 @@ export default function Navbar() {
         <BackBtn />
       </div>
       <MoveTo to='/'>
-        <div className='text-white text-[18px] md:text-[22px]'>
-          은우&#39;s Portfolio & Tech Blog
-        </div>
+        <Title />
       </MoveTo>
 
       <div className='lg:absolute right-1 pr-[80px] flex gap-[20px] items-center'>
