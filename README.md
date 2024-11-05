@@ -134,9 +134,13 @@ velog 블로그 플랫폼과 같이 mdx를 사용하여 markdown형식의 기능
 ***
 
 # 병렬처리 - Promise.all
+
 < 처리 전>
+
 ![image](https://github.com/user-attachments/assets/908cf742-9b13-4388-a157-dda0be138356)
 
 < 병렬 처리 후 >
+
 ![image](https://github.com/user-attachments/assets/1e7b63f3-84f6-4aa8-8012-1b8804ab381b)
+
 
