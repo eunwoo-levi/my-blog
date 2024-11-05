@@ -55,13 +55,16 @@ export const getAllPosts = async (categoryId?: number): Promise<PostData[]> => {
 
   const categories = fs.readdirSync(contentDirectory);
 
-  const allPostPromises = categories.flatMap((category) => {
+  const postPromises = categories.flatMap((category) => {
     const files = fs
       .readdirSync(path.join(contentDirectory, category))
       .filter((file) => file.endsWith('.mdx'));
 
-    return files.map((file) => {
-      const source = fs.readFileSync(path.join(contentDirectory, category, file), 'utf8');
+    return files.map(async (file) => {
+      const source = await fs.promises.readFile(
+        path.join(contentDirectory, category, file),
+        'utf8'
+      );
       const { data: frontmatter } = matter(source);
       const slug = file.replace(/\.mdx$/, '');
 
@@ -73,7 +76,8 @@ export const getAllPosts = async (categoryId?: number): Promise<PostData[]> => {
     });
   });
 
-  const posts = allPostPromises
+  // 모든 포스트를 병렬로 로드 및 필터링
+  const posts = (await Promise.all(postPromises))
     .filter((post) => !categoryId || post.frontmatter.categoryId === categoryId)
     .sort(
       (a, b) => dayjs(b.frontmatter.publishDate).unix() - dayjs(a.frontmatter.publishDate).unix()
