@@ -7,11 +7,8 @@
 
 ## 리팩토링 예정
 
-1. 서버 부담 줄이기
-2. 다양한 언어 지원
-3. 렌더링 최적화
-4. Post 마다 Profile
-5. 더 효율적인 검색 최적화
+- 번들이 큰 라이브러리 제거 및 대체 - (지구본, 배경 라이브러리)
+- Cache 최적화 예정
 
 ## 📌 프로젝트 개요
 
@@ -130,3 +127,17 @@ velog 블로그 플랫폼과 같이 mdx를 사용하여 markdown형식의 기능
    • 캐시 적용 후: "0밀리초" 또는 매우 짧은 응답 시간
 
 이것으로 캐시가 제대로 적용되어 페이지 로딩 성능이 향상된 것을 확인할 수 있습니다.
+
+***
+
+# 병렬처리 - Promise.all
+
+< 처리 전>
+
+![image](https://github.com/user-attachments/assets/908cf742-9b13-4388-a157-dda0be138356)
+
+< 병렬 처리 후 >
+
+![image](https://github.com/user-attachments/assets/1e7b63f3-84f6-4aa8-8012-1b8804ab381b)
+
+
