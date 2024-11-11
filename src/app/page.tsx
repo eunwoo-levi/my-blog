@@ -10,10 +10,7 @@ const StarsBackground = dynamic(
   () => import('@/components/ui/stars-background').then((mod) => mod.StarsBackground),
   { ssr: false }
 );
-const Earth = dynamic(() => import('@/components/Earth'), {
-  loading: () => <div>Loading...</div>,
-  ssr: false,
-});
+
 
 interface CustomLinkProps {
   href: string;
@@ -71,9 +68,6 @@ export default function Home() {
               </p>
             </div>
           </section>
-        </div>
-        <div className='relative flex flex-col items-center justify-between lg:flex-row w-full overflow-hidden lg:pl-[40px]'>
-          <Earth className='w-full h-auto' />
         </div>
       </div>
       <div className='flex flex-col justify-center items-center gap-[30px] mt-[150px]'>
