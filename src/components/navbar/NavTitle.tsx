@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 
-export function Title() {
+export function NavTitle() {
   const pathname = usePathname();
   return (
     <div className='text-white font-bold text-[18px] md:text-[22px]'>

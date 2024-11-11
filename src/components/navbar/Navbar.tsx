@@ -1,8 +1,8 @@
 import { FaGithub } from 'react-icons/fa';
 import { DarkModeBtn } from './DarkModeBtn';
-import MoveTo from './MoveTo';
 import BackBtn from './BackBtn';
-import { Title } from './getTitle';
+import { NavTitle } from './NavTitle';
+import { CustomLink } from '../CustomLink';
 
 export default function Navbar() {
   return (
@@ -10,14 +10,18 @@ export default function Navbar() {
       <div className='absolute top-[9px] right-2 lg:left-5'>
         <BackBtn />
       </div>
-      <MoveTo to='/'>
-        <Title />
-      </MoveTo>
+      <CustomLink
+        href='/'
+        className='z-10 flex justify-center items-center cursor-pointer hover:bg-slate-700 p-[4px] rounded-lg transition duration-200'
+      >
+        <NavTitle />
+      </CustomLink>
 
       <div className='lg:absolute right-1 pr-[60px] lg:pr-[80px] flex gap-[20px] items-center'>
-        <MoveTo to='https://github.com/eunwoo-levi'>
+        <CustomLink href='https://github.com/eunwoo-levi' className='hover:bg-neutral-700 p-1 rounded-lg'>
           <FaGithub size={34} color='white' className='cursor-pointer' />
-        </MoveTo>
+        </CustomLink>
+
         <DarkModeBtn />
       </div>
     </div>

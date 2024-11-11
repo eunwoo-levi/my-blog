@@ -1,38 +1,15 @@
 import { MdOutlineEmail } from 'react-icons/md';
-import Link from 'next/link';
-import dynamic from 'next/dynamic';
+import { StarsBackground } from '@/components/ui/stars-background';
+import { ShootingStars } from '@/components/ui/shooting-stars';
+import { CustomLink } from '@/components/CustomLink';
 
-const ShootingStars = dynamic(
-  () => import('@/components/ui/shooting-stars').then((mod) => mod.ShootingStars),
-  { ssr: false }
-);
-const StarsBackground = dynamic(
-  () => import('@/components/ui/stars-background').then((mod) => mod.StarsBackground),
-  { ssr: false }
-);
-
-
-interface CustomLinkProps {
-  href: string;
-  children: React.ReactNode;
-}
-
-const CustomLink: React.FC<CustomLinkProps> = ({ href, children }) => (
-  <Link
-    href={href}
-    className='flex justify-center items-center w-[300px] lg:w-[500px] h-[50px] border rounded-3xl transform duration-200 hover:bg-slate-700 hover:bg-opacity-30 hover:scale-110 cursor-pointer'
-    aria-label={`Navigate to ${String(children)} page`}
-  >
-    {children}
-  </Link>
-);
+const customLinkClassName =
+  'flex justify-center items-center w-[300px] lg:w-[500px] h-[50px] border rounded-3xl transform duration-300 hover:bg-slate-700 hover:bg-opacity-30 hover:scale-110 cursor-pointer';
 
 export const metadata = {
   title: 'My Portfolio - Frontend Web Developer',
-  description:
-    'Portfolio of a skilled Frontend Web Developer, showcasing projects and expertise in web development.',
-  keywords:
-    'Frontend, Web Developer, Portfolio, React, Next.js, TypeScript, tech blog, Next.js blog',
+  description: 'Portfolio of a skilled Frontend Web Developer, showcasing projects and expertise in web development.',
+  keywords: 'Frontend, Web Developer, Portfolio, React, Next.js, TypeScript, tech blog, Next.js blog',
 };
 
 export default function Home() {
@@ -48,32 +25,34 @@ export default function Home() {
           </h1>
           <section>
             <div className='border border-slate-800 mb-[50px]' />
-            <h2 className='text-[25px] mb-[20px] font-semibold'>Welcome to My Portfolio.</h2>
-            <div className='lg:text-[22px] space-y-4 font-semibold'>
-              <p className='lg:text-[20px] mb-[40px]'>
+            <h2 className='text-[20px] mb-[20px] font-bold'>Welcome to My Portfolio.</h2>
+            <div className='lg:text-[17px] space-y-4 font-semibold '>
+              <p className='lg:text-[18px] mb-[40px]'>
                 My name is Eunwoo and I decided to make my own Portfolio & Tech Blog with Next.JS
               </p>
               <p>I am committed to growing as a skilled and professional Frontend developer.</p>
+              <p>I dedicate myself to learning new technologies and mastering them, prioritizing User eXperience.</p>
               <p>
-                I dedicate myself to learning new technologies and mastering them, prioritizing User
-                eXperience.
+                While my primary focus is on Frontend development, I am also expanding my expertise in Backend
+                technologies.
               </p>
               <p>
-                While my primary focus is on Frontend development, I am also expanding my expertise
-                in Backend technologies.
-              </p>
-              <p>
-                Additionally, I am fluent in English and capable of collaborating effectively on
-                international projects.
+                Additionally, I am fluent in English and capable of collaborating effectively on international projects.
               </p>
             </div>
           </section>
         </div>
       </div>
       <div className='flex flex-col justify-center items-center gap-[30px] mt-[150px]'>
-        <CustomLink href='/portfolio'>Portfolio</CustomLink>
-        <CustomLink href='/blog'>Blog</CustomLink>
-        <CustomLink href='/board'>Board</CustomLink>
+        <CustomLink href='/portfolio' className={customLinkClassName}>
+          Portfolio
+        </CustomLink>
+        <CustomLink href='/blog' className={customLinkClassName}>
+          Blog
+        </CustomLink>
+        <CustomLink href='/board' className={customLinkClassName}>
+          Board
+        </CustomLink>
       </div>
       <div className='z-10 text-white  w-full h-[200px] bg-slate-900 mt-[200px] flex flex-col justify-center items-start pl-[20px] gap-[10px]'>
         <div className='flex gap-[20px]'>

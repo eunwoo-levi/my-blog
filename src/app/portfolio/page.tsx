@@ -6,15 +6,8 @@ import { IoPersonOutline } from "react-icons/io5";
 import { MdOutlineEmail, MdOutlineWork } from "react-icons/md";
 import { FaUniversity } from "react-icons/fa";
 import { GiAchievement } from "react-icons/gi";
-import dynamic from "next/dynamic";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 
-const AuroraBackground = dynamic(
-  () =>
-    import("@/components/ui/aurora-background").then(
-      (mod) => mod.AuroraBackground
-    ),
-  { ssr: false, loading: () => <div>Loading...</div> }
-);
 
 import {
   profileData,
