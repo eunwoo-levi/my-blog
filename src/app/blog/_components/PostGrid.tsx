@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { PostPagination } from './PostPagination';
+import { CustomLink } from '@/components/CustomLink';
 
 interface BlogFrontMatter {
   title: string;
@@ -36,10 +37,10 @@ export default function PostGrid({ posts, postsPerPage = 6 }: PostGridProps) {
     <div className='space-y-8'>
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
         {currentPosts.map((post) => (
-          <Link
-            key={`${post.category}-${post.slug}`}
+          <CustomLink
             href={`/blog/${post.category}/${post.slug}`}
             className='group h-full'
+            key={`${post.category}-${post.slug}`}
           >
             <article className='border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col'>
               <div className='p-6 flex flex-col min-h-[200px]  justify-center items-center'>
@@ -53,7 +54,7 @@ export default function PostGrid({ posts, postsPerPage = 6 }: PostGridProps) {
                 <p className='text-gray-600 dark:text-gray-400 text-sm mt-auto'>By {post.frontmatter.author}</p>
               </div>
             </article>
-          </Link>
+          </CustomLink>
         ))}
       </div>
       {posts.length === 0 ? (
