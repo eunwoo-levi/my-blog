@@ -2,14 +2,6 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
 import { PostPagination } from './PostPagination';
 
 interface BlogFrontMatter {
@@ -40,12 +32,6 @@ export default function PostGrid({ posts, postsPerPage = 6 }: PostGridProps) {
   const endIndex = startIndex + postsPerPage;
   const currentPosts = posts.slice(startIndex, endIndex);
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    // 페이지 상단으로 부드럽게 스크롤
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   return (
     <div className='space-y-8'>
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
@@ -58,34 +44,22 @@ export default function PostGrid({ posts, postsPerPage = 6 }: PostGridProps) {
             <article className='border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col'>
               <div className='p-6 flex flex-col min-h-[200px]  justify-center items-center'>
                 <div className='flex items-center gap-4 mb-4'>
-                  <span className='text-sm text-gray-600 dark:text-gray-400'>
-                    {post.frontmatter.publishDate}
-                  </span>
-                  <span className='text-sm text-purple-600 dark:text-purple-400 '>
-                    {post.category}
-                  </span>
+                  <span className='text-sm text-gray-600 dark:text-gray-400'>{post.frontmatter.publishDate}</span>
+                  <span className='text-sm text-purple-600 dark:text-purple-400 '>{post.category}</span>
                 </div>
                 <h2 className='text-xl font-semibold my-auto text-center group-hover:text-purple-600 dark:group-hover:text-purple-400 duration-200'>
                   {post.frontmatter.title}
                 </h2>
-                <p className='text-gray-600 dark:text-gray-400 text-sm mt-auto'>
-                  By {post.frontmatter.author}
-                </p>
+                <p className='text-gray-600 dark:text-gray-400 text-sm mt-auto'>By {post.frontmatter.author}</p>
               </div>
             </article>
           </Link>
         ))}
       </div>
       {posts.length === 0 ? (
-        <div className='col-span-full text-center py-12 text-gray-600 dark:text-gray-400'>
-          No posts found.
-        </div>
+        <div className='col-span-full text-center py-12 text-gray-600 dark:text-gray-400'>No posts found.</div>
       ) : (
-        <PostPagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-        />
+        <PostPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
       )}
     </div>
   );

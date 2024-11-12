@@ -13,7 +13,6 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const { frontmatter } = await getPostBySlug(params.category, params.slug);
-
     return {
       title: frontmatter.title,
       description: `${frontmatter.title} - Written by ${frontmatter.author}`,
@@ -64,9 +63,7 @@ export default async function BlogPost({ params }: Props) {
         <div className='mt-16 pt-8 border-t border-gray-200 dark:border-gray-800'>
           <div className='flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400'>
             <span>Posted in</span>
-            <span className='text-purple-600 dark:text-purple-400 font-medium'>
-              {params.category}
-            </span>
+            <span className='text-purple-600 dark:text-purple-400 font-medium'>{params.category}</span>
           </div>
         </div>
         <footer className='flex justify-center w-full max-w-[1800px]'>

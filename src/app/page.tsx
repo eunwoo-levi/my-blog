@@ -17,14 +17,14 @@ export default function Home() {
     <main className='relative w-full min-h-screen flex flex-col'>
       <StarsBackground />
       <ShootingStars />
-      <div className='relative flex flex-col items-center justify-between px-[50px] lg:flex-row'>
+      <div className='flex flex-col items-center justify-center px-[50px] lg:flex-row'>
         <div className='flex flex-col'>
           <h1 className='font-bold text-[50px] mt-[40px] pl-[30px] lg:pl-[80px] mb-[40px] bg-gradient-to-r from-purple-400 via-pink-500 to-red-700 rounded-lg text-transparent bg-clip-text'>
             PORTFOLIO <br />
             Frontend Web Developer
           </h1>
-          <section>
-            <div className='border border-slate-800 mb-[50px]' />
+          <div className='border border-slate-800 mb-[50px]' />
+          <section className='text-center'>
             <h2 className='text-[20px] mb-[20px] font-bold'>Welcome to My Portfolio.</h2>
             <div className='lg:text-[17px] space-y-4 font-semibold '>
               <p className='lg:text-[18px] mb-[40px]'>
