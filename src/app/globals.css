@@ -2,17 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-body{
-  transition-property: opacity, background, transform, filter;
-  transition-timing-function: ease-in-out;
-  transition-duration: 200ms;
-}
-
 .page-transition {
   opacity: 0;
-  background: linear-gradient(45deg, rgba(20, 20, 20, 1), rgba(0, 0, 0, 1), rgba(50, 50, 50, 1));
+  background: linear-gradient(45deg, rgba(20, 20, 20, 0.8), rgba(0, 0, 0, 0.8), rgba(50, 50, 50, 0.8));
   transform: translateY(40px);
   filter: blur(12px);
+  transition: all 400ms ease-in-out;  /* 여기에 transition 추가 */
+  pointer-events: none;  
 }
 
 
