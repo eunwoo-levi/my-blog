@@ -39,6 +39,10 @@ export interface ProfileProps {
     {
       title: "React Team Study - Deep Dive",
       period: "2024/09 ~ ongoing"
+    },
+    {
+      title: "우아한테크 코스",
+      period: "2024/10 ~ 11"
     }
   ];
   
@@ -72,5 +76,11 @@ export interface ProfileProps {
       title: "경매 웹페이지 제작 Team 프로젝트",
       period: "2024/10 - ongoing",
       role: "Frontend"
+    },
+    {
+      title: "AI 식습관 관리 시스템 - Google Vision ChallengeThon",
+      period: "2024/11",
+      role: "Frontend",
+      
     }
   ];
