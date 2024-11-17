@@ -2,7 +2,7 @@ import { getAllPosts } from '@/lib/mdx/getBlog';
 import { notFound } from 'next/navigation';
 import PostGrid from '../../_components/PostGrid';
 
-export const revalidate = 300; // 5분 캐시
+export const revalidate = 3600;
 
 interface Props {
   params: {

@@ -7,10 +7,9 @@
   background: linear-gradient(45deg, rgba(20, 20, 20, 0.8), rgba(0, 0, 0, 0.8), rgba(50, 50, 50, 0.8));
   transform: translateY(40px);
   filter: blur(12px);
-  transition: all 400ms ease-in-out;  /* 여기에 transition 추가 */
-  pointer-events: none;  
+  transition: all 400ms ease-in-out; /* 여기에 transition 추가 */
+  pointer-events: none;
 }
-
 
 @media (prefers-color-scheme: dark) {
   img {
@@ -18,7 +17,60 @@
   }
 }
 
+@keyframes twinkling {
+  0% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.3;
+  }
+}
 
+@keyframes shootingStars {
+  0% {
+    transform: translateX(0) translateY(0) rotate(45deg);
+    opacity: 1;
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(-1500px) translateY(1500px) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+.star {
+  @apply absolute w-[2px] h-[2px] rounded-full bg-white;
+}
+
+.star::after {
+  content: '';
+  @apply absolute w-full h-full rounded-full bg-white;
+  box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #fff;
+}
+
+.shooting-star {
+  @apply absolute h-[1px];
+  background: linear-gradient(90deg, white, transparent);
+  animation: shootingStars linear infinite;
+}
+
+.shooting-star::after {
+  content: '';
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  border-radius: 50%;
+  background: white;
+  left: 0;
+  box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #fff;
+}
 
 @layer base {
   :root {
@@ -46,7 +98,7 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem
+    --radius: 0.5rem;
   }
   .dark {
     --background: 222.2 84% 4.9%;
@@ -72,7 +124,7 @@
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%
+    --chart-5: 340 75% 55%;
   }
 }
 
@@ -84,4 +136,3 @@
     @apply bg-background text-foreground;
   }
 }
-

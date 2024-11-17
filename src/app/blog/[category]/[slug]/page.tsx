@@ -2,7 +2,7 @@ import { getPostBySlug } from '@/lib/mdx/getBlog';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import Comments from '@/components/Comments';
+import Comments from '@/components/comments/Comments';
 
 interface Props {
   params: {
