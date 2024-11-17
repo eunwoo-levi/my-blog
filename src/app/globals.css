@@ -2,25 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Aurora 애니메이션 정의 */
-@keyframes aurora {
-  0% {
-    background-position: -400% 0%;
-  }
-  50% {
-    background-position: 400% 0%;
-  }
-  100% {
-    background-position: -400% 0%;
-  }
-}
-
-.aurora-background {
-  animation: aurora 8s ease-in-out infinite;
-  background-size: 400% 400%;
-  background: radial-gradient(circle, #6EE7B7, #9333EA);
-}
-
 @keyframes twinkling {
   0% {
     opacity: 0.3;

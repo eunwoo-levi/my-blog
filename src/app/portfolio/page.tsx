@@ -15,7 +15,7 @@ interface SectionTitleProps {
 }
 
 const SectionTitle: React.FC<SectionTitleProps> = ({ icon: Icon, title }) => (
-  <div className='flex items-center gap-[10px] mb-[20px] md:gap-[20px] md:mb-[35px]'>
+  <div className='flex items-center gap-[10px]'>
     <Icon size={25} className='md:size-30 text-blue-500' />
     <h1 className='text-indigo-900 text-[24px] md:text-[30px] font-bold'>{title}</h1>
   </div>
@@ -161,9 +161,9 @@ const AboutPage: React.FC = () => {
   return (
     <main className='w-full min-h-screen text-black'>
       <SpaceBackground />
-      <div className='w-full min-h-[300px] flex flex-col justify-center items-center gap-[20px] md:gap-[30px] pb-[40px] md:pb-[50px]'>
+      <div className='w-full flex flex-col justify-center items-center gap-[30px] my-[60px]'>
         <h1 className='z-10 p-[5px] md:p-[10px] dark:text-white text-[50px] md:text-[65px] font-bold items-center shadow-md shadow-purple-500 rounded-md'>
-          About
+          Portfolio
         </h1>
         <h2 className='text-transparent lg:text-[30px] text-[20px] md:text-[25px] font-semibold bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text'>
           항상 도전하는 정신을 가진 개발자
