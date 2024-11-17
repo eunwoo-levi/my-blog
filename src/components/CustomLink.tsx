@@ -1,8 +1,4 @@
-'use client';
-
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { handleTransition } from '@/app/utils/handleTransition';
 
 interface CustomLinkProps {
   href: string;
@@ -10,17 +6,14 @@ interface CustomLinkProps {
   children: React.ReactNode;
 }
 
-export const CustomLink = ({ href, className, children }: CustomLinkProps) => {
-  const router = useRouter();
-
-  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-    e.preventDefault();
-    handleTransition(href, router);
-  };
-
+export default function CustomLink({ href, className, children }: CustomLinkProps) {
   return (
-    <Link href={href} className={className} aria-label={`Navigate to ${String(children)} page`}>
-      {children}
+    <Link
+      href={href}
+      className={`${className} relative overflow-hidden`}
+      aria-label={`Navigate to ${String(children)} page`}
+    >
+      <span className='relative z-10'>{children}</span>
     </Link>
   );
-};
+}

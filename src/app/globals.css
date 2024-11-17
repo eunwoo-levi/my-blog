@@ -2,60 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
-.page-transition {
-  opacity: 0;
-  background: linear-gradient(45deg, rgba(20, 20, 20, 0.8), rgba(0, 0, 0, 0.8), rgba(50, 50, 50, 0.8));
-  transform: translateY(40px);
-  filter: blur(12px);
-  transition: all 400ms ease-in-out; /* 여기에 transition 추가 */
-  pointer-events: none;
-}
-
-/* globals.css */
-@keyframes transitionIn {
+/* Aurora 애니메이션 정의 */
+@keyframes aurora {
   0% {
-    opacity: 0;
-    transform: translateY(-40px) scale(1.1);
-    filter: blur(0px);
+    background-position: -400% 0%;
   }
   50% {
-    opacity: 0.8;
-    transform: translateY(-20px) scale(1.05);
-    filter: blur(8px);
+    background-position: 400% 0%;
   }
   100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(12px);
+    background-position: -400% 0%;
   }
 }
 
-.animate-transitionIn {
-  animation: transitionIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-/* 선택적: 나가는 애니메이션 */
-@keyframes transitionOut {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(12px);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(40px) scale(0.95);
-    filter: blur(0px);
-  }
-}
-
-.animate-transitionOut {
-  animation: transitionOut 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@media (prefers-color-scheme: dark) {
-  img {
-    background-color: white !important;
-  }
+.aurora-background {
+  animation: aurora 8s ease-in-out infinite;
+  background-size: 400% 400%;
+  background: radial-gradient(circle, #6EE7B7, #9333EA);
 }
 
 @keyframes twinkling {

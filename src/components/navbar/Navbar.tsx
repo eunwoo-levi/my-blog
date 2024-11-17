@@ -2,7 +2,7 @@ import { FaGithub } from 'react-icons/fa';
 import { DarkModeBtn } from './DarkModeBtn';
 import BackBtn from './BackBtn';
 import { NavTitle } from './NavTitle';
-import { CustomLink } from '../CustomLink';
+import CustomLink from '../CustomLink';
 
 export default function Navbar() {
   return (
