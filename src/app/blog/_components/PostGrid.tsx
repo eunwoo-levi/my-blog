@@ -37,7 +37,7 @@ export default function PostGrid({ posts, postsPerPage = 6 }: PostGridProps) {
     <div className='space-y-8'>
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
         {currentPosts.map((post) => (
-          <CustomLink
+          <Link
             href={`/blog/${post.category}/${post.slug}`}
             className='group h-full'
             key={`${post.category}-${post.slug}`}
@@ -54,7 +54,7 @@ export default function PostGrid({ posts, postsPerPage = 6 }: PostGridProps) {
                 <p className='text-gray-600 dark:text-gray-400 text-sm mt-auto'>By {post.frontmatter.author}</p>
               </div>
             </article>
-          </CustomLink>
+          </Link>
         ))}
       </div>
       {posts.length === 0 ? (
