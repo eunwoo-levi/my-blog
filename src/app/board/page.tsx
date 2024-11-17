@@ -1,4 +1,4 @@
-import Comments from '@/components/comments';
+import Comments from '@/components/Comments';
 import { AuroraBackground } from '@/components/ui/aurora-background';
 
 export const revalidate = 3600;
