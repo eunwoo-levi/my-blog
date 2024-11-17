@@ -1,16 +1,7 @@
 'use client';
-
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-
-const CATEGORIES = [
-  { id: '1', name: 'acivities' },
-  { id: '2', name: 'algorithm' },
-  { id: '3', name: 'javascript' },
-  { id: '4', name: 'network' },
-  { id: '5', name: 'next.js' },
-  { id: '6', name: 'react' },
-];
+import { CATEGORIES } from '@/constants/categories';
 
 export default function CategoryList() {
   const pathname = usePathname();

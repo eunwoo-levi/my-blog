@@ -1,5 +1,7 @@
-import Giscus from '@/components/Giscus';
+import Comments from '@/components/comments';
 import { AuroraBackground } from '@/components/ui/aurora-background';
+
+export const revalidate = 3600;
 
 export default function Aboutpage() {
   return (
@@ -14,7 +16,7 @@ export default function Aboutpage() {
           </h2>
         </div>
         <article className='z-10 w-full flex-grow text-white flex flex-col justify-center items-center bg-gray-900 pt-[80px] pb-[80px]'>
-          <Giscus />
+          <Comments />
         </article>
       </AuroraBackground>
     </main>

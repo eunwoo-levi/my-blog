@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { PostPagination } from './PostPagination';
-import { CustomLink } from '@/components/CustomLink';
 
 interface BlogFrontMatter {
   title: string;
