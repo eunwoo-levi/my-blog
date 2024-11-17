@@ -19,12 +19,7 @@ export const CustomLink = ({ href, className, children }: CustomLinkProps) => {
   };
 
   return (
-    <Link
-      onClick={handleLinkClick}
-      href={href}
-      className={className}
-      aria-label={`Navigate to ${String(children)} page`}
-    >
+    <Link href={href} className={className} aria-label={`Navigate to ${String(children)} page`}>
       {children}
     </Link>
   );
