@@ -40,11 +40,7 @@ export function PostPagination({ currentPage, totalPages, onPageChange }: PostPa
 
         {[...Array(totalPages)].map((_, i) => {
           const page = i + 1;
-          if (
-            page === 1 ||
-            page === totalPages ||
-            (page >= currentPage - 2 && page <= currentPage + 2)
-          ) {
+          if (page === 1 || page === totalPages || (page >= currentPage - 2 && page <= currentPage + 2)) {
             return (
               <PaginationItem key={page}>
                 <PaginationLink

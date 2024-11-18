@@ -1,5 +1,5 @@
 // app/blog/loading.tsx
-export default function Loading() {
+export default function BlogLoading() {
   return (
     <div className='w-full animate-pulse'>
       {/* 카테고리 리스트 로딩 UI */}
