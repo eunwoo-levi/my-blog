@@ -87,7 +87,6 @@ export const getAllPosts = async (categoryId?: number): Promise<PostData[]> => {
 
   // 카테고리 ID가 있으면 메모리에서 필터링
   if (categoryId) {
-    console.log(`Filtering posts for category ${categoryId}`);
     return allPosts.filter((post) => post.frontmatter.categoryId === categoryId);
   }
 
