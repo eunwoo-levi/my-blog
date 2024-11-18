@@ -83,10 +83,7 @@ export const getAllPosts = async (categoryId?: number): Promise<PostData[]> => {
 
     // 전체 포스트 캐시 저장
     postCache.set(ALL_POSTS_CACHE_KEY, allPosts);
-    console.log('Cached all posts');
-  } else {
-    console.log('Cache hit: Using cached posts');
-  }
+  } 
 
   // 카테고리 ID가 있으면 메모리에서 필터링
   if (categoryId) {
