@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import Navbar from '@/components/navbar/Navbar';
 import PageTransition from '@/components/PageTransition';
+import Footer from './(home)/_components/Footer';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -33,10 +34,11 @@ export default function RootLayout({
   return (
     <html lang='ko' suppressHydrationWarning>
       <body className={`${inter.className} pt-[60px]`}>
+        <Navbar />
         <ThemeProvider attribute='class' defaultTheme='system' enableSystem disableTransitionOnChange>
-          <Navbar />
           <PageTransition>{children}</PageTransition>
         </ThemeProvider>
+        <Footer />
       </body>
     </html>
   );

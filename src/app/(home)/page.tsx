@@ -1,7 +1,6 @@
 import Header from '@/app/(home)/_components/Header';
 import Introduction from './_components/Introduction';
 import Links from './_components/Links';
-import Footer from './_components/Footer';
 import SpaceBackground from '@/components/backgrounds/SpaceBackground';
 
 export const metadata = {
@@ -23,7 +22,6 @@ export default function Home() {
           </div>
         </div>
         <Links />
-        <Footer />
       </div>
     </main>
   );
