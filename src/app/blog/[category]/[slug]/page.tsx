@@ -1,5 +1,4 @@
 import { getPostBySlug } from '@/lib/mdx/getBlog';
-import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
 interface Props {

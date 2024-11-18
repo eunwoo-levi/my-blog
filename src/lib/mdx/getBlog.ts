@@ -9,7 +9,6 @@ import matter from 'gray-matter';
 import type { Options } from 'rehype-pretty-code';
 import type { Element } from 'hast';
 import remarkBreaks from 'remark-breaks';
-import { postCache } from './postCache';
 import { cache } from 'react';
 
 const rehypePrettyCodeOptions: Partial<Options> = {
@@ -32,7 +31,7 @@ const rehypePrettyCodeOptions: Partial<Options> = {
   },
 };
 
-const contentDirectory = path.join(process.cwd(), 'src', 'app', 'content');
+const contentDirectory = path.join(process.cwd(), 'content');
 
 interface BlogFrontMatter {
   title: string;
