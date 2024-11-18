@@ -24,7 +24,7 @@ export default async function CategoryPage({ params }: Props) {
 
   return (
     <Suspense fallback={<BlogLoading />}>
-      <PostGrid posts={posts} />;
+      <PostGrid posts={posts} />
     </Suspense>
   );
 }
