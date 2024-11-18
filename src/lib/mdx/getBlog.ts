@@ -5,11 +5,12 @@ import rehypePrettyCode from 'rehype-pretty-code';
 import remarkGfm from 'remark-gfm';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import dayjs from 'dayjs';
-import matter from 'gray-matter'; // frontmatter 만 파싱
+import matter from 'gray-matter';
 import type { Options } from 'rehype-pretty-code';
 import type { Element } from 'hast';
 import remarkBreaks from 'remark-breaks';
 import { postCache } from './postCache';
+import { cache } from 'react';
 
 const rehypePrettyCodeOptions: Partial<Options> = {
   theme: 'github-dark',
@@ -48,57 +49,54 @@ interface PostData {
 }
 
 // frontmatter만 가져오는 최적화된 함수
-export const getAllPosts = async (categoryId?: number): Promise<PostData[]> => {
-  const ALL_POSTS_CACHE_KEY = 'posts-all';
-  
-  // 먼저 전체 포스트 캐시 확인
-  let allPosts = postCache.get<PostData[]>(ALL_POSTS_CACHE_KEY);
-
-  // 캐시가 없을 경우만 파일시스템 접근
-  if (!allPosts) {
-    console.log('Cache miss: Loading all posts from filesystem');
+export const getAllPosts = cache(async (categoryId?: number): Promise<PostData[]> => {
+  try {
     const categories = fs.readdirSync(contentDirectory);
 
-    const allPostPromises = categories.flatMap((category) => {
+    const allPosts = categories.flatMap((category) => {
+      const categoryPath = path.join(contentDirectory, category);
+      
+      // 디렉토리가 아닌 경우 스킵
+      if (!fs.statSync(categoryPath).isDirectory()) return [];
+
       const files = fs
-        .readdirSync(path.join(contentDirectory, category))
+        .readdirSync(categoryPath)
         .filter((file) => file.endsWith('.mdx'));
 
       return files.map((file) => {
-        const source = fs.readFileSync(path.join(contentDirectory, category, file), 'utf8');
-        const { data: frontmatter } = matter(source);
-        const slug = file.replace(/\.mdx$/, '');
-
+        // frontmatter만 파싱
+        const source = fs.readFileSync(path.join(categoryPath, file), 'utf8');
+        const { data } = matter(source, { excerpt: false });
+        
         return {
-          frontmatter: frontmatter as BlogFrontMatter,
-          slug,
+          frontmatter: data as BlogFrontMatter,
+          slug: file.replace(/\.mdx$/, ''),
           category,
         };
       });
     });
 
-    allPosts = allPostPromises.sort(
-      (a, b) => dayjs(b.frontmatter.publishDate).unix() - dayjs(a.frontmatter.publishDate).unix()
+    const sortedPosts = allPosts.sort(
+      (a, b) => 
+        dayjs(b.frontmatter.publishDate).unix() - 
+        dayjs(a.frontmatter.publishDate).unix()
     );
 
-    // 전체 포스트 캐시 저장
-    postCache.set(ALL_POSTS_CACHE_KEY, allPosts);
-  } 
+    if (categoryId) {
+      return sortedPosts.filter(
+        (post) => post.frontmatter.categoryId === categoryId
+      );
+    }
 
-  // 카테고리 ID가 있으면 메모리에서 필터링
-  if (categoryId) {
-    return allPosts.filter((post) => post.frontmatter.categoryId === categoryId);
+    return sortedPosts;
+  } catch (error) {
+    console.error('Error loading posts:', error);
+    return [];
   }
+});
 
-  return allPosts;
-};
-
-// 개별 포스트를 가져올 때는 전체 내용을 파싱
-export const getPostBySlug = async (category: string, slug: string) => {
-  const cacheKey = `post-${category}-${slug}`;
-  const cached = postCache.get<{ content: any; frontmatter: BlogFrontMatter }>(cacheKey);
-  if (cached) return cached;
-
+// 개별 포스트 로딩은 필요할 때만 전체 컨텐츠 파싱
+export const getPostBySlug = cache(async (category: string, slug: string) => {
   const filePath = path.join(contentDirectory, category, `${slug}.mdx`);
 
   if (!fs.existsSync(filePath)) {
@@ -106,20 +104,24 @@ export const getPostBySlug = async (category: string, slug: string) => {
   }
 
   const source = fs.readFileSync(filePath, 'utf8');
-
-  const { frontmatter, content } = await compileMDX<BlogFrontMatter>({
+  
+  // MDX 컴파일 및 스타일 적용
+  const { content, frontmatter } = await compileMDX<BlogFrontMatter>({
     source,
     options: {
       mdxOptions: {
-        rehypePlugins: [rehypeAutolinkHeadings, [rehypePrettyCode, rehypePrettyCodeOptions]],
+        rehypePlugins: [
+          rehypeAutolinkHeadings, 
+          [rehypePrettyCode, rehypePrettyCodeOptions]
+        ],
         remarkPlugins: [remarkGfm, remarkBreaks],
       },
       parseFrontmatter: true,
     },
   });
 
-  const result = { content, frontmatter };
-  postCache.set(cacheKey, result);
-  return result;
-};
-
+  return {
+    content,
+    frontmatter,
+  };
+});
