@@ -34,10 +34,8 @@ export default function RootLayout({
     <html lang='ko' suppressHydrationWarning>
       <body className={`${inter.className} pt-[60px]`}>
         <ThemeProvider attribute='class' defaultTheme='system' enableSystem disableTransitionOnChange>
-          <PageTransition>
-            <Navbar />
-            {children}
-          </PageTransition>
+          <Navbar />
+          <PageTransition>{children}</PageTransition>
         </ThemeProvider>
       </body>
     </html>
