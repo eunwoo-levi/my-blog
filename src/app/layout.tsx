@@ -1,8 +1,9 @@
+import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import './globals.css';
 import Navbar from '@/components/navbar/Navbar';
+import PageTransition from '@/components/PageTransition';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -33,8 +34,10 @@ export default function RootLayout({
     <html lang='ko' suppressHydrationWarning>
       <body className={`${inter.className} pt-[60px]`}>
         <ThemeProvider attribute='class' defaultTheme='system' enableSystem disableTransitionOnChange>
-          <Navbar />
-          <main>{children}</main>
+          <PageTransition>
+            <Navbar />
+            {children}
+          </PageTransition>
         </ThemeProvider>
       </body>
     </html>
