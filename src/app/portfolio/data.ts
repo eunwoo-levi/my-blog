@@ -42,7 +42,7 @@ export interface ProfileProps {
     },
     {
       title: "우아한테크 코스",
-      period: "2024/10 ~ 11"
+      period: "2024/10 ~ 2024/11"
     }
   ];
   
