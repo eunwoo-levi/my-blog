@@ -87,6 +87,35 @@
   box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #fff;
 }
 
+@keyframes neonGlow {
+  0%,
+  100% {
+    text-shadow: 0 0 8px rgba(255, 198, 247, 0.5), 0 0 15px rgba(231, 114, 247, 0.5), 0 0 25px rgba(255, 1, 221, 0.5),
+      0 0 35px rgba(0, 255, 255, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 12px rgba(255, 198, 247, 0.7), 0 0 25px rgba(231, 114, 247, 0.7), 0 0 35px rgba(255, 1, 221, 0.7),
+      0 0 45px rgba(0, 255, 255, 0.7);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-neon-slide {
+  text-shadow: 0 0 8px rgba(255, 198, 247, 0.5), 0 0 15px rgba(231, 114, 247, 0.5), 0 0 25px rgba(255, 1, 221, 0.5),
+    0 0 35px rgba(0, 255, 255, 0.5);
+  animation: neonGlow 2s infinite alternate, slideInLeft 1.4s ease-out forwards;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
