@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     siteName: '은우의 개발 블로그',
     images: [
       {
-        url: '/profile.webp',
+        url: 'https://www.eunwoo-levi.blog/profile.webp',
         width: 1200,
         height: 630,
         alt: '은우의 개발 블로그',
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: '은우의 개발 블로그',
     description: '은우의 프론트엔드 개발 블로그',
-    images: ['/profile.webp'],
+    images: ['https://www.eunwoo-levi.blog/profile.webp'],
   },
 };
 
