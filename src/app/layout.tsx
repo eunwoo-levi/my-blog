@@ -18,11 +18,20 @@ export const metadata: Metadata = {
     description: '은우의 프론트엔드 개발 블로그',
     url: 'https://www.eunwoo-levi.blog',
     siteName: '은우의 개발 블로그',
+    images: [
+      {
+        url: '/profile.webp',
+        width: 1200,
+        height: 630,
+        alt: '은우의 개발 블로그',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: '은우의 개발 블로그',
     description: '은우의 프론트엔드 개발 블로그',
+    images: ['/profile.webp'],
   },
 };
 
