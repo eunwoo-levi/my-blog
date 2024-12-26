@@ -51,7 +51,7 @@ function solution(friends, gifts) {
 
 <br/>
 
-이차 함수 만드는 함수는 여러가지 방법으로 표현할 수 있는데
+이차 Array를 만드는 함수는 여러가지 방법으로 표현할 수 있는데
 
 1. 첫번째 방법
 ```js
@@ -64,7 +64,6 @@ for(let i=0;i<n;i++){
 2. 두번째 방법
 ```js
 const record = new Array(friends.length).fill(null).map(() => new Array(friends.length).fill(0));
-
 ```
 
 3. 세번째 방법
@@ -75,7 +74,7 @@ const record = Array.from({length:friends.length}, ()=>Array(friends.length).fil
 속도는 비교해본 결과 모두 비슷하게 나와서 3가지 방법중 첫번째 방법이 직관적이긴 한 것 같아서 선택하였다.
 
 첫번째 for문에서 매 순회마다,
-record 2차 배열를 이용하여 giver 와 taker가 서로 준 gift 개수를 담고, giftPoints 배열을 이용하여 해당 friends의 이름에 따른 point 들을 담았다. 
+record 2차 Array를 이용하여 giver 와 taker가 서로 준 gift 개수를 담고, giftPoints 배열을 이용하여 해당 friends의 이름에 따른 point 들을 담았다. 
 (indexOf를 이용하여 friends 배열에서 해당 name에 해당되는 index를 가져옴)
 
 이후, 두번째 for문에서는 문제 조건인,
