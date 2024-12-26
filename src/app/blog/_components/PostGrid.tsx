@@ -34,32 +34,44 @@ export default function PostGrid({ posts, postsPerPage = 6 }: PostGridProps) {
 
   return (
     <div className='space-y-8'>
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
+      <div className='grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3'>
         {currentPosts.map((post) => (
           <Link
             href={`/blog/${post.category}/${post.slug}`}
             className='group h-full'
             key={`${post.category}-${post.slug}`}
           >
-            <article className='border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col'>
-              <div className='p-6 flex flex-col min-h-[200px]  justify-center items-center'>
-                <div className='flex items-center gap-4 mb-4'>
-                  <span className='text-sm text-gray-600 dark:text-gray-400'>{post.frontmatter.publishDate}</span>
-                  <span className='text-sm text-purple-600 dark:text-purple-400 '>{post.category}</span>
+            <article className='flex h-full flex-col overflow-hidden rounded-lg border border-gray-200 transition-shadow hover:shadow-lg dark:border-gray-800'>
+              <div className='flex min-h-[200px] flex-col items-center justify-center p-6'>
+                <div className='mb-4 flex items-center gap-4'>
+                  <span className='text-sm text-gray-600 dark:text-gray-400'>
+                    {post.frontmatter.publishDate}
+                  </span>
+                  <span className='text-sm text-purple-600 dark:text-purple-400'>
+                    {post.category}
+                  </span>
                 </div>
-                <h2 className='text-xl font-semibold my-auto text-center group-hover:text-purple-600 dark:group-hover:text-purple-400 duration-200'>
+                <h2 className='my-auto text-center text-xl font-semibold duration-200 group-hover:text-purple-600 dark:group-hover:text-purple-400'>
                   {post.frontmatter.title}
                 </h2>
-                <p className='text-gray-600 dark:text-gray-400 text-sm mt-auto'>By {post.frontmatter.author}</p>
+                <p className='mt-auto text-sm text-gray-600 dark:text-gray-400'>
+                  By {post.frontmatter.author}
+                </p>
               </div>
             </article>
           </Link>
         ))}
       </div>
       {posts.length === 0 ? (
-        <div className='col-span-full text-center py-12 text-gray-600 dark:text-gray-400'>No posts found.</div>
+        <div className='col-span-full py-12 text-center text-gray-600 dark:text-gray-400'>
+          No posts found.
+        </div>
       ) : (
-        <PostPagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+        <PostPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       )}
     </div>
   );

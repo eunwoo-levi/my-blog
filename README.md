@@ -139,5 +139,3 @@ velog 블로그 플랫폼과 같이 mdx를 사용하여 markdown형식의 기능
 < 병렬 처리 후 >
 
 ![image](https://github.com/user-attachments/assets/1e7b63f3-84f6-4aa8-8012-1b8804ab381b)
-
-
