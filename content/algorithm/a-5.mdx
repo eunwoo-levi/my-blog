@@ -11,7 +11,7 @@ categoryId: 2
 https://school.programmers.co.kr/learn/courses/30/lessons/258712
 
 - Level: 1
-- 알고리즘: 해시
+- 알고리즘: Hash
 
 
 ## 답안 코드
@@ -79,4 +79,50 @@ record 2차 Array를 이용하여 giver 와 taker가 서로 준 gift 개수를 �
 
 이후, 두번째 for문에서는 문제 조건인,
 '두 사람이 선물을 주고받은 기록이 하나도 없거나 주고받은 수가 같다면, 선물 지수가 더 큰 사람이 선물 지수가 더 작은 사람에게 선물을 하나 받습니다.' 에 따른 logic을 처리하였다.
+
 ***
+
+# 2. 도넛과 막대 그래프
+
+https://school.programmers.co.kr/learn/courses/30/lessons/258711
+
+- Level: 2
+- 알고리즘: Graph
+
+
+## 답안 코드
+
+```js
+function solution(edges) {
+    const map = {}
+
+    // 1차원으로 각 노드의 출발 차수와 도착 차수를 한 번에 계산
+    for (const [start, end] of edges) {
+        if (!map[start]) map[start] = [0, 0];
+        if (!map[end]) map[end] = [0, 0];
+        
+        map[start][0]++;  // 출발 차수 증가
+        map[end][1]++;    // 도착 차수 증가
+    }
+
+    let addedNode = 0;
+    let donutGraph = 0;
+    let lineGraph = 0;
+    let eightGraph = 0;
+
+    for (const [start, [given, received]] of Object.entries(map)) {
+        if (given > 1 && received === 0) {
+            addedNode = start;
+        } else if (given === 0) {
+            lineGraph++;  
+        } else if (given > 1 && received > 1) {
+            eightGraph++;
+        }
+    }
+
+    // 전체 그래프 수에서 막대 그래프와 8자 그래프를 빼면 도넛 그래프의 수가 됨
+    donutGraph = map[addedNode][0] - lineGraph - eightGraph;
+
+    return [Number(addedNode), donutGraph, lineGraph, eightGraph];
+}
+```
