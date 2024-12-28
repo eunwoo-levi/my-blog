@@ -93,6 +93,9 @@ velog 블로그 플랫폼과 같이 mdx를 사용하여 markdown형식의 기능
 
 ## 🚀 성능 최적화: 렌더링 개선 및 코드 리팩토링 결과
 
+![image](https://github.com/user-attachments/assets/b7b8d46f-8f3b-4760-a567-60c3ce5f51ff)
+
+
 <table>
   <tr>
     <th>최적화 전</th>
