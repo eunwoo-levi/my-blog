@@ -33,6 +33,9 @@ export const metadata: Metadata = {
     description: '은우의 프론트엔드 개발 블로그',
     images: ['https://www.eunwoo-levi.blog/profile.webp'],
   },
+  alternates: {
+    canonical: 'https://www.eunwoo-levi.blog',
+  },
 };
 
 export default function RootLayout({
@@ -43,7 +46,12 @@ export default function RootLayout({
   return (
     <html lang='ko' suppressHydrationWarning>
       <body className={`${inter.className} pt-[60px]`}>
-        <ThemeProvider attribute='class' defaultTheme='system' enableSystem disableTransitionOnChange>
+        <ThemeProvider
+          attribute='class'
+          defaultTheme='system'
+          enableSystem
+          disableTransitionOnChange
+        >
           <Navbar />
           <PageTransition>{children}</PageTransition>
           <Footer />
