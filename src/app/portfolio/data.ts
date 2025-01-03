@@ -20,7 +20,7 @@ export const profileData: ProfileProps = {
   location: 'Republic of Korea, Seoul (Daegu)',
   email: 'Eunwoo1341@gmail.com',
   university: 'Kyungbook National University',
-  major: ' - Computer Science',
+  major: ' - Computer Science  (Double major: Electronic Engineering)',
   achievements: [
     'TOEIC - 935',
     'Computer Specialist in Spreadsheet & Database (컴퓨터활용능력 1급)',
@@ -30,7 +30,7 @@ export const profileData: ProfileProps = {
 export const extracurricularData: ActivityProps[] = [
   {
     title: 'Korean Augmentation To the United States Army, KATUSA',
-    period: '2020.09.06 - 2023.03.06',
+    period: '2020/09 - 2023/03',
   },
   {
     title: 'Google Developers Group - KNU 4기 - Frontend',
@@ -45,8 +45,12 @@ export const extracurricularData: ActivityProps[] = [
     period: '2024/10 ~ 2024/12',
   },
   {
-    title: 'AI 기반 웹 서비스 개발 - (주)멜라카 현장실습',
-    period: '2024/12 - 2025/2',
+    title: 'AI 기반 웹 서비스 개발 - FE & PM - (주)멜라카 현장실습',
+    period: '2024/12 - 2025/02',
+  },
+  {
+    title: '우아한테크코스 7th FE - 우아한형제들 (Woowa Bros)',
+    period: '2025/02 - onGoing',
   },
 ];
 
