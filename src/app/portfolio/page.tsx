@@ -74,47 +74,15 @@ const ProfileSection = ({ data }: ProfileSectionProps) => (
     </div>
     <div className='mt-8 flex flex-col items-center gap-4 rounded-lg bg-gray-700/20 p-4'>
       <h1 className='text-[24px] font-bold text-indigo-900 md:text-[30px]'>
-        ⚡ Main Stack ⚡
+        ⚡ Tech Stack ⚡
       </h1>
       <div className='flex flex-wrap items-center justify-center gap-2'>
-        <img
-          src='https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB'
+        <Image
+          src='/techStack.webp'
           alt='React'
-          className='lg:flex-shrink-0'
-        />
-        <img
-          src='https://img.shields.io/badge/Next-black?style=for-the-badge&logo=next.js&logoColor=white'
-          alt='Next JS'
-          className='lg:flex-shrink-0'
-        />
-        <img
-          src='https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white'
-          alt='TypeScript'
-          className='lg:flex-shrink-0'
-        />
-        <img
-          src='https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white'
-          alt='TailwindCSS'
-          className='lg:flex-shrink-0'
-        />
-        <img
-          src='https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB'
-          alt='Express.js'
-          className='lg:flex-shrink-0'
-        />
-        <img
-          src='https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=for-the-badge&logo=mongodb&logoColor=white'
-          alt='MongoDB'
-          className='lg:flex-shrink-0'
-        />
-        <img
-          src='https://img.shields.io/badge/zustand-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB'
-          alt='Zustand'
-          className='lg:flex-shrink-0'
-        />
-        <img
-          src='https://img.shields.io/badge/-Storybook-FF4785?style=for-the-badge&logo=storybook&logoColor=white'
-          alt='Storybook'
+          width={1000}
+          height={200}
+          className='h-auto w-full object-contain'
         />
       </div>
     </div>
