@@ -1,0 +1,103 @@
+---
+title: "AWS S3와 CloudFront"
+author: "eunwoo"
+thumbnail: "/next.svg"
+publishDate: "2025-01-06"
+categoryId: 4
+---
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/8652e640-9894-4da4-96fa-726be9453bf0/image.png)
+
+# 🔑 CloudFront와 S3를 연동했을 때 이점
+
+AWS S3는 저장하는 건 저렴한데, S3에 직접 엑세스하는건 비싸고 느리다.
+그래서 CDN(Content Delivery Network)을 이용해 캐싱을 많이하는데, AWS에서는 CloudFront 서비스를 이용해서 CDN을 사용할 
+
+# CloudFront란?
+
+> Amazon CloudFront는 .html, .css, .js 및 이미지 파일과 같은 정적 및 동적 웹 콘텐츠를 사용자에게 더 빨리 배포하도록 지원하는 웹 서비스이다. CloudFront는 엣지 로케이션이라고 하는 데이터 센터의 전 세계 네트워크를 통해 콘텐츠를 제공한다. CloudFront를 통해 서비스하는 콘텐츠를 사용자가 요청하면 지연 시간이 가장 낮은 엣지 로케이션으로 요청이 라우팅되므로 가능한 최고의 성능으로 콘텐츠가 제공된다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/94cedc5b-eb68-4a58-b456-e8d5b9bd085c/image.png)
+
+AWS에서 사용하는 기능이니 고가용성은 기본적으로 보장이 될거고, SSL/TLS 인증서를 사용할 수 있어 보안적인 측면도 보장된다.
+그리고 콘텐츠가 지연 시간이 가장 낮은 엣지 로케이션에 있는 경우 CloudFront가 콘텐츠를 즉시 제공해 속도 면에서도 많은 이점을 얻을 수 있다.
+
+## 장점 정리
+
+- 콘텐츠 캐싱을 통한 S3 부하 감소
+- Edge Location을 통한 응답속도 향상
+- **콘텐츠 보안 유지**
+- 등등
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/9c8fd69a-d30f-4144-b630-719128f3dda9/image.png)
+
+***
+
+# AWS S3 + Cloudfront를 선택한 이유?
+
+하고있는 프로젝트는 Vite 기반 React로 이루어져 있고 CSR 기반이기 때문에 정적 리소스를 대규모로 특화 되어 있는 S3를 선택했다. 또한 CDN 방식인 Cloudfront를 사용해 S3에 직접적 접근을 막고 CloudFront로 접근하여 보안과 속도 두 가지 이점을 모두 잡고자 했다. CloudFront는 Edge 서버를 사용하여 콘텐츠를 캐싱하고 가까운 지역의 서버에서 콘텐츠를 전송할 수 있어 속도가 빠르다는 이점이 있다. 
+
+***
+
+# AWS S3 배포 방법
+
+## 1. AWS S3 - Bucket 만들기
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/1ac16e95-d581-45e7-bf72-04fce40ea3a1/image.png)
+
+AWS S3 버킷을 만들 때 AWS 리전은 보통 서울로 하고 나머지는 기본 설정으로 버킷 만들기를 하면 된다. 
+
+## 2. Bucket에 Build 파일들을 Upload 
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/f2b8df74-4f2f-4a62-bb77-d961ce15cf69/image.png)
+
+만든 Bucket을 클릭하여 Build한 파일들을 Upload를 한다.
+
+Create-React-APP 으로 만든 경우 .build폴더, vite로 만든 경우는 .dist 폴더을 업로드하면 된다.
+이때 주의할 것은 .dist 폴더를 한꺼번에 옮기는 것이 아닌 파일 혹은 폴더를 하나하나 옮겨야 한다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/9c568e6a-bda0-44e9-9c0e-c565e343eb9d/image.png)
+
+# CloudFront 배포 방법
+
+## 1. cloudfront 배포 생성 클릭 후 배포 생성 진행
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/380e21e3-e6b5-4221-bff2-b20debce241a/image.png)
+
+S3 에서 생성한 domain 선택한다.
+이후 원본 엑세스(Origin access) 에서 원본 액세스 제어 설정(권장) (Origin access control settings) 을 선택한다.
+
+## 2. Create new OAC 를 눌러서 기본으로 설정되있는 것을 가만히 두고 Create를 누르면 된다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/b414bd6c-7a48-4a9e-9cc8-556b2e0f6e4a/image.png)
+
+나머지는 기본 설정 되있는 것으로 다 하면 된다.
+웹 애플리케이션 방화벽(WAF)은 **보안 보호 비활성화** 하면 된다.
+(보안 보호 활성화하면 요금이 더 나감)
+
+## 3. *기본값 루트 객체 (Default root object - optional) 에 index.html 넣기*
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/347c8647-be36-4331-b35a-912d601fae35/image.png)
+
+## 4. 배포 생성 후 **정책 복사 하기**(Copy policy) (중요!) 
+![](https://velog.velcdn.com/images/eunwoo1341/post/9953b7e6-a297-47f1-962a-d897bd1e2442/image.png)
+
+Copy policy 이후 '정책을 업데이트하려면 ~~~.. ' 링크를 클릭하여 이동한다.
+
+## 5. 권한 탭으로 이동 후
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/2bc1e5a8-5c2b-44f3-8184-639f3cde1ec0/image.png)
+
+
+버킷 정책(Bucket policy)에 편집을 누른 후 아까 복사한 것을 붙여넣은 후 저장한다.
+
+## 6. 이후 CloudFront에 다시 들어가서 배포가 끝날때까지 기다리면 된다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/238e43bf-8708-45e2-a9d6-6655ca9eb816/image.png)
+
+## 7. 배포가 끝나면 배포 도메인 이름을 url로 넣어서 검색하면 잘 나오는 것을 확인 할 수 있다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/7d882fda-49af-49a4-be55-9ac5e61238b9/image.png)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/7ca9c1ab-35f8-4a9a-97d0-00ac8689da43/image.png)
+
