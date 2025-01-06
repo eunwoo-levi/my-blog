@@ -5,12 +5,15 @@ const customLinkClassName =
 
 export default function Links() {
   return (
-    <div className='flex flex-col justify-center items-center gap-[30px] mt-[150px]'>
+    <div className='mt-[150px] flex flex-col items-center justify-center gap-[30px]'>
       <CustomLink href='/portfolio' className={customLinkClassName}>
         Portfolio
       </CustomLink>
+      <CustomLink href='/project' className={customLinkClassName}>
+        Projects
+      </CustomLink>
       <CustomLink href='/blog' className={customLinkClassName}>
-        Blog
+        Tech Blogs
       </CustomLink>
       <CustomLink href='/board' className={customLinkClassName}>
         Board

@@ -7,11 +7,11 @@ export default async function ProjectPage() {
   const projects = await getAllProjects(); // 프로젝트 목록 가져오기
 
   return (
-    <main className='flex w-full flex-col items-center px-4 py-8'>
+    <main className='flex w-full flex-col items-center px-4 py-12'>
       {projects.map((project) => (
         <div
           key={project.slug}
-          className='mb-40 w-4/5 rounded-lg border p-4 shadow-sm transition-all duration-200 hover:scale-110'
+          className='my-10 mb-40 w-4/5 rounded-lg border p-4 shadow-sm transition-all duration-200 hover:scale-110'
         >
           <Link
             href={`/project/${project.slug}`}
