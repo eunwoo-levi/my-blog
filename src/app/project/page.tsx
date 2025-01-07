@@ -4,14 +4,14 @@ import { getAllProjects } from '@/lib/mdx/getProject';
 import Image from 'next/image';
 
 export default async function ProjectPage() {
-  const projects = await getAllProjects(); // 프로젝트 목록 가져오기
+  const projects = await getAllProjects();
 
   return (
     <main className='flex w-full flex-col items-center px-4 py-12'>
       {projects.map((project, idx) => (
         <div
           key={project.slug}
-          className='my-10 h-[700px] w-4/5 rounded-lg border p-4 shadow-sm transition-all duration-200 hover:scale-110 lg:h-[800px]'
+          className='my-10 h-[700px] w-11/12 rounded-lg border p-4 shadow-sm transition-all duration-200 hover:scale-110 lg:h-[800px] lg:w-4/5'
         >
           <Link
             // href={`/project/${project.slug}`}
@@ -35,11 +35,11 @@ export default async function ProjectPage() {
             <h2 className='text-xl font-bold lg:text-4xl'>
               {project.frontmatter.title}
             </h2>
-            <p className='text-lg font-bold text-gray-600 lg:text-2xl'>
+            <p className='text-lg font-semibold text-gray-600 lg:text-2xl'>
               {project.frontmatter.description}
             </p>
             <p className='text-md pt-2 text-gray-500'>
-              Project Date: {project.frontmatter.projectDate}
+              Project Duration: {project.frontmatter.projectDate}
             </p>
           </Link>
         </div>
