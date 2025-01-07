@@ -17,7 +17,7 @@ export interface ProjectFrontMatter {
   description: string;
   role: string;
   thumbnail: string;
-  publishDate: string;
+  projectDate: string;
 }
 
 export interface ProjectData {

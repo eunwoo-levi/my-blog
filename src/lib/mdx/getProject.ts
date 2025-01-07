@@ -33,8 +33,8 @@ export const getAllProjects = cache(async (): Promise<ProjectData[]> => {
 
     const sortedProjects = allProjects.sort(
       (a, b) =>
-        dayjs(b.frontmatter.publishDate).unix() -
-        dayjs(a.frontmatter.publishDate).unix(),
+        dayjs(b.frontmatter.projectDate).unix() -
+        dayjs(a.frontmatter.projectDate).unix(),
     );
 
     return sortedProjects;

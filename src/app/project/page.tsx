@@ -22,6 +22,7 @@ export default async function ProjectPage() {
               alt={project.frontmatter.title}
               width={400}
               height={400}
+              quality={100}
               className='mb-8 h-full w-full rounded object-cover'
             />
             <h2 className='mb-2 text-4xl font-bold'>
@@ -31,8 +32,8 @@ export default async function ProjectPage() {
               {project.frontmatter.description}
             </p>
             <p className='mt-2 text-gray-500'>
-              Published:{' '}
-              {new Date(project.frontmatter.publishDate).toLocaleDateString()}
+              proejct Date:{' '}
+              {new Date(project.frontmatter.projectDate).toLocaleDateString()}
             </p>
           </Link>
         </div>
