@@ -19,6 +19,7 @@ export interface ProjectFrontMatter {
   role: string;
   thumbnail: string;
   projectDate: string;
+  url: string;
 }
 
 export interface ProjectData {

@@ -14,7 +14,8 @@ export default async function ProjectPage() {
           className='my-10 h-[700px] w-4/5 rounded-lg border p-4 shadow-sm transition-all duration-200 hover:scale-110 lg:h-[800px]'
         >
           <Link
-            href={`/project/${project.slug}`}
+            // href={`/project/${project.slug}`}
+            href={project.frontmatter.url}
             className='flex w-full flex-col items-center gap-6'
           >
             <div className='w-full pl-2 text-xl lg:text-2xl'>
