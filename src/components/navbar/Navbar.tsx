@@ -18,7 +18,7 @@ export default function Navbar() {
         <NavTitle />
       </CustomLink>
 
-      <div className='right-1 flex items-center gap-[20px] pr-[10px] lg:absolute lg:pr-[80px]'>
+      <div className='right-1 flex items-center gap-[20px] pr-[10px] lg:absolute lg:pr-[50px]'>
         <CustomLink
           href='https://github.com/eunwoo-levi'
           className='rounded-lg p-1 hover:bg-neutral-700'
