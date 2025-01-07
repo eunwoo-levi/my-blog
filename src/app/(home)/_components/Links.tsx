@@ -9,9 +9,9 @@ export default function Links() {
       <CustomLink href='/portfolio' className={customLinkClassName}>
         Portfolio
       </CustomLink>
-      <CustomLink href='/project' className={customLinkClassName}>
+      {/* <CustomLink href='/project' className={customLinkClassName}>
         Projects
-      </CustomLink>
+      </CustomLink> */}
       <CustomLink href='/blog' className={customLinkClassName}>
         Tech Blogs
       </CustomLink>
