@@ -11,12 +11,11 @@ export default async function ProjectPage() {
       {projects.map((project, idx) => (
         <div
           key={project.slug}
-          className='my-10 h-[700px] w-11/12 rounded-lg border p-4 shadow-sm transition-all duration-200 hover:scale-110 lg:h-[800px] lg:w-4/5'
+          className='my-10 min-h-[700px] w-11/12 rounded-lg border p-4 shadow-sm transition-all duration-200 hover:scale-110 lg:min-h-[800px] lg:w-4/5'
         >
           <Link
-            // href={`/project/${project.slug}`}
             href={project.frontmatter.url}
-            className='flex w-full flex-col items-center gap-6'
+            className='flex h-full w-full flex-col items-center gap-6'
           >
             <div className='w-full pl-2 text-xl lg:text-2xl'>
               {idx.toString().length === 1 ? '0' + (idx + 1) : idx}
@@ -35,12 +34,12 @@ export default async function ProjectPage() {
             <h2 className='text-xl font-bold lg:text-4xl'>
               {project.frontmatter.title}
             </h2>
-            <p className='text-lg font-semibold text-gray-600 lg:text-2xl'>
+            <p className='text-lg font-semibold text-gray-400 lg:text-2xl'>
               {project.frontmatter.description}
             </p>
-            <p className='text-md pt-2 text-gray-500'>
+            <div className='text-md pt-2 text-gray-600'>
               Project Duration: {project.frontmatter.projectDate}
-            </p>
+            </div>
           </Link>
         </div>
       ))}
