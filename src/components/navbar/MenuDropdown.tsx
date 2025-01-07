@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useState, useEffect, useRef } from 'react';
 import { RxHamburgerMenu } from 'react-icons/rx';
 
 interface MenuItem {
@@ -52,17 +53,13 @@ const MenuDropdown: React.FC = () => {
         }`}
       >
         {menuItems.map((item, index) => (
-          <React.Fragment key={item.label}>
-            <a
-              href={item.href}
-              className='w-full px-4 py-2 text-center text-gray-800 transition-colors hover:bg-gray-100'
-            >
-              {item.label}
-            </a>
-            {index < menuItems.length - 1 && (
-              <div className='h-px w-full bg-gray-200' />
-            )}
-          </React.Fragment>
+          <Link
+            key={index}
+            href={item.href}
+            className='w-full px-4 py-2 text-center font-semibold text-gray-800 transition-colors hover:bg-gray-100'
+          >
+            {item.label}
+          </Link>
         ))}
       </div>
     </div>
