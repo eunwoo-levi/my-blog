@@ -17,7 +17,7 @@ export default async function ProjectPage() {
             href={project.frontmatter.url}
             className='flex h-full w-full flex-col items-center gap-6'
           >
-            <div className='w-full pl-2 text-xl lg:text-2xl'>
+            <div className='w-full pl-2 text-xl font-semibold lg:text-2xl'>
               {idx.toString().length === 1 ? '0' + (idx + 1) : idx}
               {' | '}
               {project.frontmatter.role}
