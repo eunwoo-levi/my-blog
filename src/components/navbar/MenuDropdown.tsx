@@ -41,7 +41,7 @@ const MenuDropdown: React.FC = () => {
         aria-expanded={isOpen}
         aria-haspopup='true'
       >
-        <RxHamburgerMenu size={35} />
+        <RxHamburgerMenu size={35} color='white' />
       </button>
 
       <div
