@@ -8,32 +8,37 @@ export default async function ProjectPage() {
 
   return (
     <main className='flex w-full flex-col items-center px-4 py-12'>
-      {projects.map((project) => (
+      {projects.map((project, idx) => (
         <div
           key={project.slug}
-          className='my-10 mb-40 w-4/5 rounded-lg border p-4 shadow-sm transition-all duration-200 hover:scale-110'
+          className='my-10 h-[700px] w-4/5 rounded-lg border p-4 shadow-sm transition-all duration-200 hover:scale-110 lg:h-[800px]'
         >
           <Link
             href={`/project/${project.slug}`}
-            className='flex w-full flex-col items-center gap-4'
+            className='flex w-full flex-col items-center gap-6'
           >
-            <Image
-              src={project.frontmatter.thumbnail}
-              alt={project.frontmatter.title}
-              width={400}
-              height={400}
-              quality={100}
-              className='mb-8 h-full w-full rounded object-cover'
-            />
-            <h2 className='mb-2 text-4xl font-bold'>
+            <div className='w-full pl-2 text-xl lg:text-2xl'>
+              {idx.toString().length === 1 ? '0' + (idx + 1) : idx}
+              {' | '}
+              {project.frontmatter.role}
+            </div>
+            <div className='relative mb-3 h-[400px] w-full overflow-hidden rounded lg:h-[500px]'>
+              <Image
+                src={project.frontmatter.thumbnail}
+                alt={project.frontmatter.title}
+                layout='fill'
+                objectFit='cover'
+                quality={100}
+              />
+            </div>
+            <h2 className='text-xl font-bold lg:text-4xl'>
               {project.frontmatter.title}
             </h2>
-            <p className='text-2xl font-bold text-gray-600'>
+            <p className='text-lg font-bold text-gray-600 lg:text-2xl'>
               {project.frontmatter.description}
             </p>
-            <p className='mt-2 text-gray-500'>
-              proejct Date:{' '}
-              {new Date(project.frontmatter.projectDate).toLocaleDateString()}
+            <p className='text-md pt-2 text-gray-500'>
+              Project Date: {project.frontmatter.projectDate}
             </p>
           </Link>
         </div>

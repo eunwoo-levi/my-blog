@@ -13,6 +13,7 @@ export interface PostData {
 }
 
 export interface ProjectFrontMatter {
+  id: number;
   title: string;
   description: string;
   role: string;

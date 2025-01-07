@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import path from 'path';
 import fs from 'fs';
 import matter from 'gray-matter';
@@ -32,9 +31,7 @@ export const getAllProjects = cache(async (): Promise<ProjectData[]> => {
     });
 
     const sortedProjects = allProjects.sort(
-      (a, b) =>
-        dayjs(b.frontmatter.projectDate).unix() -
-        dayjs(a.frontmatter.projectDate).unix(),
+      (a, b) => b.frontmatter.id - a.frontmatter.id,
     );
 
     return sortedProjects;
