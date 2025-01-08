@@ -18,7 +18,9 @@ export default async function ProjectPage() {
             className='flex h-full w-full flex-col items-center gap-6'
           >
             <div className='w-full pl-2 text-xl font-semibold lg:text-2xl'>
-              {idx.toString().length === 1 ? '0' + (idx + 1) : idx}
+              {projects.length - idx < 10
+                ? '0' + (projects.length - idx)
+                : projects.length - idx}
               {' | '}
               {project.frontmatter.role}
             </div>
