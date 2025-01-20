@@ -53,7 +53,7 @@ export const extracurricularData: ActivityProps[] = [
     period: '2024/12 - 2025/02',
   },
   {
-    title: 'Google New Year Hackathon - 최우수상',
+    title: 'Google New Year Hackathon - 🥈최우수상',
     period: '2025/01 - onGoing',
   },
   {
