@@ -20,7 +20,7 @@ interface SectionTitleProps {
   title: string;
 }
 
-const SectionTitle: React.FC<SectionTitleProps> = ({ icon: Icon, title }) => (
+const SectionTitle = ({ icon: Icon, title }: SectionTitleProps) => (
   <div className='flex items-center gap-[10px]'>
     <Icon size={25} className='md:size-30 text-blue-500' />
     <h1 className='text-[24px] font-bold text-indigo-900 md:text-[30px]'>
@@ -94,7 +94,7 @@ interface ActivitySectionProps {
   title: string;
 }
 
-const ActivitySection: React.FC<ActivitySectionProps> = ({ data, title }) => (
+const ActivitySection = ({ data, title }: ActivitySectionProps) => (
   <div className='flex flex-col justify-center gap-y-[30px] rounded-lg bg-white p-6 shadow-lg md:gap-y-[40px] md:p-8'>
     <SectionTitle icon={MdOutlineWork} title={title} />
     <div className='w-full'>
@@ -147,7 +147,7 @@ const ActivitySection: React.FC<ActivitySectionProps> = ({ data, title }) => (
   </div>
 );
 
-const AboutPage: React.FC = () => {
+const AboutPage = () => {
   return (
     <main className='min-h-screen w-full text-black'>
       <SpaceBackground />

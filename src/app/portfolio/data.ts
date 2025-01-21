@@ -30,34 +30,43 @@ export const profileData: ProfileProps = {
 export const extracurricularData: ActivityProps[] = [
   {
     title: 'Korean Augmentation To the United States Army, KATUSA',
+    role: 'Sergeant',
     period: '2020/09 - 2023/03',
   },
   {
-    title: 'Google Developers Group - KNU 4th - Frontend',
+    title: 'Google Developers Group - KNU 4th',
+    role: 'Frontend',
     period: '2024/09 ~ ongoing',
   },
   {
     title: 'React Team Study - Deep Dive',
+    role: 'Frontend',
     period: '2024/09 ~ ongoing',
   },
   {
     title: '2024 Daegyeong Region Collegiate SW Hackathon - 🥉장려상',
+    role: 'Frontend',
     period: '2024/09',
   },
   {
     title: '우아한테크 코스',
+    role: 'Frontend',
     period: '2024/10 ~ 2024/12',
   },
   {
-    title: 'AI Quiz EduPrompt 웹 서비스 개발 - FE & PM - (주)멜라카 현장실습',
+    title: 'AI Quiz EduPrompt 웹 서비스 개발 - (주)멜라카 현장실습',
+    role: 'Frontend & PM',
+
     period: '2024/12 - 2025/02',
   },
   {
     title: 'Google New Year Hackathon - 🥈최우수상',
+    role: 'Frontend (FullStack)',
     period: '2025/01 - onGoing',
   },
   {
     title: '우아한테크코스 7th FE - 우아한형제들 (Woowa Bros)',
+    role: 'Frontend',
     period: '2025/02 - onGoing',
   },
 ];
