@@ -1,0 +1,100 @@
+---
+title: "[2018 KAKAO BLIND RECRUITMENT] - 뉴스 클러스터링"
+author: "eunwoo"
+thumbnail: "/next.svg"
+publishDate: "2025-02-03"
+categoryId: 2
+
+---
+
+https://school.programmers.co.kr/learn/courses/30/lessons/17677
+
+
+난이도: level 2
+
+# Logic
+
+문제를 읽었을 때 고려해야할 것은
+
+1. 대소문자를 구분하지 않는다.
+2. 두 글자씩 끊어서 다중집합의 원소로 만든다.
+3. 교집합의 원소의 개수를 구한다.
+4. 합집합의 원소의 개수를 구한다.
+5. 교집합의 원소의 개수를 합집합의 원소의 개수로 나눈 후 65536을 곱한다.
+
+로 대충 추려볼 수 있다.
+
+
+
+```js
+function solution(str1, str2) {
+    str1 = str1.toLowerCase();
+    str2 = str2.toLowerCase();
+    
+    const arr1 = [];
+    const arr2 = [];
+    
+    for(let i=0; i<str1.length;i++){
+        if(str1[i]>='a' && str1[i]<='z' && str1[i+1]>='a' && str1[i+1]<='z'){
+            arr1.push(str1.slice(i,i+2))
+        }
+    }
+    
+    for(let i=0; i<str2.length;i++){
+        if(str2[i]>='a' && str2[i]<='z' && str2[i+1]>='a' && str2[i+1]<='z'){
+            arr2.push(str2.slice(i,i+2))
+        }
+    }
+    
+    const intersection = [];
+    const union = []
+    
+    for(let i=0; i<arr1.length;i++){
+        const index = arr2.indexOf(arr1[i])
+        if(index!==-1){
+            intersection.push(arr1[i])
+            arr2.splice(index, 1)
+        }
+        union.push(arr1[i])
+    }
+    
+    for(let i=0; i<arr2.length;i++){
+        union.push(arr2[i])
+    }
+    
+    if(union.length===0){
+        return 65536
+    }
+    
+    return parseInt(intersection.length/union.length*65536)
+}
+```
+
+***
+
+교집합을 구할 때 주의해야 할 것은 arr2에서 해당 원소를 찾은 후, 그 원소를 제거하여 중복 처리를 정확히 해야 한다.
+
+예를 들어:
+
+arr1 = ["ab", "ab", "cd"]
+arr2 = ["ab", "cd", "cd"]
+
+이라고 가정하면,
+
+arr1 에는 'ab'가 2개 있지만, 2번째 'ab'는 arr2에 없으므로 교집합에 포함되지 않아야 한다.
+그래서 결과적으로, 교집합은 ["ab", "cd"] 이다.
+
+이를 고려한 코드는 아래와 같다.
+
+```js
+
+for(let i=0; i<arr1.length;i++){
+    const index = arr2.indexOf(arr1[i])
+    if(index!==-1){
+        intersection.push(arr1[i])
+        arr2.splice(index, 1)
+    }
+    union.push(arr1[i])
+}
+
+```
