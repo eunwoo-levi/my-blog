@@ -5,10 +5,6 @@
 ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
 
-## 리팩토링 예정
-
-- 번들이 큰 라이브러리 제거 및 대체 - (지구본, 배경 라이브러리)
-- Cache 최적화 예정
 
 ## 📌 프로젝트 개요
 
