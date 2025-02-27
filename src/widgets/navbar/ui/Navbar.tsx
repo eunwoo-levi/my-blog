@@ -31,7 +31,7 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className='flex items-center gap-4'>
+        <div className='flex items-center gap-4 pl-10 lg:pl-0'>
           <Link
             href='https://github.com/eunwoo-levi'
             className='rounded-lg p-1 hover:bg-neutral-700'
