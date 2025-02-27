@@ -34,7 +34,7 @@ export default function Navbar() {
         <div className='flex items-center gap-4 pl-10 lg:pl-0'>
           <Link
             href='https://github.com/eunwoo-levi'
-            className='rounded-lg p-1 hover:bg-neutral-700'
+            className='rounded-lg p-1 hover:bg-gray-200 dark:hover:bg-gray-700'
           >
             <FaGithub size={40} />
           </Link>

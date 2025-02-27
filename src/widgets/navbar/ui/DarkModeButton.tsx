@@ -28,7 +28,7 @@ export default function DarkModeButton() {
     <div className='relative inline-block text-left' ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
-        className='flex h-10 w-10 items-center justify-center rounded-full border bg-gray-100 p-2 dark:bg-gray-800'
+        className='flex h-10 w-10 items-center justify-center rounded-full border bg-gray-100 p-2 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700'
         aria-label='Toggle theme'
       >
         <FaSun className='h-5 w-5 transition-transform dark:hidden' />
