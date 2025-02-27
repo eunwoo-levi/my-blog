@@ -2,16 +2,30 @@
 
 import { FaMoon, FaSun } from 'react-icons/fa';
 import { useTheme } from 'next-themes';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function DarkModeButton() {
   const { setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const toggleDropdown = () => setIsOpen((prev) => !prev);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
+
   return (
-    <div className='relative inline-block text-left'>
+    <div className='relative inline-block text-left' ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
         className='flex h-10 w-10 items-center justify-center rounded-full border bg-gray-100 p-2 dark:bg-gray-800'
