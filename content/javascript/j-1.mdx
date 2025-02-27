@@ -1,0 +1,80 @@
+---
+title: "Javascript Class "
+author: "eunwoo"
+thumbnail: "/next.svg"
+publishDate: "2024-11-04"
+categoryId: 3
+---
+
+# 1. 자바스크립트 class 의 필수 개념
+
+자바스크립트에서 클래스(Class)는 객체 지향 프로그래밍의 핵심 개념이다. 
+ES6에서 도입된 이후, 클래스는 더 직관적이고 구조화된 코드 작성을 가능하게 되었다. 
+
+# 1. 클래스 선언
+클래스는 class 키워드를 사용하여 선언.
+
+```js
+class Person {
+  // 클래스 내용
+}
+```
+
+# 2. 생성자 (Constructor)
+생성자는 클래스의 인스턴스가 생성될 때 자동으로 호출되는 특별한 메서드이다.
+
+```js
+class Person {
+  constructor(name, age) {
+    this.name = name;
+    this.age = age;
+  }
+}
+
+const person = new Person('홍길동', 30);
+console.log(person.name); // 출력: 홍길동
+```
+
+
+# 3. 메서드 (Methods)
+클래스 내에서 함수를 정의하여 메서드를 만들 수 있다.
+
+```js
+class Person {
+  constructor(name, age) {
+    this.name = name;
+    this.age = age;
+  }
+
+  sayHello() {
+    console.log(`안녕하세요, 제 이름은 ${this.name}입니다.`);
+  }
+}
+
+const person = new Person('홍길동', 30);
+person.sayHello(); // 출력: 안녕하세요, 제 이름은 홍길동입니다.
+```
+
+***
+
+#this 개념
+
+자바스크립트에서 this는 현재 실행 컨텍스트를 가리키는 키워드이다.
+클래스 내에서 this는 주로 현재 인스턴스를 참조하는 데 사용된다.
+
+클래스의 메서드 내에서 this는 해당 메서드를 호출한 객체를 가리킨다.
+
+```js
+class Person {
+  constructor(name) {
+    this.name = name;
+  }
+
+  greet() {
+    console.log(`안녕하세요, ${this.name}입니다.`);
+  }
+}
+
+const person = new Person('김철수');
+person.greet(); // 출력: 안녕하세요, 김철수입니다.
+```

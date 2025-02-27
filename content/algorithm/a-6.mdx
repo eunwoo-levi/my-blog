@@ -1,0 +1,218 @@
+---
+title: "[2018 KAKAO BLIND RECRUITMENT] - Javascript"
+author: "eunwoo"
+thumbnail: "/next.svg"
+publishDate: "2025-02-07"
+categoryId: 2
+
+---
+
+
+#  뉴스 클러스터링
+
+https://school.programmers.co.kr/learn/courses/30/lessons/17677
+
+
+난이도: level 2
+
+## Logic
+
+문제를 읽었을 때 고려해야할 것은
+
+1. 대소문자를 구분하지 않는다.
+2. 두 글자씩 끊어서 다중집합의 원소로 만든다.
+3. 교집합의 원소의 개수를 구한다.
+4. 합집합의 원소의 개수를 구한다.
+5. 교집합의 원소의 개수를 합집합의 원소의 개수로 나눈 후 65536을 곱한다.
+
+로 대충 추려볼 수 있다.
+
+
+
+```js
+function solution(str1, str2) {
+    str1 = str1.toLowerCase();
+    str2 = str2.toLowerCase();
+    
+    const arr1 = [];
+    const arr2 = [];
+    
+    for(let i=0; i<str1.length;i++){
+        if(str1[i]>='a' && str1[i]<='z' && str1[i+1]>='a' && str1[i+1]<='z'){
+            arr1.push(str1.slice(i,i+2))
+        }
+    }
+    
+    for(let i=0; i<str2.length;i++){
+        if(str2[i]>='a' && str2[i]<='z' && str2[i+1]>='a' && str2[i+1]<='z'){
+            arr2.push(str2.slice(i,i+2))
+        }
+    }
+    
+    const intersection = [];
+    const union = []
+    
+    for(let i=0; i<arr1.length;i++){
+        const index = arr2.indexOf(arr1[i])
+        if(index!==-1){
+            intersection.push(arr1[i])
+            arr2.splice(index, 1)
+        }
+        union.push(arr1[i])
+    }
+    
+    for(let i=0; i<arr2.length;i++){
+        union.push(arr2[i])
+    }
+    
+    if(union.length===0){
+        return 65536
+    }
+    
+    return parseInt(intersection.length/union.length*65536)
+}
+```
+
+***
+
+교집합을 구할 때 주의해야 할 것은 arr2에서 해당 원소를 찾은 후, 그 원소를 제거하여 중복 처리를 정확히 해야 한다.
+
+예를 들어:
+
+arr1 = ["ab", "ab", "cd"]
+arr2 = ["ab", "cd", "cd"]
+
+이라고 가정하면,
+
+arr1 에는 'ab'가 2개 있지만, 2번째 'ab'는 arr2에 없으므로 교집합에 포함되지 않아야 한다.
+그래서 결과적으로, 교집합은 ["ab", "cd"] 이다.
+
+이를 고려한 코드는 아래와 같다.
+
+```js
+
+for(let i=0; i<arr1.length;i++){
+    const index = arr2.indexOf(arr1[i])
+    if(index!==-1){
+        intersection.push(arr1[i])
+        arr2.splice(index, 1)
+    }
+    union.push(arr1[i])
+}
+
+```
+
+
+***
+
+# 압축
+
+https://school.programmers.co.kr/learn/courses/30/lessons/17684
+
+- 난이도: level 2
+
+## Logic
+
+msg 배열을 순회하면서, 사전에 없는 문자열이 나올 때까지 문자열(before) 을 늘려가며 사전에 추가한다.
+만약, 사전(dic)에 없는 문자열이 나오면, 사전(dic)에 추가하고, 이전 문자열(before)을 결과(res) 배열에 추가한다.
+이후 before은 현재 문자열로 초기화한다.
+
+순회가 끝나면, 마지막 남은 문자열(before)을 결과(res) 배열에 추가한다.
+
+```js
+function solution(msg) {
+    const res = [];
+    const dic = [0, 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+                'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+    let before = ''
+    
+    for(let i=0; i<msg.length; i++){
+        before+=msg[i];
+        
+        if(!dic.includes(before)){
+            res.push(dic.indexOf(before.slice(0, -1)))
+            
+            dic.push(before)
+            
+            before = msg[i]
+        }
+    }
+    
+    if(before){
+        res.push(dic.indexOf(before))
+    }
+    
+    return res;
+}
+```
+
+***
+
+# n진수 게임
+
+https://school.programmers.co.kr/learn/courses/30/lessons/17687
+
+난이도: level 2
+
+## Logic
+
+출력 형식에 `튜브가 말해야 하는 숫자 t개를 공백 없이 차례대로 나타낸 문자열` 라고 나와있으니,
+총 문자열 길이는 `t * m` 이다.
+
+16진수로 변환될 경우 lower Case로 알파벳이 변환되므로, 대문자로 변환(toLowerCase()) 해주어야 한다.
+
+```js
+while (numStr.length < t * m) {
+    numStr += num.toString(n).toUpperCase();
+    num++;
+}
+```
+
+이후,
+
+본인의 순서에 해당하는 숫자만 추출한다.
+
+예를 들어, 2진수 일때,
+`0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, …` 가 있으면 
+만약, t=2, m=4, p=2 일 때, 
+
+
+사용자 1 : `0, 1, 1, 1, …` 
+
+사용자 2 : `1, 0, 1, 0, …` 
+
+를 추출한다.
+
+튜브가 말해야 하는 숫자 길이는 t이므로, t만큼 반복하면서, `numStr[i * m + (p - 1)]` 을 추출한다.
+index는 0부터 시작하나, 순서는 1부터 시작하므로, `p-1`을 해주어야 한다.
+
+```js
+for (let i = 0; i < t; i++) {
+    result += numStr[i * m + (p - 1)];
+}
+```
+
+## Solution 
+
+```js
+
+function solution(n, t, m, p) {
+    let result = "";
+    let numStr = "";
+    let num = 0;
+    
+    // 필요한 길이만큼 변환된 숫자 문자열 생성
+    while (numStr.length < t * m) {
+        numStr += num.toString(n).toUpperCase();
+        num++;
+    }
+
+    // 본인의 순서에 해당하는 숫자만 추출
+    for (let i = 0; i < t; i++) {
+        result += numStr[i * m + (p - 1)];
+    }
+
+    return result;
+}
+
+```

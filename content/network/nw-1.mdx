@@ -1,0 +1,115 @@
+---
+title: "Internet Network"
+author: "eunwoo"
+thumbnail: "/next.svg"
+publishDate: "2024-09-21"
+categoryId: 4
+---
+
+![image](https://velog.velcdn.com/images/eunwoo1341/post/cfebce70-bdd3-42f0-81b3-ac9e953d916e/image.png)
+
+
+이 Hello world를 다른 사람한테 보내고 싶다면 어떻게 보내질까? 에 대해 고민을 할 수 있다.
+![image](https://velog.velcdn.com/images/eunwoo1341/post/d87967c2-c32f-4b5e-812b-f719ba87dd0d/image.png)
+
+이때 네트워크에서 **IP (Internet Protocol)**는 장치들이 서로 통신할 수 있도록 해주는 중요한 역할을 담당한다. 
+IP는 네트워크 상에서 장치를 식별하고, 데이터를 정확한 목적지로 전달하는 데 필요한 주소 체계 즉 프로토컬이다.
+
+![image](https://velog.velcdn.com/images/eunwoo1341/post/53aa40da-1ad9-4ccf-8135-3140898ad368/image.png)
+
+P 패킷은 인터넷과 네트워크 통신에서 데이터를 작은 단위로 나눈 것으로, 네트워크를 통해 전송되는 데이터의 기본 단위이다. IP 패킷은 인터넷 프로토콜(IP)을 통해 전달되며, 이 패킷 안에는 데이터를 수신자에게 정확하게 전달하기 위한 다양한 정보가 포함되어 있다.
+
+![image](https://velog.velcdn.com/images/eunwoo1341/post/d5f1254a-6c86-40e0-b124-76a77f4547e3/image.png)
+![image](https://velog.velcdn.com/images/eunwoo1341/post/110d6768-604e-4c15-9db2-65463ed34f49/image.png)
+IP패킷의 정보를 통해서 클라이언트와 서버 사이에서 통신이 이루어진다.
+
+***
+## IP 프로토콜의 한계
+### 1. 비연결성
+패킷을 받을 대상이  없거나 서비스 불능 상태여도 패킷을 전송
+### 2. 비신뢰성
+중간에 패킷이 사라지면? (인터넷은 결국 서버를 거쳐서 이루어지는데 만약 서버에 문제가 생기면 패킷 손실이 발생할 수 있다.)
+패킷이 순서대로 안오면? 
+
+### 프로그램 구분
+같은 IP를 사용하는 서버에서 통신하는 애플리케이션이 둘 이상이면?
+
+***
+
+## 이를 해결하기 위한 방안?
+
+# TCP, UDP
+
+### TCP/IP 5계층
+Physical layer -> DataLink layer -> Network layer -> Transport layer (전송 계층) -> Application layer (애플리케이션 계층)
+
+
+![image](https://velog.velcdn.com/images/eunwoo1341/post/ec9b312f-36a4-4105-90d8-f967fdc79805/image.png)
+
+이 중에서 프로토콜 스택이란 데이터 통신에 활용되는 프로토콜의 구조에 관한 개념으로, 계층화된 구조(스택 구조)로 모여 있는 프로토콜의 집합이다.
+
+
+![image](https://velog.velcdn.com/images/eunwoo1341/post/31ad0943-e511-463c-a1a1-67dea213599b/image.png)
+
+***
+![image](https://velog.velcdn.com/images/eunwoo1341/post/9e552d6c-7442-4c5b-8ee2-58b4340bf8e6/image.png)
+
+# TCP 특징 
+## 전송 제어 프로토콜 (Transmission Control Protocol)
+
+- 연결지향 - TCP 3 way handshake (가상 연결) (논리적으로만 연결된 것)
+- 데이터 전달 보증
+- 순서 보장 (패킷1, 패킷2, 패킷3 으로 보내면 이 순서를 유지함)
+- 신뢰할 수 있는 프로토콜
+- 현재는 대부분 TCP 사용
+
+![image](https://velog.velcdn.com/images/eunwoo1341/post/3539b2ec-8799-4413-8c67-b3a445889d8d/image.png)
+TCP 3 way handshake 과정에서 만약 전송 도중 server가 꺼져있으면 응답이 안오게 되므로 data가 전송이 안되게 된다.
+
+***
+
+# UDP 특징
+## 사용자 데이터그램 프로토콜 (User Datagram Protocol)
+- 하얀 도화지에 비유 (기능이 거의 없음)
+- 연결지향 - TCP 3 handshake X
+- 데이터 전달 보증 X
+- 순서 보장 X
+- 데이터 전달 및 순서가 보장되지 않지만, 단순하고 빠름
+
+**정리**
+- IP와 거의 같다 + PORT + 체크섬 정도만 추가
+- 애플리케이션에서 추가 작업 필요
+
+***
+
+# Port 
+
+![image](https://velog.velcdn.com/images/eunwoo1341/post/eadb903c-2e48-418f-ab10-162c09bbadb6/image.png)
+
+![image](https://velog.velcdn.com/images/eunwoo1341/post/362607da-a2c9-450f-b52e-1e3d95886b78/image.png)
+
+쉽게 생각하면 IP는 아파트 이름, Port는 그 아파트 안에서 몇동 몇호 라고 이해하면 된다.
+
+![image](https://velog.velcdn.com/images/eunwoo1341/post/7f35334f-8839-4fde-8cf0-46b90d9d05ce/image.png)
+
+***
+
+# DNS (Domain Name System)
+
+### IP 문제점
+- IP는 기억하기 어렵다. ex 200.200.200.2 ???
+- IP는 변경될 수 있다.
+
+-> **DNS**
+• 전화번호부
+• 도메인 명을 IP 주소로 변환
+
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/7872308a-b426-4062-883d-7067d9644f38/image.png)
+
+
+***
+사진 출처: https://www.inflearn.com/course/http-%EC%9B%B9-%EB%84%A4%ED%8A%B8%EC%9B%8C%ED%81%AC/dashboard
+
+
+

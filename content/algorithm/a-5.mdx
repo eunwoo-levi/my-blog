@@ -1,0 +1,128 @@
+---
+title: "2024 KAKAO WINTER INTERNSHIP - Javascript"
+author: "eunwoo"
+thumbnail: "/next.svg"
+publishDate: "2024-12-26"
+categoryId: 2
+---
+
+# 1. 가장 많이 받은 선물
+
+https://school.programmers.co.kr/learn/courses/30/lessons/258712
+
+- Level: 1
+- 알고리즘: Hash
+
+
+## 답안 코드
+
+```js
+function solution(friends, gifts) {
+   const n = friends.length
+   const giftPoints = new Array(n).fill(0)
+   const record = []
+   const points = new Array(n).fill(0)
+   
+   for(let i=0;i<n;i++){
+       record[i]=new Array(n).fill(0)
+   }
+    
+   for(const gift of gifts){
+       const [giver, taker] = gift.split(' ')
+       record[friends.indexOf(giver)][friends.indexOf(taker)] +=1
+       giftPoints[friends.indexOf(giver)] +=1
+       giftPoints[friends.indexOf(taker)] -=1
+   } 
+    
+   for(let i=0;i<n;i++){
+       for(let j=0;j<n;j++){
+           if(record[i][j]>record[j][i]){
+               points[i]+=1
+           } else if(record[i][j]===record[j][i]){
+               if(giftPoints[i]>giftPoints[j]){
+                   points[i]+=1
+               }
+           }
+       }
+   } 
+    return Math.max(...points)
+}
+```
+
+<br/>
+
+이차 Array를 만드는 함수는 여러가지 방법으로 표현할 수 있는데
+
+1. 첫번째 방법
+```js
+const record = []
+for(let i=0;i<n;i++){
+    record[i]=new Array(n).fill(0)
+}
+```
+
+2. 두번째 방법
+```js
+const record = new Array(friends.length).fill(null).map(() => new Array(friends.length).fill(0));
+```
+
+3. 세번째 방법
+```js
+const record = Array.from({length:friends.length}, ()=>Array(friends.length).fill(0)) 
+```
+
+속도는 비교해본 결과 모두 비슷하게 나와서 3가지 방법중 첫번째 방법이 직관적이긴 한 것 같아서 선택하였다.
+
+첫번째 for문에서 매 순회마다,
+record 2차 Array를 이용하여 giver 와 taker가 서로 준 gift 개수를 담고, giftPoints 배열을 이용하여 해당 friends의 이름에 따른 point 들을 담았다. 
+(indexOf를 이용하여 friends 배열에서 해당 name에 해당되는 index를 가져옴)
+
+이후, 두번째 for문에서는 문제 조건인,
+'두 사람이 선물을 주고받은 기록이 하나도 없거나 주고받은 수가 같다면, 선물 지수가 더 큰 사람이 선물 지수가 더 작은 사람에게 선물을 하나 받습니다.' 에 따른 logic을 처리하였다.
+
+***
+
+# 2. 도넛과 막대 그래프
+
+https://school.programmers.co.kr/learn/courses/30/lessons/258711
+
+- Level: 2
+- 알고리즘: Graph
+
+
+## 답안 코드
+
+```js
+function solution(edges) {
+    const map = {}
+
+    // 1차원으로 각 노드의 출발 차수와 도착 차수를 한 번에 계산
+    for (const [start, end] of edges) {
+        if (!map[start]) map[start] = [0, 0];
+        if (!map[end]) map[end] = [0, 0];
+        
+        map[start][0]++;  // 출발 차수 증가
+        map[end][1]++;    // 도착 차수 증가
+    }
+
+    let addedNode = 0;
+    let donutGraph = 0;
+    let lineGraph = 0;
+    let eightGraph = 0;
+
+    for (const [start, [given, received]] of Object.entries(map)) {
+        if (given > 1 && received === 0) {
+            addedNode = start;
+        } else if (given === 0) {
+            lineGraph++;  
+        } else if (given > 1 && received > 1) {
+            eightGraph++;
+        }
+    }
+
+    // 전체 그래프 수에서 막대 그래프와 8자 그래프를 빼면 도넛 그래프의 수가 됨
+    donutGraph = map[addedNode][0] - lineGraph - eightGraph;
+
+    return [Number(addedNode), donutGraph, lineGraph, eightGraph];
+}
+```

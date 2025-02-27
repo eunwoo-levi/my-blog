@@ -1,0 +1,73 @@
+---
+title: "[2023 KAKAO BLIND RECRUITMENT] - 이모티콘 할인행사"
+author: "eunwoo"
+thumbnail: "/next.svg"
+publishDate: "2024-10-24"
+categoryId: 2
+---
+
+https://school.programmers.co.kr/learn/courses/30/lessons/150368
+
+Level:2
+
+알고리즘: 완전탐색 - (DFS or 조합)
+
+```js
+
+function solution(users, emoticons) {
+    let maxSubscribers = 0;     // 최대 구독자수
+    let maxRevenue = 0;         // 최대 매출액
+
+    // 깊이 우선 탐색(DFS)을 사용하여 모든 가능한 할인 조합을 탐색합니다.
+    // discounts: 각 이모티콘에 적용된 할인율을 저장하는 배열, // index:현재 처리 중인 이모티콘의 인덱스
+    function dfs(discounts, index) {      
+        
+        // 모든 이모티콘에 대한 할인율이 결정되면 결과를 계산
+        if (index === emoticons.length) {
+            let subscribers = 0;
+            let revenue = 0;
+
+            for (const [userDiscount, userLimit] of users) {
+                let userPurchase = 0;
+                
+                for (let i = 0; i < emoticons.length; i++) {
+                    if (discounts[i] >= userDiscount) {
+                        userPurchase += emoticons[i] * (100 - discounts[i]) / 100;
+                    }
+                }
+                
+                if (userPurchase >= userLimit) {
+                    subscribers++;
+                } 
+                else {
+                    revenue += userPurchase;
+                }
+            }
+            
+            // 서비스 가입자가 더 많거나  ,  혹은 서비스 가입자는 같지만 이모티콘 판매액이 더 클때
+            if (subscribers > maxSubscribers || (subscribers === maxSubscribers && revenue > maxRevenue)) {
+                maxSubscribers = subscribers;
+                maxRevenue = revenue;
+            }
+            return;
+        }
+        
+        //  if (index === emoticons.length) 기저 조건 될때까지 "모든 가능한 할인 조합" 을 탐색
+        for (let discount of [10, 20, 30, 40]) {
+            discounts[index] = discount;
+            dfs(discounts, index + 1);
+        }
+    }
+
+    // new Array 랑 Array는 기능상 같다.
+    // 1번 예제로, emotions.length 은 2이므로 바로 위에 for문을 통해서 [10,10], [10,20], .... [40,40] 총 16가지 비교
+    initialDiscounts = Array(emoticons.length).fill(0)
+    dfs(initialDiscounts, 0);
+    
+    return [maxSubscribers, Math.floor(maxRevenue)];
+}
+
+
+
+```
+
