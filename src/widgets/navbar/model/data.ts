@@ -1,7 +1,7 @@
 export const navbarList = [
   {
     title: 'Tech Blog',
-    href: '/blog',
+    href: '/',
   },
 
   {
