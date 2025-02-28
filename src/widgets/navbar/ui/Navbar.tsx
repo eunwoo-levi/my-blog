@@ -15,11 +15,11 @@ export default function Navbar() {
       <div className='mx-auto flex w-full items-center justify-between px-6 md:px-10 lg:px-20'>
         <div className='flex items-center'>
           <Link href='/' className='duration-200 hover:scale-110'>
-            <h1 className='text-2xl font-bold md:text-3xl'>Eunwoo's Blog</h1>
+            <h1 className='text-xl font-bold md:text-2xl'>Developer Eunwoo</h1>
           </Link>
         </div>
 
-        <div className='hidden flex-1 justify-center gap-10 lg:flex'>
+        <div className='hidden flex-1 justify-center gap-10 pr-16 lg:flex'>
           {navbarList.map((link, idx) => (
             <Link
               key={idx}
