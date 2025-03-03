@@ -1,12 +1,17 @@
-import { CategoryList } from '@/src/features/blog';
+import { BlogContainer, CategoryList } from '@/src/features/blog';
+import { getAllPosts } from '@/src/shared/lib/mdx/getBlog';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const posts = await getAllPosts();
+
   return (
     <div className='flex w-full flex-col items-center'>
       <div className='mt-10 w-full max-w-[1000px]'>
         <CategoryList />
       </div>
-      <div className='w-[100px] bg-blue-300'>음22</div>
+      <main className='w-full'>
+        <BlogContainer posts={posts} />
+      </main>
     </div>
   );
 }
