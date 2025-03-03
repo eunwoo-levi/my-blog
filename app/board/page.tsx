@@ -13,7 +13,7 @@ export default function Aboutpage() {
           자유 게시판
         </h2>
       </div>
-      <article className='z-10 flex w-full flex-grow flex-col items-center justify-center bg-gray-900 pb-[80px] pt-[80px] text-white'>
+      <article className='z-10 flex w-full flex-grow flex-col items-center justify-center bg-gray-900/50 pb-[80px] pt-[80px] text-white'>
         <Giscus />
       </article>
     </main>
