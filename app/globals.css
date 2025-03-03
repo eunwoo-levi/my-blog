@@ -31,7 +31,7 @@
     --radius: 0.5rem;
   }
   .dark {
-    --background: 220 13% 20%;
+    --background: 222.2 84% 4.9%;
     --foreground: 0 0% 98%;
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
@@ -65,4 +65,135 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-down {
+  animation: fadeInDown 1.8s ease-out forwards;
+}
+
+.animate-slide-left {
+  animation: slideInLeft 1.2s ease-out forwards;
+}
+
+@keyframes twinkling {
+  0% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes shootingStars {
+  0% {
+    transform: translateX(0) translateY(0) rotate(45deg);
+    opacity: 1;
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(-1500px) translateY(1500px) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+.star {
+  @apply absolute h-[2px] w-[2px] rounded-full bg-white;
+}
+
+.star::after {
+  content: '';
+  @apply absolute h-full w-full rounded-full bg-white;
+  box-shadow:
+    0 0 10px #fff,
+    0 0 20px #fff,
+    0 0 30px #fff;
+}
+
+.shooting-star {
+  @apply absolute h-[1px];
+  background: linear-gradient(90deg, white, transparent);
+  animation: shootingStars linear infinite;
+}
+
+.shooting-star::after {
+  content: '';
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  border-radius: 50%;
+  background: white;
+  left: 0;
+  box-shadow:
+    0 0 10px #fff,
+    0 0 20px #fff,
+    0 0 30px #fff;
+}
+
+@keyframes neonGlow {
+  0%,
+  100% {
+    text-shadow:
+      0 0 8px rgba(255, 198, 247, 0.5),
+      0 0 15px rgba(231, 114, 247, 0.5),
+      0 0 25px rgba(255, 1, 221, 0.5),
+      0 0 35px rgba(0, 255, 255, 0.5);
+  }
+  50% {
+    text-shadow:
+      0 0 12px rgba(255, 198, 247, 0.7),
+      0 0 25px rgba(231, 114, 247, 0.7),
+      0 0 35px rgba(255, 1, 221, 0.7),
+      0 0 45px rgba(0, 255, 255, 0.7);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-neon-slide {
+  text-shadow:
+    0 0 8px rgba(255, 198, 247, 0.5),
+    0 0 15px rgba(231, 114, 247, 0.5),
+    0 0 25px rgba(255, 1, 221, 0.5),
+    0 0 35px rgba(0, 255, 255, 0.5);
+  animation:
+    neonGlow 2s infinite alternate,
+    slideInLeft 1.4s ease-out forwards;
 }
