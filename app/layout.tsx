@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import Navbar from '@/src/widgets/navbar/ui/Navbar';
 import { ThemeProvider } from '@/src/shared/providers/ThemeProvider';
 import { Footer } from '@/src/widgets/footer';
+import { SpaceBackground } from '@/src/shared/ui';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -35,6 +36,8 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Navbar />
+          <SpaceBackground />
+
           <main className='min-h-[calc(100vh-190px)]'>{children}</main>
           <Footer />
         </ThemeProvider>
