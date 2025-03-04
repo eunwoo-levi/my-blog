@@ -2,7 +2,7 @@ import { MdOutlineEmail } from 'react-icons/md';
 
 export default function Footer() {
   return (
-    <footer className='flex h-[120px] w-full flex-col justify-center gap-4 bg-[#242729] pl-32'>
+    <footer className='flex h-[120px] w-full flex-col justify-center gap-4 bg-[#242729] pl-10 lg:pl-32'>
       <span className='text-xl text-[#bbc0c4]'>COPYRIGHT ⓒ eunwoo-levi</span>
       <div className='flex gap-2'>
         <MdOutlineEmail size={25} />
