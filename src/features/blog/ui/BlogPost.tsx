@@ -5,7 +5,7 @@ import Link from 'next/link';
 export default function BlogPost({ post }: { post: PostData }) {
   return (
     <Link href={`/${post.category}/${post.slug}`} className='block'>
-      <div className='h-[380px] w-[350px] transform overflow-hidden rounded-lg bg-white shadow-lg transition duration-200 hover:scale-105 hover:text-purple-500 dark:bg-[#22272E]'>
+      <div className='h-[380px] w-[350px] transform overflow-hidden rounded-lg bg-white shadow-lg transition duration-200 hover:scale-105 hover:text-purple-500 dark:bg-[#22272E] dark:bg-opacity-90'>
         <Image
           src={post.frontmatter.thumbnail}
           width={280}
@@ -20,7 +20,7 @@ export default function BlogPost({ post }: { post: PostData }) {
             <h2 className='mt-2 text-xl font-bold'>{post.frontmatter.title}</h2>
           </div>
 
-          <p className='text-xs text-gray-500'>{post.frontmatter.publishDate}</p>
+          <p className='text-gray-400'>{post.frontmatter.publishDate}</p>
         </div>
       </div>
     </Link>
