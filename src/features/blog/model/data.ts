@@ -1,4 +1,5 @@
 export const CATEGORIES = [
+  { id: 0, name: 'All', path: '' },
   { id: 1, name: 'Activities', path: 'activities' },
   { id: 2, name: 'Algorithm', path: 'algorithm' },
   { id: 3, name: 'JavaScript', path: 'javascript' },

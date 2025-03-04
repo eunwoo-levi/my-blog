@@ -4,8 +4,8 @@ import Link from 'next/link';
 
 export default function BlogPost({ post }: { post: PostData }) {
   return (
-    <Link href={`/blog/${post.category}/${post.slug}`} className='block'>
-      <div className='h-[380px] w-[300px] overflow-hidden rounded-lg bg-white shadow-lg transition-transform duration-200 hover:scale-105 dark:bg-[#22272E]'>
+    <Link href={`/${post.category}/${post.slug}`} className='block'>
+      <div className='h-[380px] w-[350px] transform overflow-hidden rounded-lg bg-white shadow-lg transition duration-200 hover:scale-105 hover:text-purple-500 dark:bg-[#22272E]'>
         <Image
           src={post.frontmatter.thumbnail}
           width={280}
