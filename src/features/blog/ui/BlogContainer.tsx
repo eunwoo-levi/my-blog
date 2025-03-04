@@ -17,32 +17,26 @@ export default function BlogContainer({ posts }: { posts: PostData[] }) {
   const postsPerPage = 9;
   const totalPages = Math.ceil(posts.length / postsPerPage);
 
-  // 현재 페이지에 해당하는 포스트 필터링
   const startIdx = (currentPage - 1) * postsPerPage;
   const currentPosts = posts.slice(startIdx, startIdx + postsPerPage);
 
-  // 페이지 변경 핸들러
   const onPageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
   };
 
-  console.log('currentPosts', currentPosts);
-
   return (
-    <div className='mb-32 flex w-full flex-col items-center'>
-      <div className='grid w-full max-w-[1000px] grid-cols-3 gap-8'>
+    <div className='mb-32 flex w-full flex-col items-center justify-center'>
+      <div className='grid w-full max-w-[1200px] grid-cols-1 justify-items-center gap-8 lg:grid-cols-3'>
         {currentPosts.map((post) => (
           <BlogPost key={post.slug} post={post} />
         ))}
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <Pagination className='mt-6'>
           <PaginationContent>
-            {/* 이전 페이지 버튼 */}
             <PaginationItem>
               <PaginationPrevious
                 onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
