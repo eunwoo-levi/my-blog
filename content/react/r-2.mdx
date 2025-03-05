@@ -1,40 +1,40 @@
 ---
-title: "CSR vs SSR"
-author: "eunwoo"
-thumbnail: "/next.svg"
-publishDate: "2024-09-29"
+title: 'CSR vs SSR'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2024-09-29'
 categoryId: 6
 ---
 
 CSR, SSR에 들어가기에 앞서, SPA와 MPA에 대해서 알아보자.
 
-# SPA (Single Page Application) 
+# SPA (Single Page Application)
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/55de3491-07a4-4910-b0df-e620d19fc758/image.png)
 하나의 Page로 구성된 Web Application
-
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/489ff08e-48ef-4cc0-b52a-f2dfdd5a3e15/image.png)
 
 어플리케이션을 이용할때 Header는 고정 되어있고 메뉴를 선택하면 Main화면 부분 혹은 클릭한 부분만 Update
 
-***
-# MPA (Multi Page Application) 
+---
+
+# MPA (Multi Page Application)
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/73a7ae2c-5688-4bc8-a0d7-7bcca0971b7f/image.png)
-
 
 Tab을 이동 할 때마다 Server로 부터 새로운 HTML를 새로 받아와서 Page전체를 새로 Rendering하는 전통적인 Web Page 구성방식
 
 ## MPA 단점
-MPA를 사용할 경우 매번 새로운 HTML을 Server로부터 	받아옴
+
+MPA를 사용할 경우 매번 새로운 HTML을 Server로부터 받아옴
 -> 전환 시마다 화면 깜빡임
 
 ### AJAX (Asynchronous JavaScript And XML)
 
 원하는 부분만 Client에서 동적으로 갈아 끼울 수 있는 화면 깜빡임도 없는 SPA를 사용할 수 있게 되었다.
 
-***
+---
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/054e347d-3fba-4dba-991a-bc996125088a/image.png)
 
@@ -44,61 +44,55 @@ MPA를 사용할 경우 매번 새로운 HTML을 Server로부터 	받아옴
 **MPA** <br/>
 : 새로운 요청이 있을 때마다 Server에서 이미 Rendering된 정적 Resource를 받아오기 때문에 Rendering 방식으로 SSR를 사용하게 된다.
 
-
 ![](https://velog.velcdn.com/images/eunwoo1341/post/519bbc31-77ac-4d9a-8b6c-f24013b5f304/image.png)
 
 “Page가 몇 개인지, Rendering이 어디서 하는지” 에 따라서 달라지는 다른 개념이다.
 
-***
+---
 
 **CSR (Client Side Rendering)**: Client 측에서 Rendering하는 방식
 **SSR (Server Side Rendering)**: Server 측에서 Rendering하는 방식
 **SSG (Static Site Generation)**: Server 에서 요청 시에 즉시 만드느냐, 미리 다 만들어 놓느냐 차이
 
-SSR: 사용자가 페이지를 요청할 때마다 서버에서 HTML을 즉석에서 생성하고, 그 결과를 클라이언트에 보내줌. 
+SSR: 사용자가 페이지를 요청할 때마다 서버에서 HTML을 즉석에서 생성하고, 그 결과를 클라이언트에 보내줌.
 서버는 항상 최신 데이터를 가져오며 페이지를 구성하기 때문에, 동적인 데이터가 필요한 페이지에 적합
 
-SSG: 페이지를 미리 빌드 시점에 정적 HTML 파일로 생성해 두고, 사용자가 요청할 때 서버에서 그 파일을 그대로 제공. 
+SSG: 페이지를 미리 빌드 시점에 정적 HTML 파일로 생성해 두고, 사용자가 요청할 때 서버에서 그 파일을 그대로 제공.
 페이지를 미리 만들어 두기 때문에, 변경이 거의 없는 콘텐츠에 적합
 
-***
+---
 
 ## CSR 동작 과정
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/9bc99599-5669-4eca-93e8-922ea965985d/image.png)
 
 User가 웹사이트 방문 -> Browser 가 Server에 콘텐츠 요청 <br/>
--> Server는 빈 뼈대만 있는 HTML를 응답으로 보내줌  <br/>
+-> Server는 빈 뼈대만 있는 HTML를 응답으로 보내줌 <br/>
 -> Browser가 연결된 JS 링크를 통해 Server로 부터 다시 JS 다운로드 받음 <br/>
 -> JS를 이용해 동적으로 Page를 만들어서 Browser에 띄어줌  
-	(동적 DOM 생성) <br/>
+ (동적 DOM 생성) <br/>
 
 ## CSR 장단점
 
-**단점**<br/>
--초기 로딩 속도 느림  (JS 다운로드)
--SEO 불리 (Search Engine Optimization) 불리  (초반에 빈 뼈대 HTML만 받아오기 때문에)   <br/>
-(GoogleBot은 JS를 읽을 줄 알아 CSR 웹사이트도 크롤링이 가능하긴 하지만 완벽한 단계는 아님) 
+**단점**<br/> -초기 로딩 속도 느림 (JS 다운로드)
+-SEO 불리 (Search Engine Optimization) 불리 (초반에 빈 뼈대 HTML만 받아오기 때문에) <br/>
+(GoogleBot은 JS를 읽을 줄 알아 CSR 웹사이트도 크롤링이 가능하긴 하지만 완벽한 단계는 아님)
 
-**장점** <br/>
--이후 구동 속도 빠름
--서버 부하 적음 (Page의 일부 해당 data만 요청하면 되기 때문에)
+**장점** <br/> -이후 구동 속도 빠름 -서버 부하 적음 (Page의 일부 해당 data만 요청하면 되기 때문에)
 
-***
+---
 
 ## SSR 동작 과정 및 장단점
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/57012fc0-4281-4ea0-b62f-af96eafd1adb/image.png)
 
-**단점**
--사용자는 페이지가 먼저 보이지만, 상호작용(Event handler)이 가능해지는 데는 약간 더 시간이 걸릴 수 있음     -  TTV(Time to View) !== TTI(Time to Interactive)
+**단점** -사용자는 페이지가 먼저 보이지만, 상호작용(Event handler)이 가능해지는 데는 약간 더 시간이 걸릴 수 있음 - TTV(Time to View) !== TTI(Time to Interactive)
 (반면 CSR은 JS가 동적으로 DOM을 생성하기 때문에 HTML은 JS 로직이 완전 연결된 상태라 사용자가 보는 시점과 이용할 수 있는 시점이 동일)
 
 **장점**
--SEO 최적화 (모든 data가 이미 HTML에 담겨짐)
--초기 구동 속도 빠름 (JS 다운로드 하기 전 User가 화면을 볼 수 있음)
+-SEO 최적화 (모든 data가 이미 HTML에 담겨짐) -초기 구동 속도 빠름 (JS 다운로드 하기 전 User가 화면을 볼 수 있음)
 
-***
+---
 
 ## CSR vs SSR 장단점 정리
 
@@ -112,8 +106,7 @@ User가 웹사이트 방문 -> Browser 가 Server에 콘텐츠 요청 <br/>
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/67b75586-57e3-4fd7-ace9-628886f510bd/image.png)
 
-
-## CSR , SSR , SSG , Universal  선택 기준
+## CSR , SSR , SSG , Universal 선택 기준
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/4f81562b-1dc2-471c-a197-092f553ce546/image.png)
 
@@ -122,5 +115,3 @@ User가 웹사이트 방문 -> Browser 가 Server에 콘텐츠 요청 <br/>
 ![](https://velog.velcdn.com/images/eunwoo1341/post/bf6477ee-a252-4ec7-8d7d-757765b5d4e8/image.png)
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/5f0bf9d7-ec8a-4458-9df4-847c39de1635/image.png)
-
-

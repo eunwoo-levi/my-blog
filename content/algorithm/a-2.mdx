@@ -1,8 +1,8 @@
 ---
-title: "[2022 KAKAO BLIND RECRUITMENT] 양궁대회"
-author: "eunwoo"
-thumbnail: "/next.svg"
-publishDate: "2024-10-19"
+title: '[2022 KAKAO BLIND RECRUITMENT] 양궁대회'
+author: 'eunwoo'
+thumbnail: '/thumbnail/algo.webp'
+publishDate: '2024-10-19'
 categoryId: 2
 ---
 
@@ -12,10 +12,8 @@ level: 2
 
 알고리즘: 완전탐색 (DFS)
 
-
 문제를 잘 읽자.
 info의 i번째 원소는 과녁의 10 - i 점을 맞힌 화살 개수입니다. ( i는 0~10 사이의 정수입니다.)
-
 
 # 풀이 Logic
 
@@ -29,172 +27,165 @@ info의 i번째 원소는 과녁의 10 - i 점을 맞힌 화살 개수입니다.
 
 5. 점수 차이가 같은 경우, 가장 낮은 점수에 더 많은 화살을 쏜 경우를 선택합니다.
 
-
-<br/><br/><br/><br/><br/><br/>
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
 
 # 해답 코드
 
 ```js
-
 function solution(n, info) {
   let max = 0;
   let answer = [-1];
-  let ryan = Array(11).fill(0);       
+  let ryan = Array(11).fill(0);
 
   function DFS(level, count) {
     // 기저 조건(base case)
     if (level == 11 || count == 0) {
-      if (count > 0) ryan[10] += count;       // 마지막에 남은 화살이 있다면 0점에 할당하고, 계산 후 다시 제거합니다.
-      
+      if (count > 0) ryan[10] += count; // 마지막에 남은 화살이 있다면 0점에 할당하고, 계산 후 다시 제거합니다.
+
       let sum = 0;
       for (let i = 0; i < 11; i++) {
-        if (ryan[i] > info[i]) {              // ryan이 apeach보다 해당 level에서 더 많이 맞춘 경우
-          sum += (10 - i);
-        } 
-        else if (info[i] > 0) {               // 해당 level에서 ryan보다 더 많이 맞췄거나, 같은 화살 수인 경우
-          sum -= (10 - i);
+        if (ryan[i] > info[i]) {
+          // ryan이 apeach보다 해당 level에서 더 많이 맞춘 경우
+          sum += 10 - i;
+        } else if (info[i] > 0) {
+          // 해당 level에서 ryan보다 더 많이 맞췄거나, 같은 화살 수인 경우
+          sum -= 10 - i;
         }
       }
-      
+
       if (sum > 0 && sum >= max) {
         if (sum > max || isLowerScoreBetter(ryan, answer)) {
           max = sum;
           answer = [...ryan];
         }
       }
-      
+
       if (count > 0) ryan[10] -= count;
       return;
     }
-    
+
     // ryan이 가지고 있는 화살 수가 apeach가 해당 level에서 맞힌 화살 수보다 많은 경우
     if (count > info[level]) {
       ryan[level] = info[level] + 1;
       DFS(level + 1, count - ryan[level]);
-      ryan[level] = 0;                        // 백트래킹  -  이전 단계로 되돌아감
+      ryan[level] = 0; // 백트래킹  -  이전 단계로 되돌아감
     }
-    
+
     DFS(level + 1, count);
   }
-  
+
   function isLowerScoreBetter(ryan, answer) {
-    for (let i = 10; i >= 0; i--) {           // 가장 낮은 점수를 더 맞이 맞힌 경우 (문제 조건)
+    for (let i = 10; i >= 0; i--) {
+      // 가장 낮은 점수를 더 맞이 맞힌 경우 (문제 조건)
       if (ryan[i] !== answer[i]) {
         return ryan[i] > answer[i];
       }
     }
     return false;
   }
-  
+
   DFS(0, n);
-  return answer
+  return answer;
 }
-
-
 ```
 
-***
+---
 
 # 코드 해설
 
 ## 백트래킹
 
-ryan[level]을 통해서 이전 단계로 되돌아감으로써 
+ryan[level]을 통해서 이전 단계로 되돌아감으로써
 
-<br/>
+<br />
 
 ```js
-
-    if (count > info[level]) {
-      ryan[level] = info[level] + 1;
-      DFS(level + 1, count - ryan[level]);
-      ryan[level] = 0;                        // 백트래킹  -  이전 단계로 되돌아감
-    }
-
+if (count > info[level]) {
+  ryan[level] = info[level] + 1;
+  DFS(level + 1, count - ryan[level]);
+  ryan[level] = 0; // 백트래킹  -  이전 단계로 되돌아감
+}
 ```
 
-***
+---
 
 ## isLowerScoreBetter 함수
 
 ```js
-
-  function isLowerScoreBetter(ryan, answer) {
-    for (let i = 10; i >= 0; i--) {           // 가장 낮은 점수를 더 맞이 맞힌 경우 (문제 조건)
-      if (ryan[i] !== answer[i]) {
-        return ryan[i] > answer[i];
-      }
+function isLowerScoreBetter(ryan, answer) {
+  for (let i = 10; i >= 0; i--) {
+    // 가장 낮은 점수를 더 맞이 맞힌 경우 (문제 조건)
+    if (ryan[i] !== answer[i]) {
+      return ryan[i] > answer[i];
     }
-    return false;
   }
-
+  return false;
+}
 ```
 
 가장 낮은 점수를 더 맞이 맞힌 경우 (문제 조건) 에 의해서 i가 10부터 0까지 돈다. i가 10일 경우 문제에서 10점이라고 하였기 때문에.
 
-
-***
-
+---
 
 ## 다듬기 전 코드
 
 ```js
 function solution(n, info) {
-    var answer = [-1];
-    
-    let max = 0;
-    let ryan = new Array(info.length).fill(0)
-    
-    function dfs(level, arrow){
-        // 기저 조건
-        if(level===11 || arrow ===0){
-            if (arrow > 0) ryan[10] += arrow;
-            
-            let sum=0;
-            for(let i=0; i<info.length;i++){
-                if(ryan[i] > info[i]){          // ryan[i] <= info[i] 이건 둘 다 0점일 경우도 포함되기 때문에 안됌
-                    sum+=10-i;
-                }
-                else if (info[i]){
-                    sum-=10-i;
-                }
-            }
-            
-            if(sum>0 && sum>max){
-                max = sum;
-                answer = [...ryan]
-            }
-            else if(sum>0 && sum===max){
-                for(let i=10; i>=0; i--){
-                   if(ryan[i]!==answer[i]){
-                       if(ryan[i]>answer[i]){
-                           max=sum;
-                           answer = [...ryan]
-                       }
-                       break;
-                   }
-                    
-                }
-            }
-            
-            if (arrow > 0) ryan[10] -= arrow; 
-            return;
+  var answer = [-1];
+
+  let max = 0;
+  let ryan = new Array(info.length).fill(0);
+
+  function dfs(level, arrow) {
+    // 기저 조건
+    if (level === 11 || arrow === 0) {
+      if (arrow > 0) ryan[10] += arrow;
+
+      let sum = 0;
+      for (let i = 0; i < info.length; i++) {
+        if (ryan[i] > info[i]) {
+          // ryan[i] <= info[i] 이건 둘 다 0점일 경우도 포함되기 때문에 안됌
+          sum += 10 - i;
+        } else if (info[i]) {
+          sum -= 10 - i;
         }
-        
-        
-        if(arrow>info[level]){
-            ryan[level]=info[level]+1;
-            dfs(level+1, arrow-ryan[level])
-            ryan[level] = 0;
+      }
+
+      if (sum > 0 && sum > max) {
+        max = sum;
+        answer = [...ryan];
+      } else if (sum > 0 && sum === max) {
+        for (let i = 10; i >= 0; i--) {
+          if (ryan[i] !== answer[i]) {
+            if (ryan[i] > answer[i]) {
+              max = sum;
+              answer = [...ryan];
+            }
+            break;
+          }
         }
-        
-        dfs(level+1, arrow)
+      }
+
+      if (arrow > 0) ryan[10] -= arrow;
+      return;
     }
-    
-    dfs(0, n)
-    
-    return answer;
+
+    if (arrow > info[level]) {
+      ryan[level] = info[level] + 1;
+      dfs(level + 1, arrow - ryan[level]);
+      ryan[level] = 0;
+    }
+
+    dfs(level + 1, arrow);
+  }
+
+  dfs(0, n);
+
+  return answer;
 }
-
 ```
-
