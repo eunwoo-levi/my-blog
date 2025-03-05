@@ -5,8 +5,6 @@ import { getPortfolio } from '@/src/shared/lib/mdx/getPortfolio';
 export default async function PortfolioPage() {
   const post = await getPortfolio();
 
-  console.log(post);
-
   if (!post) {
     notFound(); // 파일이 없으면 404 페이지로 이동
   }

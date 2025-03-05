@@ -1,13 +1,10 @@
 import { getPostBySlug } from '@/src/shared/lib/mdx/getBlog';
+import { ParamsProps } from '@/src/shared/model/type';
 import { notFound } from 'next/navigation';
-
-type Props = {
-  params: Promise<{ category: string; slug: string }>;
-};
 
 export const revalidate = 3600; // 1시간
 
-export default async function BlogDetailPage({ params }: Props) {
+export default async function BlogDetailPage({ params }: ParamsProps) {
   const { category, slug } = await params;
 
   const { content, frontmatter } = await getPostBySlug(category, slug);
