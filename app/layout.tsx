@@ -1,20 +1,17 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
 import Navbar from '@/src/widgets/navbar/ui/Navbar';
 import { ThemeProvider } from '@/src/shared/providers/ThemeProvider';
 import { Footer } from '@/src/widgets/footer';
 import { SpaceBackground } from '@/src/shared/ui';
 import { GoogleAnalytics } from '@/src/app/provider/GoogleAnalytics';
+import localFont from 'next/font/local';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
+const iansui = localFont({
+  src: '../public/fonts/iansui.woff2',
+  weight: '500',
+  style: 'normal',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -54,7 +51,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en' suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${iansui.className} antialiased`}>
         <GoogleAnalytics />
         <ThemeProvider
           attribute='class'
