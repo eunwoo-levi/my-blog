@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     siteName: '리바이 개발 블로그',
     images: [
       {
-        url: 'https://www.eunwoo-levi.blog/profile.webp',
+        url: 'https://www.eunwoo-levi.blog/levi.webp',
         width: 1200,
         height: 630,
         alt: '리바이 개발 블로그',
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: '리바이 개발 블로그',
     description: '리바이 프론트엔드 개발 블로그',
-    images: ['https://www.eunwoo-levi.blog/profile.webp'],
+    images: ['https://www.eunwoo-levi.blog/levi.webp'],
   },
   alternates: {
     canonical: 'https://www.eunwoo-levi.blog',
