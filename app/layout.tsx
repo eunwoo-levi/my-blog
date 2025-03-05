@@ -5,6 +5,7 @@ import Navbar from '@/src/widgets/navbar/ui/Navbar';
 import { ThemeProvider } from '@/src/shared/providers/ThemeProvider';
 import { Footer } from '@/src/widgets/footer';
 import { SpaceBackground } from '@/src/shared/ui';
+import { GoogleAnalytics } from '@/src/app/provider/GoogleAnalytics';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -54,6 +55,7 @@ export default function RootLayout({
   return (
     <html lang='en' suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <GoogleAnalytics />
         <ThemeProvider
           attribute='class'
           defaultTheme='system'
