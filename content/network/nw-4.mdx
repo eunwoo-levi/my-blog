@@ -1,8 +1,8 @@
 ---
-title: "AWS S3와 CloudFront"
-author: "eunwoo"
-thumbnail: "/next.svg"
-publishDate: "2025-01-06"
+title: 'AWS S3와 CloudFront'
+author: 'eunwoo'
+thumbnail: '/thumbnail/network.webp'
+publishDate: '2025-01-06'
 categoryId: 4
 ---
 
@@ -14,6 +14,7 @@ AWS S3는 저장하는 건 저렴한데, S3에 직접 엑세스하는건 비싸�
 그래서 CDN(Content Delivery Network)을 이용해 캐싱을 많이하는데, AWS에서는 CloudFront 서비스를 이용해서 CDN을 사용할 수 있다.
 
 # AWS S3란?
+
 > Simple Storage Service(S3)는 최고의 확장성, 데이터 가용성, 보안 및 성능을 제공하는 객체 스토리지 서비스. 데이터를 버킷 내의 객체(해당 파일을 설명하는 모든 메타데이터)로 저장하는 객체 스토리지 서비스
 
 # CloudFront란?
@@ -34,13 +35,13 @@ AWS에서 사용하는 기능이니 고가용성은 기본적으로 보장이 �
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/9c8fd69a-d30f-4144-b630-719128f3dda9/image.png)
 
-***
+---
 
 # AWS S3 + Cloudfront를 선택한 이유?
 
-하고있는 프로젝트는 Vite 기반 React로 이루어져 있고 CSR 기반이기 때문에 정적 리소스를 대규모로 특화 되어 있는 S3를 선택했다. 또한 CDN 방식인 Cloudfront를 사용해 S3에 직접적 접근을 막고 CloudFront로 접근하여 보안과 속도 두 가지 이점을 모두 잡고자 했다. CloudFront는 Edge 서버를 사용하여 콘텐츠를 캐싱하고 가까운 지역의 서버에서 콘텐츠를 전송할 수 있어 속도가 빠르다는 이점이 있다. 
+하고있는 프로젝트는 Vite 기반 React로 이루어져 있고 CSR 기반이기 때문에 정적 리소스를 대규모로 특화 되어 있는 S3를 선택했다. 또한 CDN 방식인 Cloudfront를 사용해 S3에 직접적 접근을 막고 CloudFront로 접근하여 보안과 속도 두 가지 이점을 모두 잡고자 했다. CloudFront는 Edge 서버를 사용하여 콘텐츠를 캐싱하고 가까운 지역의 서버에서 콘텐츠를 전송할 수 있어 속도가 빠르다는 이점이 있다.
 
-***
+---
 
 # AWS S3 배포 방법
 
@@ -48,9 +49,9 @@ AWS에서 사용하는 기능이니 고가용성은 기본적으로 보장이 �
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/1ac16e95-d581-45e7-bf72-04fce40ea3a1/image.png)
 
-AWS S3 버킷을 만들 때 AWS 리전은 보통 서울로 하고 나머지는 기본 설정으로 버킷 만들기를 하면 된다. 
+AWS S3 버킷을 만들 때 AWS 리전은 보통 서울로 하고 나머지는 기본 설정으로 버킷 만들기를 하면 된다.
 
-## 2. Bucket에 Build 파일들을 Upload 
+## 2. Bucket에 Build 파일들을 Upload
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/f2b8df74-4f2f-4a62-bb77-d961ce15cf69/image.png)
 
@@ -78,11 +79,12 @@ S3 에서 생성한 domain 선택한다.
 웹 애플리케이션 방화벽(WAF)은 **보안 보호 비활성화** 하면 된다.
 (보안 보호 활성화하면 요금이 더 나감)
 
-## 3. *기본값 루트 객체 (Default root object - optional) 에 index.html 넣기*
+## 3. _기본값 루트 객체 (Default root object - optional) 에 index.html 넣기_
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/347c8647-be36-4331-b35a-912d601fae35/image.png)
 
-## 4. 배포 생성 후 **정책 복사 하기**(Copy policy) (중요!) 
+## 4. 배포 생성 후 **정책 복사 하기**(Copy policy) (중요!)
+
 ![](https://velog.velcdn.com/images/eunwoo1341/post/9953b7e6-a297-47f1-962a-d897bd1e2442/image.png)
 
 Copy policy 이후 '정책을 업데이트하려면 ~~~.. ' 링크를 클릭하여 이동한다.
@@ -90,7 +92,6 @@ Copy policy 이후 '정책을 업데이트하려면 ~~~.. ' 링크를 클릭하�
 ## 5. 권한 탭으로 이동 후
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/2bc1e5a8-5c2b-44f3-8184-639f3cde1ec0/image.png)
-
 
 버킷 정책(Bucket policy)에 편집을 누른 후 아까 복사한 것을 붙여넣은 후 저장한다.
 
@@ -103,4 +104,3 @@ Copy policy 이후 '정책을 업데이트하려면 ~~~.. ' 링크를 클릭하�
 ![](https://velog.velcdn.com/images/eunwoo1341/post/7d882fda-49af-49a4-be55-9ac5e61238b9/image.png)
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/7ca9c1ab-35f8-4a9a-97d0-00ac8689da43/image.png)
-
