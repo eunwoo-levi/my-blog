@@ -1,7 +1,7 @@
 import { getPostBySlug } from '@/src/shared/lib/mdx/getBlog';
 import { ParamsProps } from '@/src/shared/model/type';
-import { GiscusDynamic } from '@/src/shared/ui';
 import { notFound } from 'next/navigation';
+import { Giscus } from '@/src/shared/ui';
 
 export const revalidate = 3600; // 1시간
 
@@ -58,7 +58,7 @@ export default async function BlogDetailPage({ params }: ParamsProps) {
 
       {/* Giscus를 동적 로딩 */}
       <div className='mt-8 flex justify-center'>
-        <GiscusDynamic />
+        <Giscus />
       </div>
     </article>
   );
