@@ -1,16 +1,16 @@
 import { getPostBySlug } from '@/src/shared/lib/mdx/getBlog';
 import { ParamsProps } from '@/src/shared/model/type';
+import { GiscusDynamic } from '@/src/shared/ui';
 import { notFound } from 'next/navigation';
 
 export const revalidate = 3600; // 1시간
 
 export default async function BlogDetailPage({ params }: ParamsProps) {
   const { category, slug } = await params;
-
   const { content, frontmatter } = await getPostBySlug(category, slug);
 
   if (!frontmatter) {
-    notFound(); // 404 페이지로 리다이렉트
+    notFound();
   }
 
   return (
@@ -37,7 +37,7 @@ export default async function BlogDetailPage({ params }: ParamsProps) {
         </div>
       </header>
 
-      <main className='prose prose-lg dark:prose-invert max-w-none rounded-xl bg-neutral-900 px-5 py-6 lg:px-14'>
+      <main className='prose prose-lg max-w-none rounded-xl bg-neutral-900 px-5 py-6 dark:prose-invert lg:px-14'>
         {content}
       </main>
 
@@ -55,6 +55,11 @@ export default async function BlogDetailPage({ params }: ParamsProps) {
           </div>
         </div>
       </footer>
+
+      {/* Giscus를 동적 로딩 */}
+      <div className='mt-8 flex justify-center'>
+        <GiscusDynamic />
+      </div>
     </article>
   );
 }
