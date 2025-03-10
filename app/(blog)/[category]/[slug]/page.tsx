@@ -37,7 +37,7 @@ export default async function BlogDetailPage({ params }: ParamsProps) {
         </div>
       </header>
 
-      <main className='prose prose-lg max-w-none rounded-xl bg-neutral-900 px-5 py-6 dark:prose-invert lg:px-14'>
+      <main className='prose prose-lg relative z-10 max-w-none rounded-xl px-5 py-6 dark:prose-invert dark:bg-neutral-900/70 lg:px-14'>
         {content}
       </main>
 

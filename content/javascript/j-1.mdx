@@ -1,5 +1,5 @@
 ---
-title: 'DOM API 사용법과 Virtual DOM과 차이점'
+title: 'DOM API 개념 및 Virtual DOM과 차이점'
 author: 'Eunwoo'
 thumbnail: '/thumbnail/javascript.webp'
 publishDate: '2025-03-10'
@@ -8,7 +8,7 @@ categoryId: 2
 
 DOM 과 DOM API를 알아보기 전에 전반적인 브라우저의 렌더링 과정을 먼저 알아보자.
 
-[](https://velog.velcdn.com/images/eunwoo1341/post/7f3a3de5-8e99-43c5-aaab-c8e86ebf44c2/image.png)
+![Browser Rendering](https://velog.velcdn.com/images/eunwoo1341/post/7f3a3de5-8e99-43c5-aaab-c8e86ebf44c2/image.png)
 
 # 브라우저의 렌더링 과정
 
@@ -50,7 +50,7 @@ DOM이란 Document Object Model 문서 객체 모델로, HTML로 작성된 여�
 쉽게 말해 브라우저가 우리가 작성한 HTML을 자바스크립트가 이해하고 조작할 수 있게 객체로 변환 한 것이다.
 
 웹 브라우저는 이 HTML 문서를 불러 온 다음 이를 아래 사진과 같이 상하 관계를 한 눈에 볼 수 있는 트리 구조로 나타내는데, 이를 DOM Tree 라고 부른다.
-[](https://velog.velcdn.com/images/eunwoo1341/post/adb95a4c-4808-4cda-b084-4dc00eff9bd0/image.png)
+![DOM API](https://velog.velcdn.com/images/eunwoo1341/post/adb95a4c-4808-4cda-b084-4dc00eff9bd0/image.png)
 
 DOM Tree에서 이 아이템 하나 하나를 노드(Node)라고 부르며, 이 노드들은 전부 하나의 객체로 이루어져 있고, 웹 브라우저는 이 DOM Tree를 통해 웹 요소들을 웹 페이지에 나타낼 수 있다.
 
@@ -68,7 +68,7 @@ DOM API를 이용해 HTML 요소들에 접근하기 위해서는 DOM Tree를 참
 아래에 있는 왼쪽의 HTML 코드를 DOM Tree로 나타낸 것을 보면,
 이 DOM Tree는 크게 노랑색으로 표시되어있는 document 문서노드, 초록색으로 표시되어있는 요소노드, 분홍색으로 표시되어있는 어트리뷰트 노드, 마지막으로 파랑색으로 표시되어있는 텍스트 노드로 나타낼 수 있다.
 
-[](https://velog.velcdn.com/images/eunwoo1341/post/b14ca2fe-0451-4ab6-b0a0-cb0f141ed0a6/image.png)
+![DOM API](https://velog.velcdn.com/images/eunwoo1341/post/b14ca2fe-0451-4ab6-b0a0-cb0f141ed0a6/image.png)
 
 우리는 DOM API를 이용해 요소에 접근하기 위해, 해당 요소들을 찾을 때 문서, 요소, 어트리뷰트, 텍스트 순서로 각각의 노드에 접근해야하고, 이 문서 노드는 트리의 가장 위쪽에 위치하기 때문에 어떤 요소에 접근하든지 항상 이 문서 노드를 거쳐서 다른 요소들에 접근 해야한다.
 자바스크립트가 이 DOM API를 사용해 웹 페이지를 조작하기 위해서는 먼저, 조작하고자하는 요소를 찾아 해당 요소를 선택한 다음, 선택된 요소를 조작해야 한다.
@@ -103,7 +103,7 @@ console.log(document.getElementById('date'));
 
 를 하게 되면 아래와 같이 해당 id를 갖고 있는 요소 객체를 반환한다.
 
-[](https://velog.velcdn.com/images/eunwoo1341/post/c0c17abf-7889-465e-bdc8-5b132c189c81/image.png)
+![](https://velog.velcdn.com/images/eunwoo1341/post/c0c17abf-7889-465e-bdc8-5b132c189c81/image.png)
 
 ## document.querySelector(cssSelector)
 
