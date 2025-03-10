@@ -56,7 +56,6 @@ export default async function BlogDetailPage({ params }: ParamsProps) {
         </div>
       </footer>
 
-      {/* Giscus를 동적 로딩 */}
       <div className='mt-8 flex justify-center'>
         <Giscus />
       </div>
