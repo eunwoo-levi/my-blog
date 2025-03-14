@@ -1,0 +1,159 @@
+---
+title: '클로저(Closure)란 무엇인가?'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/javascript.webp'
+publishDate: '2025-03-14'
+categoryId: 2
+---
+
+함수형 컴포넌트의 구조와 작동 방식, 훅의 원리, 의존성 배열 등 함수형 컴포넌트의 대부분의 기술이 모두 클로저에 의존하고 있기 때문에 함수형 컴포넌트 작성을 위해서는 클로저에 대해 이해하는 것이 필수다.
+그렇기 때문에 좋은 함수형 컴포넌트를 만들고, 나아가 함수형 프로그래밍의 패러다임을 이해하려면 클로저에 대해 반드시 알고 있어야 한다.
+
+# 클로저(Closure) 정의
+
+클로저에 대한 정의를 MDN에서 찾아보면 "클로저는 함수와 함수가 선언된 어휘적 환경(Lexical Scope)의 조합" 이라고 돼 있다.
+사실 이러한 개념이 난해해서 클로저가 무엇이고 또 어떤 식으로 활용되는지 이해하기가 쉽지 않다.
+
+"함수와 함수가 선언된 어휘적 환경의 조합" 이라는 문장에서 과연 "어휘적 환경"이 어떤 뜻을 의미하고 있는가?
+
+"어휘적 환경" 에 대해 이해하기 위해 다음 예제 코드를 살펴보자.
+
+```ts
+function add() {
+  const a = 10;
+  function innerAdd() {
+    const b = 20;
+    console.log(a + b);
+  }
+
+  innerAdd(); //  30
+}
+
+add();
+```
+
+위 예제 코드를 보면, add 함수 내부에 innerAdd가 있고, innerAdd 함수는 내부에서 b 변수를 선언한 뒤, 자신의 함수 외부에 있는 a와b를 더해서 정상적으로 30을 출력한 것을 볼 수 있다.
+이 예시를 살펴보면 함수가 이처럼 중첩돼 있는 상황에서 변수의 범위가 어떻게 정의되는지 알 수 있을 것이다.
+
+a 변수의 유효 범위는 add 전체이고, b의 유효 범위는 innerAdd의 전체이다.
+innerAdd는 add 내부에서 선언돼 있어 a를 사용할 수 있게 된 것이다.
+즉, 앞에서 말하는 "_선언된 어휘적 환경_" 이라는 것은, 변수가 코드 내부에서 어디서 선언됐는지를 말하는 것이다.
+
+호출되는 방식에 따라 동적으로 결종되는 this와는 다르게 코드가 작성된 순간에 정적으로 결정된다.
+클로저는 이러한 어휘적 환경을 조합해 코딩하는 기법이다.
+
+# 함수 스코프
+
+클로저의 정의인 "_함수와 함수가 선언된 어휘적 환경의 조합_"이 무엇인지 살펴봤다.
+
+Javascript는 함수 레벨 스코프를 가지고 있으므로, 이렇게 선언된 함수 레벨 스코프를 활용해 어떤 작업을 할 수 있다는 개념이 바로 *클로저*라는 것을 알게 됐다.
+클로저에 대한 개념을 조금 더 정확히 이해하기 위해 다음 코드를 다시 살펴보자.
+
+```js
+function outerFunction() {
+  x = 'hello';
+  function innerFunction() {
+    console.log(x);
+  }
+
+  return innerFunction;
+}
+
+const innerFunction = outerFunction();
+innerFunction(); // hello
+```
+
+앞서 Javascript가 함수 레벨 스코프를 가지고 있다는 사실, 그리고 이러한 Scope는 동적으로 결정된다는 사실을 알기에 위 예제에서 "hello" 가 출력된다는 것은 쉽게 알 수 있다.
+위 예제에서 OuterFunction은 innerFunction을 반환하며 실행이 종료됐다. 여기에서 반환한 함수에는 x라는 변수가 존재하지 않지만,
+해당 함수가 선언된 어휘적 환경, 즉 outerFunction에는 x라는 변수가 존재하며 접근할 수도 있다.
+따라서 같은 환경에서 선언되고 반환된 innerFunction에서는 x라는 변수가 존재하던 환경을 기억하기 때문에 정상적으로 "hello"를 출력할 수 있는 것이다.
+
+# 클로저의 활용
+
+전역 스코프는 어디서든 원하는 값만 꺼내올 수 있다는 장점이 있지만, 반대로 이야기하면 누구든 접근할 수 있고 수정할 수 있다는 뜻도 된다.
+
+```js
+var counter = 0;
+
+function handleClick() {
+  counter++;
+}
+```
+
+위 counter 변수는 전역 레벨에 선언돼 있어서 누구나 수정할 수 있다.
+window.counter를 활용하면 쉽게 해당 변수를 접근할 수 있을 것이다.
+
+만약 React의 useState의 변수가 전역 레벨에 저장돼 있으면 어떻게 될까?
+Javascript를 조금만 아는 사람이라면 누구나 React의 Application을 쉽게 망가뜨릴 것이다.
+
+따라서 React가 관리하는 내부 상태 값은 React가 별도로 관리하는 클로저 내부에서만 접근할 수 있다.
+
+```js
+function Counter() {
+  var counter = 0;
+
+  return {
+    increase: function () {
+      return ++counter;
+    },
+
+    decrease: function () {
+      return --counter;
+    },
+
+    counter: function () {
+      console.log('counter에 접근!');
+      return counter;
+    },
+  };
+}
+
+var c = Counter();
+
+console.log(c.increase()); // 1
+console.log(c.increase()); // 2
+console.log(c.increase()); // 3
+console.log(c.decrease()); // 2
+console.log(c.counter()); // 2
+```
+
+위와 같이 클로저를 활용해서 코드를 변경했을 때 얻을 수 있는 이점에는 여러가지가 있다.
+
+먼저 Counter 변수를 직접적으로 노출하지 않음으로써 사용자가 직접 수정하는 것을 막았음은 물론,
+접근하는 경우를 제한해 로그를 남기는 등의 부차적인 작업도 수행할 수 있게 된다.
+
+또한, counter 변수의 업데이트를 increase와 decrease로 제한해 무분별하게 변경되는는 것을 막았다.
+이처럼 클로저를 활용하면 전역 스코프의 사용을 막고, 개발자가 원하는 정보만 개발자가 원하는 방향으로 노출시킬 수 있다는 장점이 있다.
+
+이와 같이 예제를 살펴보면, 리액트에서는 클로저를 어떻게 사용하고 있을지 어렴풋하게 짐작할 수 있을 것이다.
+useState의 변수를 저장해 두고, useState의 변수 접근 및 수정 또한 클로저 내부에서 확인이 가능해 값이 변하면 렌더링 함수를 호출하는 등의 작업이 이루어질 것이다.
+
+# React에서의 클로저
+
+그렇다면 React 함수형 컴포넌트의 hook에서 클로저는 어떻게 사용될까?
+클로저의 원리를 사용하고 있는 대표적인 것 중 하나가 바로 useState이다.
+
+```js
+function Component() {
+  const [state, setState] = useState();
+
+  function handleClick() {
+    // useState 호출은 위에서 끝났지만,
+    // setState는 계속 내부의 최신값(prev)을 알고 있다.
+    // 이는 클로저를 활용했기 때문에 가능하다.
+    setState((prev) => prev + 1);
+  }
+  // ....
+}
+```
+
+useState 함수의 호출은 Component 내부 첫 줄에서 종료됐는데, setState는 useState 내부의 최신 ㅏㅄ을 어떻게 계속해서 확인할 수 있을까?
+그것은 바로 클로저가 useState 내부에서 활용됐기 때문이다.
+
+외부 함수(useState)가 반환한 내부 함수(setState)는 외부 함수(useState)의 호출이 끝났음에도 자신이 선언된 외부함수가 선언된 환경(state가 저장돼 있는 어딘가)를 기억하기 때문에 계속해서 state 값을 사용할 수 있는 것이다.
+
+# 클로저의 Side-Effect
+
+클로저의 개념, 즉 외부 함수를 기억하고 이를 내부 함수에서 가져다 쓰는 매커니즘은 성능에 영향을 미친다.
+클로저에 꼭 필요한 작업만 남겨두지 않는다면 Memory를 불필요하게 잡아먹는 결과를 야기할 수 있고, 마찬가지로 클로저 사용을 적절한 스코프로 가둬두지 않는다면 성능에 악영향을 미친다.
+클로저는 공짜가 아니므로 클로저를 사용할 때는 주의가 필요하다.
