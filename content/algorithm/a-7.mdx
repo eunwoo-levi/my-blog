@@ -1,0 +1,109 @@
+---
+title: 'Min Heap 최소힙 구현 - Javascript'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/algo.webp'
+publishDate: '2025-03-15'
+categoryId: 8
+---
+
+# Javascript를 이용한 Min Heap 최소힙 구현
+
+```js
+class MinHeap {
+  constructor() {
+    this.heap = [];
+  }
+
+  push(value) {
+    this.heap.push(value);
+    this.heapifyUp();
+  }
+
+  pop() {
+    if (this.isEmpty()) return null;
+    const root = this.heap[0];
+    const lastNode = this.heap.pop();
+    if (!this.isEmpty()) {
+      this.heap[0] = lastNode;
+      this.heapifyDown();
+    }
+    return root;
+  }
+
+  isEmpty() {
+    return this.heap.length === 0;
+  }
+
+  size() {
+    return this.heap.length;
+  }
+
+  heapifyUp() {
+    let index = this.heap.length - 1;
+    while (index > 0) {
+      const parentIndex = Math.floor((index - 1) / 2);
+      if (this.heap[parentIndex] <= this.heap[index]) break;
+      [this.heap[parentIndex], this.heap[index]] = [this.heap[index], this.heap[parentIndex]];
+      index = parentIndex;
+    }
+  }
+
+  heapifyDown() {
+    let index = 0;
+    const length = this.heap.length;
+    while (true) {
+      let smallest = index;
+      const leftChildIndex = 2 * index + 1;
+      const rightChildIndex = 2 * index + 2;
+      if (leftChildIndex < length && this.heap[leftChildIndex] < this.heap[smallest]) {
+        smallest = leftChildIndex;
+      }
+      if (rightChildIndex < length && this.heap[rightChildIndex] < this.heap[smallest]) {
+        smallest = rightChildIndex;
+      }
+      if (smallest === index) break;
+      [this.heap[index], this.heap[smallest]] = [this.heap[smallest], this.heap[index]];
+      index = smallest;
+    }
+  }
+
+  peek() {
+    if (this.isEmpty()) return null;
+    return this.heap[0];
+  }
+}
+```
+
+# Min Heap 응용 문제 - 프로그래머스 더 맵게 Lv.2
+
+[프로그래머스 더 맵게 문제](https://programmers.co.kr/learn/courses/30/lessons/42626)는 다음과 같다.
+
+해당 minHeap 코드를 이용하여 아래와 같이 문제를 풀었다.
+
+```js
+function solution(scoville, K) {
+  const minHeap = new MinHeap();
+
+  // 모든 스코빌 지수를 힙에 넣음
+  for (const value of scoville) {
+    minHeap.push(value);
+  }
+
+  let res = 0;
+
+  // 가장 맵지 않은 음식의 스코빌 지수가 K 미만인 동안 반복
+  while (minHeap.size() >= 2 && minHeap.peek() < K) {
+    const first = minHeap.pop();
+    const second = minHeap.pop();
+
+    const newFood = first + second * 2;
+
+    minHeap.push(newFood);
+
+    res++;
+  }
+
+  // 모든 음식의 스코빌 지수가 K 이상인지 확인
+  return minHeap.peek() >= K ? res : -1;
+}
+```
