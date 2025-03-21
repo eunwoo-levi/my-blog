@@ -279,7 +279,11 @@ n초 뒤에 setTimeout을 요청하는 작업은 누가 처리할까? fetch를 �
 
 ## 예제
 
+### 예제 1
+
 ![](https://velog.velcdn.com/images/eunwoo1341/post/264e9d46-a7c6-47a3-ac4b-65cdd3dbebc2/image.png)
+
+#### 답안
 
 - logBanana가 호출되어 console.log가 실행된다.
 - logBanana가 콜스택에 들어온다.
@@ -294,6 +298,112 @@ n초 뒤에 setTimeout을 요청하는 작업은 누가 처리할까? fetch를 �
 - 웹 api의 타이머가 만료되고 사과의 콜백 함수(console.log)가 태스크 큐에 들어간다.
 - 태스트큐에 있는 콜백을 콜스택으로 이동시켜 실행시킨다.
 - 콜백 실행 완료 후 콜스택에서 빠져나간다.
+
+### 예제 2. 왜 1->3->2->4 순으로 출력되는지 설명하시오.
+
+```js
+console.log('1');
+setTimeout(() => console.log('2'));
+new Promise((resolve) => resolve()).then(() => {
+  console.log('3');
+});
+setTimeout(() => console.log('4'));
+```
+
+#### 답안
+
+- console.log("1")는 즉시 실행됩니다. 동기 방식이므로 바로 출력됩니다.
+- setTimeout(() => console.log("2"))는 비동기 함수입니다. 기본적으로 0초 지연을 주기 때문에 콜백 큐에 들어가게 되고, 이벤트 루프가 실행되는 시점에서 출력됩니다. setTimeout은 웹 API에 의해 처리되고, 그 이후에 큐에 등록됩니다.
+- new Promise((resolve) => resolve()).then(() => { console.log("3") })에서 then은 마이크로태스크 큐에 등록됩니다. 마이크로태스크 큐는 이벤트 루프에서 우선순위가 더 높기 때문에 setTimeout보다 먼저 실행됩니다. 따라서 "3"이 먼저 출력됩니다.
+- 두 번째 setTimeout(() => console.log("4"))는 첫 번째 setTimeout과 마찬가지로 비동기 함수이며, 마지막에 콜백 큐에서 실행되므로 "4"가 마지막에 출력됩니다.
+
+### 예제 3. 왜 두 개의 for문의 결과가 다른지 설명하시오.
+
+```js
+for (var i = 0; i < 10; i++) {
+  setTimeout(() => console.log(i)); // 10이 10번 출력
+}
+```
+
+```js
+for (var i = 0; i < 10; i++) {
+  (function (i) {
+    setTimeout(() => console.log(i)); // 0 1 2 3 4 5 6 7 8 9
+  })(i);
+}
+```
+
+#### 답안
+
+- 첫 번째 for문: var는 함수 스코프를 가지며, 클로저를 형성하지 않습니다. setTimeout이 비동기적으로 실행되기 때문에 i가 반복문을 끝낸 후 값인 10으로 10번 출력됩니다. 이는 setTimeout이 비동기 함수로 호출되고, 그 시점에 i는 이미 10이므로 10이 출력됩니다.
+- 두 번째 for문: `js (function(i) { ... })(i)` 형태로 즉시 실행 함수(IIFE)를 사용함으로써, 각 반복문에서 i가 즉시 캡처됩니다. 이로 인해 각각의 setTimeout 콜백에서 독립적인 값이 전달되어 0부터 9까지 차례대로 출력됩니다. i는 블록 스코프가 아닌, 즉시 실행된 함수 스코프에 의해 캡처되어 각 값이 콜백에서 독립적으로 처리됩니다.
+
+결론: 첫 번째 for문은 10을 10번 출력하고, 두 번째 for문은 0부터 9까지 순서대로 출력됩니다.
+
+### 예제 4. foo 함수에서 getPopularMovies를 호출한 결괏값을 받아서 console에 출력하시오.
+
+단, foo 함수는 async 키워드를 붙일 수 없다.
+
+```js
+async function getPopularMovies() {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  return ['쿵푸팬더4', '댐즐', '스리 아시', '돼지와 뱀과 비둘기', '듄: 파트 2', '가여운 것들'];
+}
+
+function foo() {
+  //✨✨✨✨✨✨✨✨✨✨✨✨✨✨ 수정 가능 영역
+  //✨✨✨✨✨✨✨✨✨✨✨✨✨✨
+}
+foo();
+```
+
+#### 답안
+
+- `getPopularMovies`는 비동기 함수로, 1초의 지연 후 영화 목록을 반환합니다. 이 함수는 Promise를 반환하기 때문에, foo 함수 내에서 이를 호출할 때는 result는 Promise 객체가 됩니다.
+- `js result.then(movies => console.log(movies))`는 getPopularMovies가 완료되고 반환된 값을 처리하는 부분으로, Promise가 해결될 때 then에서 지정된 콜백 함수가 실행됩니다. 여기서 movies는 getPopularMovies에서 반환한 영화 목록입니다.
+
+설명: Promise의 then 메서드를 사용하여 비동기적으로 값을 처리한 후 출력할 수 있습니다.
+비동기 처리를 await 키워드 없이 .then()으로 처리하는 방법을 사용했습니다.
+
+### 예제 5. `getPopularMovies` 함수가 3초 이상 지연되면 "대기 시간이 오래 걸립니다"라는 오류 메시지를 콘솔로 출력하시오.
+
+(단, 3초 이상 지연 시 getPopularMovies는 작업이 중단되거나 결괏값은 무시된다.)
+
+```js
+console.error('대기 시간이 오래 걸립니다');
+```
+
+아래의 영역에 코드를 채워 넣고 왜 해당 코드를 넣으면 해결되는지 설명하시오.
+
+```js
+const getPopularMovies = new Promise((resolve, reject) => {
+  setTimeout(resolve, Math.random() * 4000 + 1000, '외부 API 접근한 결괏값');
+});
+
+// 아래에 답안을 작성하세요
+```
+
+#### 답안
+
+```js
+const getPopularMovies = new Promise((resolve, reject) => {
+  setTimeout(resolve, Math.random() * 4000 + 1000, '외부 API 접근한 결괏값');
+});
+
+const timeoutPromise = new Promise((_, reject) => {
+  setTimeout(() => reject('대기 시간이 오래 걸립니다'), 3000);
+});
+
+Promise.race([getPopularMovies, timeoutPromise])
+  .then((result) => console.log(result))
+  .catch((error) => console.error(error));
+```
+
+- getPopularMovies는 setTimeout을 사용하여 일정 시간 후에 결괏값을 반환하는 Promise입니다. Math.random() \* 4000 + 1000을 사용하여 1초에서 5초 사이의 랜덤한 시간 동안 지연됩니다.
+- timeoutPromise는 3초 후에 "대기 시간이 오래 걸립니다"라는 오류 메시지를 출력하는 Promise입니다.
+- Promise.race는 주어진 여러 Promise 중 가장 먼저 해결되거나 거부된 Promise의 결괏값을 반환합니다. 이 예제에서는 getPopularMovies와 timeoutPromise를 race 시켜 3초 이상 지연되면 "대기 시간이 오래 걸립니다" 메시지가 출력됩니다.
+
+설명: Promise.race를 사용하여 두 Promise 중 빠르게 해결된 것을 기준으로 동작하게 만들어, 3초 이상 지연되면 timeoutPromise가 우선적으로 실행되어 "대기 시간이 오래 걸립니다"라는 메시지를 출력합니다.
 
 ---
 
