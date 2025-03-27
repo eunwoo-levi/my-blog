@@ -1,0 +1,82 @@
+---
+title: 'Min Steps to Convert x to y (Recursion, BFS, DP)'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/algo.webp'
+publishDate: '2025-03-28'
+categoryId: 8
+---
+
+You want to transform a natural number x into y. You can use the following operations:
+
+- Add n to x
+- Multiply x by 2
+- Multiply x by 3
+
+Given the natural numbers x, y, and n as parameters, complete the function solution to return the minimum number of operations required to transform x into y.
+If it's impossible to transform x into y using these operations, return -1.
+
+# Solution 1 - Recursion
+
+```js
+function solution(x, y, n) {
+  let result = Infinity;
+
+  const go = (cur, step) => {
+    if (cur === y) {
+      result = Math.min(result, step);
+      return;
+    }
+
+    if (cur > y) return;
+
+    go(cur + n, step + 1);
+    go(cur * 2, step + 1);
+    go(cur * 3, step + 1);
+  };
+
+  go(x, 0);
+
+  return result === Infinity ? -1 : result;
+}
+```
+
+# Solution 2 - BFS
+
+```js
+function solution(x, y, n) {
+  let result = -1;
+  const q = [];
+  q.push([y, 0]);
+
+  while (q.length !== 0) {
+    const [value, step] = q.shift();
+    if (value <= x) {
+      if (value === x) result = step;
+      break;
+    }
+
+    if (value - n >= x) q.push([value - n, step + 1]);
+    if (value % 2 === 0 && value / 2 >= x) q.push([value / 2, step + 1]);
+    if (value % 3 === 0 && value / 3 >= x) q.push([value / 3, step + 1]);
+  }
+
+  return result;
+}
+```
+
+# Solution 3 - DP (Most Efficient)
+
+```js
+function solution(x, y, n) {
+  let d = [...Array(y + 1).fill(Infinity)];
+  d[x] = 0;
+
+  for (let i = x; i <= y; i++) {
+    if (i - n >= x) d[i] = Math.min(d[i], d[i - n] + 1);
+    if (i % 2 === 0 && i / 2 >= x) d[i] = Math.min(d[i], d[i / 2] + 1);
+    if (i % 3 === 0 && i / 3 >= x) d[i] = Math.min(d[i], d[i / 3] + 1);
+  }
+
+  return d[y] === Infinity ? -1 : d[y];
+}
+```
