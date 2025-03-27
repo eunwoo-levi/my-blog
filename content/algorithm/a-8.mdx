@@ -21,11 +21,14 @@ If it's impossible to transform x into y using these operations, return -1.
 
 # Solution 1 - Recursion
 
+I tried to solve this problem using recursion first time however it was not efficient way to solve this problem in terms of time complexity.
+it failed to pass the test case with large numbers.
+
 ```js
 function solution(x, y, n) {
   let result = Infinity;
 
-  const go = (cur, step) => {
+  function go(cur, step) {
     if (cur === y) {
       result = Math.min(result, step);
       return;
@@ -36,7 +39,7 @@ function solution(x, y, n) {
     go(cur + n, step + 1);
     go(cur * 2, step + 1);
     go(cur * 3, step + 1);
-  };
+  }
 
   go(x, 0);
 
@@ -46,41 +49,43 @@ function solution(x, y, n) {
 
 # Solution 2 - BFS
 
+Next solution is using BFS.
+It's more efficient than recursion but still not the best solution.
+
 ```js
 function solution(x, y, n) {
-  let result = -1;
-  const q = [];
-  q.push([y, 0]);
+  var res = 0;
 
-  while (q.length !== 0) {
-    const [value, step] = q.shift();
-    if (value <= x) {
-      if (value === x) result = step;
-      break;
-    }
+  var que = [[y, 0]];
 
-    if (value - n >= x) q.push([value - n, step + 1]);
-    if (value % 2 === 0 && value / 2 >= x) q.push([value / 2, step + 1]);
-    if (value % 3 === 0 && value / 3 >= x) q.push([value / 3, step + 1]);
+  while (que.length) {
+    const [num, i] = que.shift();
+
+    if (num === x) return i;
+
+    if (num % 2 === 0 && num / 2 >= x) que.push([num / 2, i + 1]);
+    if (num % 3 === 0 && num / 3 >= x) que.push([num / 3, i + 1]);
+    if (num - n >= x) que.push([num - n, i + 1]);
   }
 
-  return result;
+  return -1;
 }
 ```
 
 # Solution 3 - DP (Most Efficient)
 
+The most efficient solution is using DP.
+We can solve this problem by using DP with the following steps:
+
 ```js
 function solution(x, y, n) {
-  let d = [...Array(y + 1).fill(Infinity)];
-  d[x] = 0;
-
+  const dp = new Array(y + 1).fill(Infinity);
+  dp[x] = 0;
   for (let i = x; i <= y; i++) {
-    if (i - n >= x) d[i] = Math.min(d[i], d[i - n] + 1);
-    if (i % 2 === 0 && i / 2 >= x) d[i] = Math.min(d[i], d[i / 2] + 1);
-    if (i % 3 === 0 && i / 3 >= x) d[i] = Math.min(d[i], d[i / 3] + 1);
+    dp[i + n] = Math.min(dp[i + n], dp[i] + 1);
+    dp[i * 2] = Math.min(dp[i * 2], dp[i] + 1);
+    dp[i * 3] = Math.min(dp[i * 3], dp[i] + 1);
   }
-
-  return d[y] === Infinity ? -1 : d[y];
+  return dp[y] !== Infinity ? dp[y] : -1;
 }
 ```
