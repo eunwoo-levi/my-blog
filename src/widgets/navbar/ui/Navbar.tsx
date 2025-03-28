@@ -39,22 +39,24 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className='flex items-center gap-4'>
+        <div className='flex items-center justify-end gap-5'>
           <Link
             href='https://github.com/eunwoo-levi'
-            className='rounded-lg p-1 hover:bg-gray-200 dark:hover:bg-gray-700'
+            className='rounded-lg p-1 dark:hover:bg-gray-700 hover:lg:bg-gray-200'
           >
             <FaGithub size={40} />
           </Link>
-          <DarkModeButton />
-        </div>
+          <div className='hidden w-full lg:block'>
+            <DarkModeButton />
+          </div>
 
-        <button
-          className='rounded-md text-3xl hover:bg-neutral-300 focus:outline-none lg:hidden'
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          ☰
-        </button>
+          <button
+            className='rounded-md text-3xl focus:outline-none lg:hidden hover:lg:bg-neutral-300'
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            ☰
+          </button>
+        </div>
 
         {isOpen && <MobileNavbar isOpen={isOpen} setIsOpen={setIsOpen} />}
       </div>

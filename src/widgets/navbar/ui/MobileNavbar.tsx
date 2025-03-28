@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { navbarList } from '../model/data';
 import { useEffect, useRef } from 'react';
+import DarkModeButton from './DarkModeButton';
 
 interface MobileNavbarProps {
   isOpen: boolean;
@@ -32,9 +33,10 @@ export default function MobileNavbar({ isOpen, setIsOpen }: MobileNavbarProps) {
   return (
     <div
       ref={menuRef}
-      className='absolute left-0 top-16 w-full bg-white shadow-md lg:hidden dark:bg-gray-800'
+      className='absolute left-0 top-16 w-full bg-white shadow-md dark:bg-gray-700 lg:hidden'
     >
       <ul className='flex flex-col items-center space-y-4 py-4'>
+        <DarkModeButton />
         {navbarList.map((link, idx) => (
           <li key={idx} className='flex w-full flex-col items-center'>
             <Link
