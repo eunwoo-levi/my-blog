@@ -50,22 +50,23 @@ function solution(x, y, n) {
 # Solution 2 - BFS
 
 Next solution is using BFS.
-It's more efficient than recursion but still not the best solution.
+Since BFS finds the shortest path from the start node to the end node, it is a better solution than recursion in terms of time complexity.
+Additionally, we can use a set to store visited nodes to avoid infinite loops.
 
 ```js
 function solution(x, y, n) {
-  var res = 0;
+  const visited = new Set();
+  const queue = [[y, 0]];
 
-  var que = [[y, 0]];
+  while (queue.length) {
+    const [cur, count] = queue.shift();
+    if (cur === x) return count;
+    if (visited.has(cur)) continue;
+    visited.add(cur);
 
-  while (que.length) {
-    const [num, i] = que.shift();
-
-    if (num === x) return i;
-
-    if (num % 2 === 0 && num / 2 >= x) que.push([num / 2, i + 1]);
-    if (num % 3 === 0 && num / 3 >= x) que.push([num / 3, i + 1]);
-    if (num - n >= x) que.push([num - n, i + 1]);
+    if (cur - n >= x) queue.push([cur - n, count + 1]);
+    if (cur % 2 === 0 && cur / 2 >= x) queue.push([cur / 2, count + 1]);
+    if (cur % 3 === 0 && cur / 3 >= x) queue.push([cur / 3, count + 1]);
   }
 
   return -1;
