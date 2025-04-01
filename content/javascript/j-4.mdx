@@ -1,0 +1,105 @@
+---
+title: '브라우저 동작원리 - DOM이 어떻게 그려지는가? (브라우저 렌더링 파이프)'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/javascript.webp'
+publishDate: '2025-04-02'
+categoryId: 2
+---
+
+# 🌐 브라우저 동작 원리 간단 정리
+
+브라우저는 HTML, CSS, JavaScript를 받아 화면에 렌더링하는 복잡한 과정을 거친다.
+이 과정을 잘 이해하면, 성능 최적화나 UI 디버깅 시 큰 도움이 된다.
+
+## 브라우저 렌더링 파이프라인 (Rendering Pipeline)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/6a0d1d6c-a1e5-4952-bc8c-dda58b5e5686/image.png)
+
+1. HTML 파싱 → DOM(Document Object Model) 트리 생성
+   브라우저는 HTML 코드를 위에서부터 읽으며, 각 요소를 트리 구조의 객체로 변환.
+
+2. CSS 파싱 → CSSOM(CSS Object Model) 생성
+   CSS 파일이나 `<style>` 태그의 내용을 분석해서 스타일 정보를 트리 형태로 만든다.
+
+3. DOM + CSSOM → 렌더 트리(Render Tree) 생성
+   DOM의 구조와 CSSOM의 스타일을 결합하여, 실제 화면에 표시될 요소들만 포함하는 트리가 만들어진다.
+   👉 display: none 요소는 이 과정에서 제외된다.
+
+4. 레이아웃 단계 (Reflow / Layout)
+   렌더 트리를 바탕으로 각 요소의 위치와 크기를 계산한다.
+   👉 부모의 크기에 따라 자식 크기가 바뀌는 경우, 전체 트리 재계산이 발생할 수 있다.
+
+5. 페인팅 단계 (Repaint / Paint)
+   각 요소를 픽셀 단위로 시각화합니다. 배경색, 테두리, 그림자 등 스타일 요소가 이 단계에서 처리된다.
+
+6. 컴포지팅 단계 (Compositing)
+   Paint 단계에서 처리된 레이어들을 조합해서 최종 화면에 표시한다.
+   👉 GPU 가속이 활용될 수도 있다.
+
+# 📌 DOM vs 렌더 트리: 개발자도구 기준으로 보기
+
+### DOM 트리 = 개발자도구의 요소 탭
+
+- HTML 전체 구조가 트리 형태로 표현됨
+- `<head>`, `<meta>`, `<script>` 등 화면에 안 보이는 요소도 포함
+- JavaScript로 동적으로 변경된 내용까지 반영됨
+
+#### 렌더 트리 = 화면에 실제 보이는 구조
+
+- DOM + CSSOM의 조합
+- display: none은 포함되지 않음
+- visibility: hidden이나 opacity: 0은 포함됨 (위치는 계산되지만, 시각적으로만 안 보임)
+
+# Reflow vs Repaint 정리
+
+| 구분            | 트리 영향   | 발생 원인                              | 성능 비용 |
+| --------------- | ----------- | -------------------------------------- | --------- |
+| Reflow (Layout) | DOM + CSSOM | 요소 크기, 위치 변경, DOM 삽입/삭제 등 | 높음      |
+| Repaint (Paint) | CSSOM       | 색상, 그림자, 배경 등 스타일 변경      | 중간      |
+
+- ❗ Reflow는 Repaint를 유발할 수 있지만, 그 반대는 아님
+  예: width 변경 → Reflow + Repaint
+  예: background-color 변경 → Repaint만 발생
+
+# 💡 DOM 접근 최소화가 중요한 이유
+
+### DOM 조작 = 비용이 큰 연산
+
+DOM은 브라우저 엔진에서 별도로 관리하는 복잡한 구조이기 때문에, JavaScript가 DOM을 조작하려면 브라우저와 "통신"해야 한다.
+
+#### 반복 DOM 조작은 특히 위험
+
+다음과 같은 패턴은 성능 저하의 주범이 된다.
+
+```js
+for (let i = 0; i < 1000; i++) {
+  const item = document.createElement('li');
+  item.textContent = `아이템 ${i}`;
+  list.appendChild(item); // 매번 DOM에 접근해서 삽입
+}
+```
+
+위 코드는 appendChild를 1000번 호출하면서, 매번 DOM이 갱신된다.
+→ Reflow와 Repaint가 계속 발생해 브라우저의 렌더링 성능이 크게 떨어지고, 스크롤이나 애니메이션이 끊기는 현상이 생길 수 있다.
+
+#### 개선 방법 예시: DocumentFragment 활용
+
+DOM 조작은 한 번에 모아서, 최소한으로 해야 브라우저 입장에서 더 효율적이다.
+DocumentFragment는 실제 DOM에 붙기 전까진 브라우저에 영향을 주지 않는 가상의 DOM이다.
+
+```js
+const fragment = document.createDocumentFragment();
+
+for (let i = 0; i < 1000; i++) {
+  const item = document.createElement('li');
+  item.textContent = `아이템 ${i}`;
+  fragment.appendChild(item); // 가상의 DOM에 먼저 저장
+}
+
+list.appendChild(fragment); // 단 한 번만 실제 DOM에 삽입
+```
+
+이 방식은 브라우저가 Reflow/Repaint를 단 한 번만 수행하게 도와주기 때문에
+렌더링 최적화 측면에서 훨씬 더 효율적이다.
+
+이 외에도 여러 방법이 있지만, 어떻게 하면 DOM 접근을 최소화할 수 있을지 고민하는 것이 중요하다.
