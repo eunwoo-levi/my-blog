@@ -3,6 +3,15 @@
 @tailwind utilities;
 
 @layer base {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    word-break: break-word;
+  }
+  code {
+    word-break: break-word;
+  }
+
   :root {
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
