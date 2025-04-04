@@ -1,0 +1,161 @@
+---
+title: '비동기 - callback -> Promise -> async/await 변천사'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/javascript.webp'
+publishDate: '2025-04-03'
+categoryId: 2
+---
+
+# JavaScript 비동기 처리 방식의 변천사
+
+JavaScript에서 비동기 처리 방식은 점점 더 **간결하고, 직관적이며, 유지보수하기 쉬운 방향**으로 발전해왔다.
+이 글에서는 대표적인 3가지 비동기 처리 방식인 `Callback`, `Promise`, `async/await`의 변천사를 설명하고, 장단점도 비교해보겠다.
+
+---
+
+# 1️. Callback (콜백 함수)
+
+## 초창기 JavaScript 비동기 처리 방식
+
+작업이 끝난 후 실행할 함수를 **인자로 전달**해서 실행하는 방식입니다.
+
+```js
+function fetchData(callback) {
+  setTimeout(() => {
+    callback('데이터 도착');
+  }, 1000);
+}
+
+fetchData((data) => console.log(data));
+```
+
+### 장점
+
+- 구조가 간단하고 직관적
+- 초창기 JS에서는 이걸로 대부분 처리 가능
+
+### 단점
+
+- 콜백 지옥 (Callback Hell)
+  콜백 중첩이 깊어지면 가독성과 유지보수성 급감
+- 에러 처리 어려움
+  try-catch로 예외를 잡을 수 없음
+- 디버깅 어려움
+  흐름이 복잡해져 로직 추적이 어렵고, 디버깅도 힘듦
+
+```js
+login(user, (token) => {
+  getProfile(token, (profile) => {
+    getPosts(profile.id, (posts) => {
+      // 콜백 지옥 시작...
+    });
+  });
+});
+```
+
+# 2. Promise (ES6, 2015)
+
+## 콜백의 한계를 극복하기 위해 등장
+
+비동기 작업의 결과를 Promise 객체로 감싸고,
+.then(), .catch() 체이닝으로 처리합니다.
+
+```js
+fetchData()
+  .then((data) => processData(data))
+  .then((result) => console.log(result))
+  .catch((err) => console.error(err));
+```
+
+### 장점
+
+- 체이닝으로 가독성 향상
+- catch로 명확한 에러 처리
+- Promise.all, Promise.race 등으로 동시 비동기 처리 제어 가능
+
+### 단점
+
+- .then() 체인이 길어지면 여전히 복잡함
+- 동기 코드처럼 읽히지 않아서 흐름 파악이 어려움
+
+## 💡 Promise 상태
+
+- Pending: 대기 중
+- Fulfilled: 성공
+- Rejected: 실패
+
+# 3. async/await (ES2017)
+
+## Promise를 더 간결하게 쓰기 위한 문법
+
+async 함수 내에서 await 키워드를 사용하면,
+비동기 작업을 마치 동기처럼 처리할 수 있다.
+
+```js
+async function handleData() {
+  try {
+    const data = await fetchData();
+    const result = await processData(data);
+    console.log(result);
+  } catch (err) {
+    console.error(err);
+  }
+}
+```
+
+### 장단
+
+- 동기 코드처럼 보여 가독성 탁월
+- try-catch로 에러 처리 용이
+- 흐름 추적이 쉬워서 디버깅 편리
+
+## 단점
+
+- await는 기본적으로 순차 실행이라 병렬 처리 어려움
+- 내부적으로는 여전히 Promise 객체 기반 → JS 엔진은 Generator 기반으로 처리
+
+### 병렬 처리 해결 방법
+
+```js
+async function loadAll() {
+  const [a, b] = await Promise.all([fetchA(), fetchB()]);
+  console.log(a, b);
+}
+```
+
+### Generator란?
+
+Generator 함수는 일반 함수와 다르게 **실행을 일시 중단**하고,
+**필요할 때 재개(resume)** 할 수 있는 함수이다.
+
+```js
+function* gen() {
+  yield 1;
+  yield 2;
+  return 3;
+}
+
+const g = gen();
+console.log(g.next()); // { value: 1, done: false }
+console.log(g.next()); // { value: 2, done: false }
+console.log(g.next()); // { value: 3, done: true }
+```
+
+async/await는 내부적으로 이 Generator와 유사한 방식으로 작동합니다.
+
+## 세 가지 방식 비교
+
+| 구분          | Callback                     | Promise                       | async/await                           |
+| ------------- | ---------------------------- | ----------------------------- | ------------------------------------- |
+| **등장 시기** | 초창기 JavaScript            | ES6 (2015)                    | ES2017                                |
+| **문법 구조** | 함수 인자로 콜백 전달        | `.then().catch()` 체이닝      | `async`, `await` + `try-catch`        |
+| **가독성**    | ❌ 중첩 시 매우 나쁨         | ✅ 중간 정도                  | ✅ 매우 좋음                          |
+| **에러 처리** | ❌ 어려움 (`try-catch` 불가) | ✅ `catch` 가능               | ✅ `try-catch` 가능                   |
+| **병렬 처리** | ❌ 어려움                    | ✅ `Promise.all` 등 사용 가능 | ❌ 순차 실행, ✅ `Promise.all`로 보완 |
+| **흐름 추적** | ❌ 어려움                    | ❌ `then` 체인 많으면 어려움  | ✅ 동기처럼 읽힘                      |
+
+## 정리
+
+- 콜백 → Promise → async/await로 갈수록 코드가 깔끔해지고 가독성이 높아졌음
+- 하지만 **기본 개념(비동기 처리 방식)**은 모두 같고, 표현 방식이 다를 뿐!
+- 실제 프로젝트에서는 세 가지 방식이 혼용되기도 하며, 상황에 맞게 선택하는 유연함이 필요하다.

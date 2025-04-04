@@ -13,13 +13,26 @@ categoryId: 2
 
 ## 브라우저 렌더링 파이프라인 (Rendering Pipeline)
 
+### 브라우저 렌더링 파이프라인이란?
+
+브라우저가 HTML, CSS, JS를 받아서
+**사용자 눈에 보이는 화면(픽셀)**로 그리기까지의 **과정(파이프라인)**을 말한다.
+즉, 우리가 index.html, style.css, app.js를 쓰면,
+브라우저는 그걸 차례대로 "해석 → 변환 → 그리기" 하게 된다.
+
+### 렌더링 파이프라인 단계 (6단계)
+
 ![](https://velog.velcdn.com/images/eunwoo1341/post/6a0d1d6c-a1e5-4952-bc8c-dda58b5e5686/image.png)
 
 1. HTML 파싱 → DOM(Document Object Model) 트리 생성
-   브라우저는 HTML 코드를 위에서부터 읽으며, 각 요소를 트리 구조의 객체로 변환.
+   브라우저는 HTML 코드를 위에서부터 읽으며, 각 요소를 트리 구조의 객체로 변환. (**노드 기반의 트리 구조(DOM)**)
+   DOM(Document Object Model)은 HTML 문서의 구조를 JS가 조작할 수 있게 만든 객체 모델이다.
+   `<script>` 태그는 DOM 트리에 포함되지만, `<style>` 태그는 CSSOM을 생성하는 데 사용된다.
+   DOM은 HTML 문서의 구조를 표현하기 때문에, `<head>`, `<meta>` 등 화면에 보이지 않는 요소도 포함된다.
 
 2. CSS 파싱 → CSSOM(CSS Object Model) 생성
    CSS 파일이나 `<style>` 태그의 내용을 분석해서 스타일 정보를 트리 형태로 만든다.
+   CSSOM은 CSS 문서의 구조를 표현하는 객체 모델이다.
 
 3. DOM + CSSOM → 렌더 트리(Render Tree) 생성
    DOM의 구조와 CSSOM의 스타일을 결합하여, 실제 화면에 표시될 요소들만 포함하는 트리가 만들어진다.
