@@ -1,0 +1,211 @@
+---
+title: 'Custom Hooks - React에서 효율적인 커스텀 훅 만들기'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/storybook.webp'
+publishDate: '2025-04-23'
+categoryId: 6
+---
+
+# Custom Hooks 이란?
+
+React가 제공하는 Hooks처럼 특정 목적을 위해 직접 만들 수 있는 Hooks이다.
+예를 들어, 데이터를 가져오거나, 사용자의 온라인 상태를 추적하거나, 채팅방에 연결하는 로직을 Custom Hook으로 만들 수 있다.
+
+React에서 Custom Hooks는 여러 컴포넌트 간에 상태 관련 로직을 재사용할 수 있도록 해주는 기능이다.
+React는 useState, useContext, useEffect와 같은 내장 Hooks를 제공하지만, 애플리케이션의 특정 요구 사항에 맞춰 사용자 정의 Hooks를 만들 수 있다.
+
+# 왜 Custom Hooks 사용해야 할까?
+
+#### 1. 로직 재사용
+
+여러 컴포넌트에서 동일한 상태 관련 로직을 반복해서 작성하는 대신, Custom Hook으로 추출하여 재사용할 수 있다.
+이는 코드의 중복을 줄이고 유지보수를 용이하게 합니다.
+
+#### 2. 코드 간결성
+
+컴포넌트 코드는 필요한 상태와 동작에 집중하고, 복잡한 구현 세부 사항은 Custom Hook 내부로 숨길 수 있다.
+이는 컴포넌트 코드를 더 선언적이고 이해하기 쉽게 만들어 준다.
+
+# Custom Hook을 어떻게 만들 수 있을까?
+
+1. use로 시작하고 뒤에 대문자가 오는 이름의 JavaScript 함수를 선언한다 (예: useOnlineStatus).
+   이 명명 규칙은 React에게 이 함수가 Hook의 규칙을 따른다는 것을 알려준다. 린터가 이 규칙을 강제하도록 설정할 수도 있다.
+2. 함수 내부에서 useState, useEffect와 같은 다른 내장 또는 사용자 정의 Hooks를 사용하여 필요한 상태 및 Side Effect 로직을 구현한다.
+3. 컴포넌트에서 사용할 값을 반환한다.
+   이는 상태 값, 상태를 업데이트하는 함수, 또는 다른 필요한 어떤 값이든 될 수 있다.
+
+# Custom Hook 사용 예시
+
+네트워크 연결 상태를 추적하는 useOnlineStatus Custom Hook을 만드는 과정을 살펴보자.
+
+아래와 같이 StatusBar 컴포넌트가 있다고 하자.
+StatusBar 컴포넌트와 SaveButton 컴포넌트가 Network가 on 인지 off인지에 따라 state가 업데이트되고 이를 보여준다.
+
+```tsx
+import { useState, useEffect } from 'react';
+
+export default function StatusBar() {
+  const [isOnline, setIsOnline] = useState(true);
+  useEffect(() => {
+    function handleOnline() {
+      setIsOnline(true);
+    }
+    function handleOffline() {
+      setIsOnline(false);
+    }
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  return <h1>{isOnline ? '✅ Online' : '❌ Disconnected'}</h1>;
+}
+```
+
+```tsx
+import { useState, useEffect } from 'react';
+
+export default function SaveButton() {
+  const [isOnline, setIsOnline] = useState(true);
+  useEffect(() => {
+    function handleOnline() {
+      setIsOnline(true);
+    }
+    function handleOffline() {
+      setIsOnline(false);
+    }
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  function handleSaveClick() {
+    console.log('✅ Progress saved');
+  }
+
+  return (
+    <button disabled={!isOnline} onClick={handleSaveClick}>
+      {isOnline ? 'Save progress' : 'Reconnecting...'}
+    </button>
+  );
+}
+```
+
+위 두 개의 컴포넌트를 보았을 때, useState 와 useEffect 로 네트워크 상태를 관리하는 로직이 중복되고 있다.
+이런 경우 Custom Hook을 만들어서 중복된 로직을 하나의 함수로 추출할 수 있다.
+
+```tsx
+function useOnlineStatus() {
+  const [isOnline, setIsOnline] = useState(true);
+  useEffect(() => {
+    function handleOnline() {
+      setIsOnline(true);
+    }
+    function handleOffline() {
+      setIsOnline(false);
+    }
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+  return isOnline;
+}
+```
+
+1.  네트워크가 온라인인지 여부를 저장하는 상태 (isOnline)와 이 상태를 업데이트하는 함수 (setIsOnline)를 useState를 사용하여 만든다.
+2.  브라우저의 online 및 offline 이벤트에 리스너를 등록하고, 이벤트가 발생할 때마다 isOnline 상태를 업데이트하는 useEffect를 설정한다. 컴포넌트가 언마운트될 때 이벤트 리스너를 정리하는 함수를 반환하는 것이 중요하다.
+3.  isOnline 상태 값을 반환한다.
+
+이렇게 만들어진 useOnlineStatus Hook을 StatusBar 및 SaveButton 컴포넌트에서 호출하여 각 컴포넌트가 독립적으로 네트워크 상태를 알 수 있도록 할 수 있다.
+네트워크 상태가 변경되면 각 컴포넌트는 자체적으로 업데이트된다.
+
+```tsx
+import { useOnlineStatus } from './useOnlineStatus.js';
+
+function StatusBar() {
+  const isOnline = useOnlineStatus();
+  return <h1>{isOnline ? '✅ Online' : '❌ Disconnected'}</h1>;
+}
+
+function SaveButton() {
+  const isOnline = useOnlineStatus();
+
+  function handleSaveClick() {
+    console.log('✅ Progress saved');
+  }
+
+  return (
+    <button disabled={!isOnline} onClick={handleSaveClick}>
+      {isOnline ? 'Save progress' : 'Reconnecting...'}
+    </button>
+  );
+}
+
+export default function App() {
+  return (
+    <>
+      <SaveButton />
+      <StatusBar />
+    </>
+  );
+}
+```
+
+# Custom Hook 특징
+
+### Custom Hook 이름 규칙
+
+Custom Hook의 이름은 반드시 use로 시작하고 뒤에 대문자가 와야 합니다 (예: useOnlineStatus). 이는 React가 해당 함수가 Hook의 규칙을 준수하는지 확인하는 데 도움이 된다. Hook을 호출하지 않는 함수에는 use 접두사를 사용하지 않아야 한다.
+
+### 상태 자체 공유가 아닌 상태 관련 로직 공유
+
+Custom Hooks는 상태 관련 로직을 공유하지만, 상태 자체를 공유하는 것은 아니다.
+Custom Hook을 호출하는 각 컴포넌트는 해당 Hook 내에서 정의된 상태 변수의 독립적인 인스턴스를 갖게 된다. 이는 여러 컴포넌트가 동일한 로직을 사용하면서도 서로 다른 상태 값을 유지할 수 있음을 의미한다.
+만약 상태 자체를 공유해야 한다면, 해당 상태를 상위 컴포넌트로 끌어올려 props로 전달해야 한다.
+
+### 반응형 값 전달
+
+Custom Hook 내부의 코드는 컴포넌트가 리렌더링될 때마다 다시 실행된다.
+따라서 Custom Hook은 항상 최신 props와 상태에 접근할 수 있으며, Hook에 전달된 반응형 값(props 또는 상태)의 변경에 따라 동작할 수 있다.
+
+### 이벤트 핸들러 전달
+
+Custom Hook에 이벤트 핸들러 함수를 전달하여 컴포넌트가 Hook의 동작을 사용자 정의할 수 있다.
+하지만 이벤트 핸들러가 매번 렌더링 시 변경되어 불필요한 재연결을 유발하는 것을 방지하기 위해, useEffectEvent로 감싸는 것이 좋다.
+
+# Custom Hook을 언제 사용해야 할까?
+
+- 여러 컴포넌트에서 동일한 상태 관련 로직을 반복해서 사용할 때 Custom Hook으로 추출하는 것을 고려해보는 것이 좋다. 특히 useEffect를 사용하는 경우 Custom Hook으로 감싸는 것이 좋다.
+- Custom Hook의 이름이 명확하게 정의하기 어렵다면, 해당 로직이 아직 컴포넌트 로직과 너무 결합되어 있어 추출할 준비가 되지 않았을 수 있다.
+
+# Custom Hook 사용을 피해야 할 때
+
+- 단순한 상태 업데이트 로직 (useState 호출 하나만 감싸는 경우 등)은 Custom Hook으로 추출하는 것이 불필요할 수 있다.
+- useMount와 같이 React의 생명주기 API를 단순히 감싸는 형태의 Custom Hook은 React의 패러다임과 잘 맞지 않으며 린터의 경고를 놓칠 수 있다. 대신, 목적에 따라 명확하게 이름 지어진 Custom Hook을 사용하는 것이 좋다.
+
+# Custom Hook의 장점
+
+- 코드 재사용성 및 유지보수성 향상
+
+- 컴포넌트 코드의 가독성 및 선언성 향상
+
+- 외부 시스템 또는 브라우저 API와의 상호 작용과 같은 구현 세부 정보를 추상화하여 컴포넌트가 의도에 집중할 수 있도록 함
+
+- React의 새로운 기능이 추가될 때 컴포넌트 코드를 변경하지 않고도 Custom Hook 내부 구현을 업데이트하여 더 나은 패턴으로 쉽게 마이그레이션할 수 있도록 도움
+
+# Custom Hooks에 대한 요약
+
+Custom Hooks는 React 컴포넌트 간에 상태 관련 로직을 효율적으로 재사용하고 코드를 더 깔끔하고 유지보수하기 쉽게 만들어주는 강력한 기능이다. 로직은 공유하되 상태는 독립적으로 관리하며, 구현 세부 사항을 숨기고 컴포넌트의 의도를 명확하게 표현할 수 있도록 도와준다.
+
+---
+
+출처: [React 공식 문서](https://react.dev/learn/reusing-logic-with-custom-hooks)
