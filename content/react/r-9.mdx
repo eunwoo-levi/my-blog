@@ -1,0 +1,380 @@
+---
+title: 'Describing the UI - [React 공식문서]'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/react.webp'
+publishDate: '2025-04-25'
+categoryId: 6
+---
+
+React에 대한 개념을 탄탄히 쌓고 부족한 지식들을 채우기 위해서 [React 공식문서](https://react.dev/learn/describing-the-ui)에서 UI를 설명하는 방법에 대해 정독하고, 핵심 내용들을 정리해보려고 한다.
+
+전통적으로 웹 페이지를 만들 때 웹 개발자는 콘텐츠를 마크업한 후 JavaScript를 살짝 뿌려 상호작용 기능을 추가했다. 이는 웹에서 상호작용 기능이 필수적이었던 시절에는 매우 효과적이었다. 이제는 많은 사이트와 모든 앱에서 이러한 기능이 필수적이다.
+React는 동일한 기술을 사용하면서도 상호작용성을 우선시한다. React 컴포넌트는 마크업을 추가할 수 있는 JavaScript 함수이다.
+
+React는 사용자 인터페이스(UI)를 렌더링하는 JavaScript 라이브러리이다.
+React를 사용하면 마크업, CSS, JavaScript를 사용자 정의 "컴포넌트"로 결합하여 앱에서 재사용 가능한 UI 요소를 만들 수 있다.
+
+React 애플리케이션은 `Component`라고 불리는 분리된 UI 조각들로 구성된다.
+컴포넌트는 버튼만큼 작거나 전체 페이지만큼 클 수 있다.
+
+# Component 만드는 방법
+
+- 1. 구성 요소 내보내기 - `export default`를 통하여 컴포넌트를 내보내고 다른 파일에서 이 컴포넌트를 가져올 수 있다.
+- 2.  함수 정의 - `function` 키워드를 사용하여 avaScript 함수(컴포넌트)를 이름으로 정의한다.
+  - React 구성 요소는 일반 JavaScript 함수이지만, 이름은 `대문자`로 시작해야 작동한다.
+- 3. 마크업 추가 - 컴포넌트는 속성을 가진 태그를 반환한다 . `<img />`HTML 처럼 작성되었지만, 실제로는 JavaScript이다. 이 구문은 `JSX` 라고 하며 , JavaScript 내에 마크업을 삽입할 수 있도록 해줍니다.
+
+```jsx
+function Profile() {
+  return <img src='https://i.imgur.com/MK3eW3As.jpg' alt='Katherine Johnson' />;
+}
+
+export default function Gallery() {
+  return (
+    <section>
+      <h1>Amazing scientists</h1>
+      <Profile />
+      <Profile />
+      <Profile />
+    </section>
+  );
+}
+```
+
+# JSX로 마크업 작성하기
+
+각 React 컴포넌트는 React가 브라우저에 렌더링하는 마크업을 포함할 수 있는 JavaScript 함수이다.
+React 컴포넌트는 JSX라는 구문 확장을 사용하여 해당 마크업을 표현한다.
+JSX는 HTML과 매우 유사하지만, 좀 더 엄격하고 동적 정보를 표시할 수 있다.
+
+웹은 HTML, CSS, JavaScript로 구축되었다. 오랫동안 웹 개발자들은 콘텐츠를 HTML로, 디자인을 CSS로, 로직을 JavaScript로, 그리고 종종 별도의 파일로 관리해 왔다. 콘텐츠는 HTML 내부에 마크업되었지만, 페이지 로직은 JavaScript로 별도로 관리되었다다.
+하지만 웹이 더욱 인터랙티브해지면서 로직이 콘텐츠를 점점 더 좌우하게 되었다. JavaScript가 HTML을 담당하게 된 것이다. 이것이 React에서 렌더링 로직과 마크업이 같은 곳, 즉 컴포넌트에 함께 존재하는 이유다.
+JSX를 사용하면 JavaScript 파일 내에 HTML과 유사한 마크업을 작성하여 렌더링 로직과 콘텐츠를 같은 위치에 유지할 수 있다.
+
+## 중괄호를 사용한 JSX의 JavaScript
+
+JSX를 사용하면 JavaScript 파일 내에 HTML과 유사한 마크업을 작성하여 렌더링 로직과 콘텐츠를 같은 위치에 유지할 수 있다.
+경우에 따라 해당 마크업 내에 JavaScript 로직을 추가하거나 동적 속성을 참조해야 할 수 있다.
+이 경우 JSX에 `중괄호`를 사용하여 JavaScript 창을 열 수 있다.
+
+```tsx
+const person = {
+  name: 'Gregorio Y. Zara',
+  theme: {
+    backgroundColor: 'black',
+    color: 'pink',
+  },
+};
+
+export default function TodoList() {
+  return (
+    <div style={person.theme}>
+      <h1>{person.name}'s Todos</h1>
+      <img className='avatar' src='https://i.imgur.com/7vQD0fPs.jpg' alt='Gregorio Y. Zara' />
+      <ul>
+        <li>Improve the videophone</li>
+        <li>Prepare aeronautics lectures</li>
+        <li>Work on the alcohol-fuelled engine</li>
+      </ul>
+    </div>
+  );
+}
+```
+
+`JSX`는 JavaScript를 작성하는 특별한 방법입니다. 즉, 중괄호를 사용하여 JavaScript를 JSX 안에 사용할 수 있습니다 `{}`.
+중괄호 안에서는 모든 JavaScript 표현식이 작동한다.
+
+```tsx
+const today = new Date();
+
+function formatDate(date) {
+  return new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(date);
+}
+
+export default function TodoList() {
+  return <h1>To Do List for {formatDate(today)}</h1>;
+}
+```
+
+## 중괄호를 어디에 사용할 것인가?
+
+- 1. As text directly inside a JSX tag: `<h1>{name}'s To Do List</h1>` works, but `<{tag}>Gregorio Y. Zara's To Do List</{tag}>` will not.
+- 2. As attributes immediately following the `=` sign: `src={avatar}` will read the avatar variable, but `src="{avatar}"` will pass the string `"{avatar}"`
+
+# 컴포넌트에 props 전달하기
+
+React 컴포넌트는 props를 사용하여 서로 통신한다.
+모든 부모 컴포넌트는 props를 통해 자식 컴포넌트에 정보를 전달할 수 있다. props는 객체, 배열, 함수, 심지어 JSX까지 모든 JavaScript 값을 전달할 수 있다.
+Props를 사용하면 부모 컴포넌트와 자식 컴포넌트를 독립적으로 고려할 수 있다.
+props는 조정할 수 있는 "손잡이"라고 생각하면 된다. props는 함수의 인수와 같은 역할을 한다.
+실제로 props는 컴포넌트의 유일한 인수이다. React 컴포넌트 함수는 `props` 객체라는 단일 인수를 받는다.
+
+```tsx
+function Avatar(props) {
+  let person = props.person;
+  let size = props.size;
+  // ...
+}
+```
+
+하지만 일반적으로 `props` 객체 자체는 필요하지 않으므로 props객체를 개별적인 props로 분해한다.
+
+- Don’t miss the pair of { and } curlies inside of ( and ) when declaring props
+
+```tsx
+function Avatar({ person, size }) {
+  // ...
+}
+```
+
+This syntax is called `“destructuring”`(구조 분해) and is equivalent to reading properties from a function parameter:
+
+```tsx
+function Avatar(props) {
+  let person = props.person;
+  let size = props.size;
+  // ...
+}
+```
+
+아래는 props를 사용하여 컴포넌트에 props를 전달하는 예시이다.
+
+```tsx
+import { getImageUrl } from './utils.js';
+
+export default function Profile() {
+  return (
+    <Card>
+      <Avatar
+        size={100}
+        person={{
+          name: 'Katsuko Saruhashi',
+          imageId: 'YfeOqp2',
+        }}
+      />
+    </Card>
+  );
+}
+
+function Avatar({ person, size }) {
+  return (
+    <img
+      className='avatar'
+      src={getImageUrl(person)}
+      alt={person.name}
+      width={size}
+      height={size}
+    />
+  );
+}
+
+function Card({ children }) {
+  return <div className='card'>{children}</div>;
+}
+```
+
+# 조건부 렌더링
+
+컴포넌트는 조건에 따라 다른 내용을 표시해야 하는 경우가 많다.
+React에서는 `if`명령문, `&&`, `? :`연산자와 같은 JavaScript 구문을 사용하여 JSX를 조건부로 렌더링할 수 있다.
+
+```tsx
+function Item({ name, isPacked }) {
+  return (
+    <li className='item'>
+      {name} {isPacked && '✅'}
+    </li>
+  );
+}
+
+export default function PackingList() {
+  return (
+    <section>
+      <h1>Sally Ride's Packing List</h1>
+      <ul>
+        <Item isPacked={true} name='Space suit' />
+        <Item isPacked={true} name='Helmet with a golden leaf' />
+        <Item isPacked={false} name='Photo of Tam' />
+      </ul>
+    </section>
+  );
+}
+```
+
+# 렌더링 목록
+
+데이터 컬렉션에서 여러 개의 유사한 구성 요소를 표시해야 하는 경우가 많다.
+JavaScript filter()와 map()React를 함께 사용하면 데이터 배열을 필터링하고 구성 요소 배열로 변환할 수 있다.
+
+- JSX elements directly inside a map() call always need keys!
+
+키는 React에 각 구성 요소가 어떤 배열 항목에 대응하는지 알려주어 나중에 일치시킬 수 있도록 한다.
+배열 항목이 이동(예: 정렬), 삽입 또는 삭제될 수 있는 경우 이 키가 중요하다. 잘 선택된 key는 React가 정확히 무슨 일이 일어났는지 추론하고 DOM 트리를 올바르게 업데이트하는 데 도움이 된다.
+
+#### key 규칙
+
+- 1. 키는 형제 노드 간에 고유해야 한다. 하지만 서로 다른 배열 의 JSX 노드에 동일한 키를 사용해도 괜찮다.
+- 2. 키는 변경되어서는 안 됩니다. 변경 하면 키의 목적이 달성되지 않는다! 렌더링 중에는 키를 생성하면 안된다.
+
+각 배열 항목에 대해 key 를 지정해야 한다. 일반적으로 데이터베이스의 ID를 key 로 사용합니다.
+key를 사용하면 React가 목록이 변경되더라도 목록에서 각 항목의 위치를 ​​추적할 수 있습니다.
+
+- Note that your components won’t receive key as a prop. It’s only used as a hint by React itself. If your component needs an ID, you have to pass it as a separate prop: `<Profile key={id} userId={id} />`
+
+```tsx
+import { people } from './data.js';
+import { getImageUrl } from './utils.js';
+
+export default function List() {
+  const listItems = people.map((person) => (
+    <li key={person.id}>
+      <img src={getImageUrl(person)} alt={person.name} />
+      <p>
+        <b>{person.name}:</b>
+        {' ' + person.profession + ' '}
+        known for {person.accomplishment}
+      </p>
+    </li>
+  ));
+  return (
+    <article>
+      <h1>Scientists</h1>
+      <ul>{listItems}</ul>
+    </article>
+  );
+}
+```
+
+# 구성 요소를 pure하게 유지
+
+일부 JavaScript 함수는 pure function다. pure function는 다음과 같다.
+
+- 자기 일에만 신경 쓴다. 호출되기 전에 존재했던 객체나 변수를 변경하지 않다.
+- 동일한 입력이면 동일한 출력이다. 동일한 입력이 주어지면 pure function는 항상 동일한 결과를 반환해야 한다.
+
+컴포넌트를 pure function로만 엄격하게 작성하면 코드베이스가 커짐에 따라 발생하는 난해한 버그와 예측할 수 없는 동작을 피할 수 있다.
+
+다음은 impure function의 예시이다.
+
+```tsx
+let guest = 0;
+
+function Cup() {
+  // Bad: changing a preexisting variable!
+  guest = guest + 1;
+  return <h2>Tea cup for guest #{guest}</h2>;
+}
+
+export default function TeaSet() {
+  return (
+    <>
+      <Cup />
+      <Cup />
+      <Cup />
+    </>
+  );
+}
+```
+
+기존 변수를 수정하는 대신 prop을 전달하여 이 구성 요소를 순수하게 만들 수 있다.
+
+```tsx
+function Cup({ guest }) {
+  return <h2>Tea cup for guest #{guest}</h2>;
+}
+
+export default function TeaSet() {
+  return (
+    <>
+      <Cup guest={1} />
+      <Cup guest={2} />
+      <Cup guest={3} />
+    </>
+  );
+}
+```
+
+side effect는 컴포넌트 외부 상태를 변경하는 행위 (예: DOM 조작, API 호출, 타이머 설정 등)를 뜻한다.
+
+React에서는 주로 `event handlers`에서 `side effect`이 발생한다.
+이벤트 핸들러는 버튼을 클릭하는 등의 동작을 수행할 때 React가 실행하는 함수다. 이벤트 핸들러는 컴포넌트 내부에 정의되어 있지만, 렌더링 중에는 실행되지 않는다.
+따라서 이벤트 핸들러는 pure할 필요가 없다.
+
+React 렌더링은 pure 함수처럼 동작해야 하므로, side effect는 그 안에서 실행되면 안 된다.
+
+다른 모든 옵션을 시도했지만 `side effect`에 적합한 이벤트 핸들러를 찾을 수 없는 경우, `useEffect` 컴포넌트에서 호출하여 반환된 JSX에 이벤트 핸들러를 연결할 수 있다.
+이렇게 하면 React가 나중에 렌더링 후 `side effect`이 허용될 때 해당 이벤트를 실행하도록 할 수 있다. 하지만 이 방법은 최후의 수단이어야 한다.
+
+아래 공식문서를 참고해보면 좋다.
+[React 공식문서 내용](https://react.dev/learn/keeping-components-pure)
+
+```
+In React, side effects usually belong inside event handlers. Event handlers are functions that React runs when you perform some action—for example, when you click a button. Even though event handlers are defined inside your component, they don’t run during rendering! So event handlers don’t need to be pure.
+
+If you’ve exhausted all other options and can’t find the right event handler for your side effect, you can still attach it to your returned JSX with a useEffect call in your component. This tells React to execute it later, after rendering, when side effects are allowed. However, this approach should be your last resort.
+```
+
+위 공식문서에서 `“왜 handler로 못 해결한 부작용을 useEffect로 해결할 수 있지?”` 라는 의문점이 생겼다.
+예시를 생각해보면 이해가 된다.
+
+`event handler`는 '특정 이벤트'에 반응할 때만 실행된다. (ex- onClick, onChange, onMouseEnter.. 등)
+하지만 어떤 부작용은 렌더링 이후 자동으로 실행되어야 한다. (ex- 컴포넌트가 마운트된 후 API 요청을 보내야 할 때)
+
+```tsx
+useEffect(() => {
+  fetch('/api/data'); // 클릭 없이도 side effect 발생
+}, []);
+```
+
+또한, 렌더링 시점에는 DOM이 완전히 준비되지 않았을 수 있는 경우가 있다.
+예를 들어 `document.getElementById()` 같은 DOM 조작은 렌더링 직후가 아니면 에러날 수 있다. 이럴 땐 `useEffect`로 DOM이 그려지고 난 뒤 실행하게 해야 된다.
+
+## 렌더트리 (Render Tree)
+
+React 앱은 서로 중첩된 많은 컴포넌트로 구성되어 있다. React는 어떻게 앱의 컴포넌트 구조를 추적할까?
+React와 많은 다른 UI 라이브러리는 UI를 트리로 모델링한다. 애플리케이션을 트리로 생각하면 컴포넌트 간의 관계를 이해하는 데 도움이 된다.
+React `Render Tree`는 구성 요소 간의 부모와 자식 관계를 나타낸다.
+
+아래에서 렌더링하는 React앱의 코드를 보고 Render Tree를 도식화해보자.
+
+```tsx
+import FancyText from './FancyText';
+import InspirationGenerator from './InspirationGenerator';
+import Copyright from './Copyright';
+
+export default function App() {
+  return (
+    <>
+      <FancyText title text='Get Inspired App' />
+      <InspirationGenerator>
+        <Copyright year={2004} />
+      </InspirationGenerator>
+    </>
+  );
+}
+```
+
+![React Render Tree Example](https://ko.react.dev/_next/image?url=%2Fimages%2Fdocs%2Fdiagrams%2Frender_tree.dark.png&w=1080&q=75)
+
+트리는 노드로 구성되어 있으며, 각 노드는 컴포넌트를 나타낸다. App, FancyText, Copyright 등은 모두 트리의 노드이다.
+React 렌더 트리에서 루트 노드는 앱의 Root 컴포넌트이다. 이 경우 루트 컴포넌트는 App이며 React가 렌더링하는 첫 번째 컴포넌트이다. 트리의 각 화살표는 부모 컴포넌트에서 자식 컴포넌트를 가리킨다.
+
+## 모듈 의존성 트리 (Module Dependency Tree)
+
+트리로 모델링 할 수 있는 React 앱의 다른 관계는 앱의 모듈 의존성이다. 컴포넌트를 분리하고 로직을 별도의 파일로 분리하면 컴포넌트, 함수 또는 상수를 내보내는 JS 모듈을 만들 수 있다.
+모듈 의존성 트리의 각 노드는 모듈이며, 각 가지는 해당 모듈의 import 문을 나타낸다.
+이전의 영감 앱을 사용하면 모듈 의존성 트리 또는 줄여서 의존성 트리를 구축할 수 있다.
+
+![module dependency tree](https://ko.react.dev/_next/image?url=%2Fimages%2Fdocs%2Fdiagrams%2Fmodule_dependency_tree.dark.png&w=1920&q=75)
+
+트리의 루트 노드는 루트 모듈이며, 엔트리 포인트 파일이라고도 한다. 일반적으로 루트 컴포넌트를 포함하는 모듈이다.
+
+동일한 앱의 렌더 트리와 비교하면 유사한 구조가 있지만 몇 가지 차이점이 있다.
+
+- 트리를 구성하는 노드는 컴포넌트가 아닌 모듈을 나타낸다.
+- inspirations.js와 같은 컴포넌트가 아닌 모듈도 이 트리에 나타낸다. 렌더 트리는 컴포넌트만 캡슐화한다.
+- Copyright.js가 App.js 아래에 나타나지만, 렌더 트리에서 Copyright 컴포넌트는 InspirationGenerator의 자식으로 나타낸다. 이는 InspirationGenerator가 자식 props로 JSX를 허용하기 때문에, Copyright를 자식 컴포넌트로 렌더링하지만 모듈을 가져오지는 않기 때문이다.
+
+의존성 트리는 React 앱을 실행하는 데 필요한 모듈을 결정하는 데 유용하다. React 앱을 프로덕션용으로 빌드할 때, 일반적으로 클라이언트에 제공할 모든 필요 JavaScript를 번들로 묶는 빌드 단계가 있다. 이 작업을 담당하는 도구를 번들러라고 하며, 번들러는 의존성 트리를 사용하여 포함해야 할 모듈을 결정한다.
+
+앱이 커짐에 따라 번들 크기도 커진다. 번들 크기가 커지면 클라이언트가 다운로드하고 실행하는 데 드는 비용도 커진다. 또한 UI가 그려지는 데 시간이 지체될 수 있다. 앱의 의존성 트리를 파악하면 이러한 문제를 디버깅하는 데 도움이 될 수 있다.
