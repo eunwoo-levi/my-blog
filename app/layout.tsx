@@ -7,8 +7,8 @@ import { SpaceBackground } from '@/src/shared/ui';
 import { GoogleAnalytics } from '@/src/app/provider/GoogleAnalytics';
 import localFont from 'next/font/local';
 
-const bmfont = localFont({
-  src: '../public/fonts/bmfont.woff2',
+const insansui = localFont({
+  src: '../public/fonts/insansui.woff2',
   weight: '500',
   style: 'normal',
   display: 'swap',
@@ -51,7 +51,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en' suppressHydrationWarning>
-      <body className={`${bmfont.className} antialiased`}>
+      <body className={`${insansui.className} antialiased`}>
         <GoogleAnalytics />
         <ThemeProvider
           attribute='class'
