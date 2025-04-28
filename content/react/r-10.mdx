@@ -1,0 +1,531 @@
+---
+title: 'Adding Interactivity - [React 공식문서]'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-04-29'
+categoryId: 6
+---
+
+[Adding Interactivity - React 공식문서](https://react.dev/learn/adding-interactivity)
+
+React에서는 시간에 따라 변화하는 데이터를 state라고 부른다.
+state는 컴포넌트의 상태를 나타내며, React는 state가 변경될 때마다 화면을 자동으로 업데이트한다. 이를 통해 사용자는 동적인 웹 애플리케이션을 쉽게 만들 수 있다.
+이번 장에서는 공식문서를 통해서 상호작용을 다루는 컴포넌트를 작성하고 state를 업데이트하며, 시간에 따라 화면을 갱신하는 방법에 대해서 자세히 알아보자.
+
+# 이벤트에 대한 응답
+
+React에서는 JSX에 `event handler`를 추가할 수 있다.
+`event handler`는 clicking, hovering, focusing on form inputs 등 `사용자 상호작용`에 따라 유발되는 사용자 정의 함수이다.
+
+Event handler 함수는 다음 특징을 가진다.
+
+- Button 컴포넌트 내부에 handleClick 함수를 선언한다.
+- 해당 함수 내부 로직을 구현한다. 이번에는 메시지를 표시하기 위해 alert를 사용한다.
+- `<button>` JSX에 `onClick={handleClick}`을 추가한다.
+
+`<button>`과 같은 내장 컴포넌트는 `onClick`과 같은 내장 브라우저 이벤트만 지원한다.
+반면 사용자 정의 컴포넌트를 생성하는 경우, 컴포넌트 event handler props의 역할에 맞는 원하는 이름을 사용할 수 있다.
+
+```tsx
+export default function App() {
+  return (
+    <Toolbar onPlayMovie={() => alert('Playing!')} onUploadImage={() => alert('Uploading!')} />
+  );
+}
+
+function Toolbar({ onPlayMovie, onUploadImage }) {
+  return (
+    <div>
+      <Button onClick={onPlayMovie}>Play Movie</Button>
+      <Button onClick={onUploadImage}>Upload Image</Button>
+    </div>
+  );
+}
+
+function Button({ onClick, children }) {
+  return <button onClick={onClick}>{children}</button>;
+}
+```
+
+### 주의: Event Handler로 전달한 함수들은 호출이 아닌 전달되어야 한다.
+
+#### 잘못된 예시 (함수 호출)
+
+다음과 같이 인라인 함수를 전달하면 버튼을 클릭할 때마다 실행되는 것이 아니라 컴포넌트가 렌더링 될 때마다 실행될 것이다.
+
+: `<button onClick={handleClick()}>` , `<button onClick={alert('...')}>`
+
+#### 올바른 예시 (함수 전달)
+
+아래의 올바른 예시와 같은 방법으로 매 렌더링마다 내부 코드를 실행하지 않고 함수를 생성하여 추후 이벤트에 의해 호출되게 한다.
+
+: `<button onClick={handleClick}>` , `<button onClick={() => alert('...')}>`
+
+### 유의: 적절한 HTML 태그 사용하기
+
+event handler에 적절한 HTML 태그를 사용하고 있는지 확인하자.
+예를 들어 클릭을 처리하기 위해서는 `<div onClick={handleClick}>` 대신 `<button onClick={handleClick}>`을 사용하는 것이 좋다. 실제 브라우저에서 `<button>`은 키보드 내비게이션과 같은 빌트인 브라우저 동작을 활성화 한다.
+
+## Event propagation
+
+Event Handler는 Event Object를 유일한 매개변수로 받습니다. 관습을 따르자면 “event”를 의미하는 `e`로 호출되는 것이 일반적이다. 이 Object를 이벤트의 정보를 읽어들이는데 사용할 수 있다.
+
+이러한 Event Object는 Propagation(전파)를 멈출 수 있게 해줍니다. 이벤트가 부모 컴포넌트에 닿지 못하도록 막으려면 아래 Button 컴포넌트와 같이 `e.stopPropagation()`를 호출하면 된다.
+
+```tsx
+function Button({ onClick, children }) {
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+export default function Toolbar() {
+  return (
+    <div
+      className='Toolbar'
+      onClick={() => {
+        alert('You clicked on the toolbar!');
+      }}
+    >
+      <Button onClick={() => alert('Playing!')}>Play Movie</Button>
+      <Button onClick={() => alert('Uploading!')}>Upload Image</Button>
+    </div>
+  );
+}
+```
+
+위 코드에서 Button을 클릭하면 아래와 같은 절차로 실행이 된다.
+
+- React가 `<button>`에 전달된 onClick 핸들러를 호출한다.
+- Button에 정의된 해당 핸들러는 다음을 수행한다.
+- `e.stopPropagation()`을 호출하여 이벤트가 더 이상 bubbling 되지 않도록 방지한다.
+- Toolbar 컴포넌트가 전달해 준 onClick 함수를 호출한다.
+- Toolbar 컴포넌트에서 정의된 위 함수가 버튼의 alert를 표시한다.
+- 전파가 중단되었으므로 부모인 `<div>`의 onClick은 실행되지 않는다.
+
+### Preventing default behavior
+
+일부 브라우저 이벤트는 그와 관련된 기본 브라우저 동작을 가진다. 일례로 `<form>`의 제출 이벤트는 그 내부의 버튼을 클릭 시 페이지 전체를 리로드하는 것이 기본 동작이다.
+
+이러한 일이 발생하지 않도록 막기 위해 `e.preventDefault()`를 이벤트 오브젝트에서 호출할 수 있다.
+
+```tsx
+export default function Signup() {
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        alert('Submitting!');
+      }}
+    >
+      <input />
+      <button>Send</button>
+    </form>
+  );
+}
+```
+
+# State: 컴포넌트의 메모리
+
+상호작용에 따라 컴포넌트는 종종 화면에 표시되는 내용을 변경해야 한다. 폼에 타이핑하면 입력 필드를 업데이트해야 하고, 이미지 캐러셀에서 “다음”을 클릭하면 표시되는 이미지가 변경되어야 하며, “구매”를 클릭하면 제품이 장바구니에 추가되어야 한다. 컴포넌트는 현재 입력값, 현재 이미지, 장바구니에 담긴 상품 등을 “기억”해야 한다. React에서는 이러한 컴포넌트별 메모리를 `state`라고 부른다.
+
+`useState` Hook을 사용하면 컴포넌트에 state를 추가할 수 있다. Hooks는 컴포넌트가 React의 주요 기능(state는 그중 하나이다.)을 사용할 수 있도록 해주는 특별한 함수이다. useState Hook을 사용하면 state 변수를 선언할 수 있다. useState는 초기 state를 인자로 받으며, 현재 상태와 상태를 업데이트할 수 있는 상태 설정 함수를 배열에 담아 반환한다.
+
+```tsx
+import { sculptureList } from './data.js';
+
+export default function Gallery() {
+  let index = 0;
+
+  function handleClick() {
+    index = index + 1;
+  }
+
+  let sculpture = sculptureList[index];
+  return (
+    <>
+      <button onClick={handleClick}>Next</button>
+      <h2>
+        <i>{sculpture.name} </i>
+        by {sculpture.artist}
+      </h2>
+      <h3>
+        ({index + 1} of {sculptureList.length})
+      </h3>
+      <img src={sculpture.url} alt={sculpture.alt} />
+      <p>{sculpture.description}</p>
+    </>
+  );
+}
+```
+
+위 코드에서 `handleClick` 이벤트 핸들러는 지역 변수 index를 업데이트하고 있다. 하지만 이러한 변화를 보이지 않게 하는 두 가지 이유가 있다.
+
+- 1. 지역 변수는 렌더링 간에 유지되지 않다. React는 이 컴포넌트를 두 번째로 렌더링할 때 지역 변수에 대한 변경 사항은 고려하지 않고 처음부터 렌더링 한다.
+- 2. 지역 변수를 변경해도 렌더링을 일으키지 않다. React는 새로운 데이터로 컴포넌트를 다시 렌더링해야 한다는 것을 인식하지 못한다.
+
+컴포넌트를 새로운 데이터로 업데이트하기 위해선 다음 두 가지가 필요하다.
+
+- 1. 렌더링 사이에 데이터를 유지한다.
+- 2. React가 새로운 데이터로 컴포넌트를 렌더링하도록 유발한다.
+
+`useState` 훅은 이 두 가지를 제공한다.
+
+- 1. 렌더링 간에 데이터를 유지하기 위한 state 변수.
+- 2. 변수를 업데이트하고 React가 컴포넌트를 다시 렌더링하도록 유발하는 state setter 함수
+
+```tsx
+import { useState } from 'react';
+import { sculptureList } from './data.js';
+
+export default function Gallery() {
+  const [index, setIndex] = useState(0);
+  const [showMore, setShowMore] = useState(false);
+  const hasNext = index < sculptureList.length - 1;
+
+  function handleNextClick() {
+    if (hasNext) {
+      setIndex(index + 1);
+    } else {
+      setIndex(0);
+    }
+  }
+
+  function handleMoreClick() {
+    setShowMore(!showMore);
+  }
+
+  let sculpture = sculptureList[index];
+  return (
+    <>
+      <button onClick={handleNextClick}>Next</button>
+      <h2>
+        <i>{sculpture.name} </i>
+        by {sculpture.artist}
+      </h2>
+      <h3>
+        ({index + 1} of {sculptureList.length})
+      </h3>
+      <button onClick={handleMoreClick}>{showMore ? 'Hide' : 'Show'} details</button>
+      {showMore && <p>{sculpture.description}</p>}
+      <img src={sculpture.url} alt={sculpture.alt} />
+    </>
+  );
+}
+```
+
+# 렌더링과 반영
+
+컴포넌트는 화면에 표시되기 전에 React에 의해 렌더링 되어야 한다. 이 과정을 이해하면 코드가 어떻게 실행되는지 파악하고 코드의 동작을 설명하는 데 도움이 될 것이다.
+`Rendering`은 쉽게 말해서 `컴포넌트를 다시 계산해서, 화면에 반영하는 일`이다.
+
+UI를 요청하고 제공하는 세 가지 단계가 있다.
+
+- Triggering a render
+- Rendering the component
+- Committing to the DOM
+
+## STEP1: Triggering a render (JSX를 실행해서 새로운 가상 DOM을 생성)
+
+컴포넌트 렌더링이 일어나는 데에는 두 가지 이유가 있다.
+
+- 1. 컴포넌트의 `초기 렌더링`인 경우
+- 2. 컴포넌트의 `state`가 업데이트된 경우
+
+### 초기 렌더링
+
+앱을 시작할 때 초기 렌더링을 트리거해야 한다.
+프레임워크와 샌드박스는 때때로 이 코드를 숨기곤 하지만, 대상 DOM 노드와 함께 `createRoot`를 호출한 다음 해당 컴포넌트로 `render` 메서드를 호출하면 이 작업이 완료된다.
+
+```tsx
+// index.js
+import Image from './Image.js';
+import { createRoot } from 'react-dom/client';
+
+const root = createRoot(document.getElementById('root'));
+root.render(<Image />);
+```
+
+### State 업데이트 시 리렌더링
+
+컴포넌트가 처음으로 렌더링 된 후에는 set 함수를 통해 상태를 업데이트하여 추가적인 렌더링을 트리거할 수 있다. 컴포넌트의 상태를 업데이트하면 자동으로 렌더링 대기열에 추가된다.
+
+## STEP2: Rendering the component - diffing (이전 가상 DOM과 새 가상 DOM을 비교)
+
+렌더링을 트리거한 후 React는 컴포넌트를 호출하여 화면에 표시할 내용을 파악한다. `Rendering`은 React에서 컴포넌트를 호출하는 것이다.
+
+- 초기 렌더링에서 React는 루트 컴포넌트를 호출한다.
+- 이후 렌더링에서 React는 state 업데이트가 일어나 렌더링을 트리거한 컴포넌트를 호출한다.
+
+다음 예시에서 React는 Gallery()와 Image()를 여러 번 호출한다.
+
+```tsx
+export default function Gallery() {
+  return (
+    <section>
+      <h1>Inspiring Sculptures</h1>
+      <Image />
+      <Image />
+      <Image />
+    </section>
+  );
+}
+
+function Image() {
+  return (
+    <img
+      src='https://i.imgur.com/ZF6s192.jpg'
+      alt="'Floralis Genérica' by Eduardo Catalano: a gigantic metallic flower sculpture with reflective petals"
+    />
+  );
+}
+```
+
+- 초기 렌더링 하는 동안 React는 `<section>`, `<h1>` 그리고 3개의 `<img>` 태그에 대한 DOM 노드를 생성한다.
+- 리렌더링하는 동안 React는 이전 렌더링 이후 변경된 속성을 계산한다. 다음 단계인 커밋 단계까지는 해당 정보로 아무런 작업도 수행하지 않는다.
+
+## STEP3: Committing to the DOM (실제 브라우저 DOM에 변경사항을 적용)
+
+컴포넌트를 렌더링(호출)한 후 React는 DOM을 수정한다.
+
+- 초기 렌더링의 경우 React는 appendChild() DOM API를 사용하여 생성한 모든 DOM 노드를 화면에 표시한다.
+- 리렌더링의 경우 React는 필요한 최소한의 작업(렌더링하는 동안 계산된 것!)을 적용하여 DOM이 최신 렌더링 출력과 일치하도록 한다.
+
+React는 렌더링 간에 차이가 있는 경우에만 DOM 노드를 변경한다.
+예를 들어 매초 부모로부터 전달된 다른 props로 다시 렌더링하는 컴포넌트가 있다. `<input>`에 텍스트를 입력하여 value를 업데이트 하지만 컴포넌트가 리렌더링될 때 텍스트가 사라지지 않는다.
+
+```tsx
+// Clock.js
+export default function Clock({ time }) {
+  return (
+    <>
+      <h1>{time}</h1>
+      <input />
+    </>
+  );
+}
+```
+
+마지막 단계에서 React가 `<h1>`의 내용만 새로운 time으로 업데이트하기 때문이다. `<input>`이 JSX에서 이전과 같은 위치로 확인되므로 React는 `<input>` 또는 value를 건드리지 않는다.
+
+## Browser paint
+
+렌더링이 완료되고 React가 DOM을 업데이트한 후 브라우저는 화면을 다시 그립니다. 이 단계를 `Browser paint`이라고 하지만 이 문서의 나머지 부분에서 혼동을 피하고자 `Painting`이라고 부를 것이다.
+
+# State as a Snapshot
+
+State 변수는 읽고 쓸 수 있는 일반 자바스크립트 변수처럼 보일 수 있다. 하지만 state는 스냅샷처럼 동작한다. state 변수를 설정하여도 이미 가지고 있는 state 변수는 변경되지 않고, 대신 리렌더링이 발동된다.
+
+클릭과 같은 사용자 이벤트에 반응하여 사용자 인터페이스가 직접 변경된다고 생각할 수 있다. React에서는 이와 다르게 조금 다르게 작동한다. 이전 페이지에서 state를 설정하면 React에 리렌더링을 요청하는 것을 보았다. 즉, 인터페이스가 이벤트에 반응하려면 state를 업데이트해야 한다.
+
+```tsx
+import { useState } from 'react';
+
+export default function Form() {
+  const [isSent, setIsSent] = useState(false);
+  const [message, setMessage] = useState('Hi!');
+  if (isSent) {
+    return <h1>Your message is on its way!</h1>;
+  }
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        setIsSent(true);
+        sendMessage(message);
+      }}
+    >
+      <textarea
+        placeholder='Message'
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+      />
+      <button type='submit'>Send</button>
+    </form>
+  );
+}
+
+function sendMessage(message) {
+  // ...
+}
+```
+
+버튼을 클릭하면 다음과 같은 일이 발생한다.
+
+- 1. onSubmit 이벤트 핸들러가 실행된다.
+- 2. setIsSent(true)가 isSent를 true로 설정하고 새로운 렌더링을 `queue`에 넣는다.
+- 3. React는 새로운 isSent값에 따라 컴포넌트를 다시 렌더링한다. (DOM tree를 업데이트)
+
+여기서 `새로운 렌더링을 `queue`에 넣는다 ` 라는 문장이 중요하다. React는 state를 업데이트할 때마다 컴포넌트를 다시 렌더링하는 것이 아니라, 렌더링을 `queue`에 넣고 나중에 한 번에 처리한다.
+
+즉, React에서 setState는 즉시 반영되지 않는다.
+`setIsSent(true)`를 호출하면, 바로 isSent가 true로 바뀌는 것이 아니다.
+
+`setState` 호출 시, React는 "아, 이 컴포넌트는 다시 렌더링해야겠다"라고 요청만 한다.
+이 요청은 즉시 처리되지 않고, 나중에 일괄적으로 처리(`batching`) 된다.
+
+이걸 "업데이트 요청을 큐에 넣는다"라고 비유적으로 표현한 것 같다.
+
+예를 들어 아래와 같은 예시를 보면 `setNumber(number + 1)`를 3번 호출했지만, 화면에는 1만 증가한다.
+
+```tsx
+import { useState } from 'react';
+
+export default function Counter() {
+  const [number, setNumber] = useState(0);
+
+  return (
+    <>
+      <h1>{number}</h1>
+      <button
+        onClick={() => {
+          setNumber(number + 1);
+          setNumber(number + 1);
+          setNumber(number + 1);
+        }}
+      >
+        +3
+      </button>
+    </>
+  );
+}
+```
+
+왜 +3이 아니라 +1만 증가할까?
+
+`setNumber(number + 1)`를 세 번 호출했지만, 이 렌더링에서 이벤트 핸들러에서 number는 항상 0이므로 state를 1로 세 번 설정한다.
+이것이 이벤트 핸들러가 완료된 후 React가 컴포넌트 안의 number 를 3이 아닌 1로 다시 렌더링하는 이유이다.
+
+햇갈릴 수 있는 또 다른 예시를 보자.
+
+```tsx
+import { useState } from 'react';
+
+export default function Counter() {
+  const [number, setNumber] = useState(0);
+
+  return (
+    <>
+      <h1>{number}</h1>
+      <button
+        onClick={() => {
+          setNumber(number + 5);
+          alert(number);
+        }}
+      >
+        +5
+      </button>
+    </>
+  );
+}
+```
+
+위의 코드에서 `alert(number)`를 클릭하면 0이 출력된다. 왜 그런것일까?
+React에 저장된 state는 경고창이 실행될 때 변경되었을 수 있지만 사용자가 상호작용한 시점에 state 스냅샷을 사용하는 건 이미 예약되어 있던 것이다.
+
+state 변수의 값은 이벤트 핸들러의 코드가 비동기적이더라도 렌더링 내에서 절대 변경되지 않는다. 해당 렌더링의 onClick 내에서, `setNumber(number + 5)`가 호출된 후에도 number의 값은 계속 0이다. 이 값은 컴포넌트를 호출해 React가 UI의 “스냅샷을 찍을” 때 “고정”된 값이다.
+
+즉, React는 렌더링의 이벤트 핸들러 내에서 state 값을 “고정”으로 유지한다. 코드가 실행되는 동안 state가 변경되었는지를 걱정할 필요가 없다.
+
+# Queueing a Series of State Updates
+
+state 변수를 설정하면 다음 렌더링이 큐에 들어간다. 그러나 때에 따라 다음 렌더링을 큐에 넣기 전에, 값에 대해 여러 작업을 수행하고 싶을 때도 있다. 이를 위해서는 React가 state 업데이트를 어떻게 배치하면 좋을지 이해하는 것이 도움이 된다.
+
+## React batches state updates
+
+우리는 이전에 아래 코드를 보았을 때 `setNumber(number + 1)`를 세 번 호출하므로 “+3” 버튼을 클릭하면 세 번 증가할 것으로 예상할 수 있다.
+각 렌더링의 state 값은 고정되어 있으므로, 첫 번째 렌더링의 이벤트 핸들러의 number 값은 `setNumber(1)`을 몇 번 호출하든 항상 0이다.
+
+```tsx
+import { useState } from 'react';
+
+export default function Counter() {
+  const [number, setNumber] = useState(0);
+
+  return (
+    <>
+      <h1>{number}</h1>
+      <button
+        onClick={() => {
+          setNumber(number + 1);
+          setNumber(number + 1);
+          setNumber(number + 1);
+        }}
+      >
+        +3
+      </button>
+    </>
+  );
+}
+```
+
+하지만 여기에는 한가지 요인이 더 있다. React는 state 업데이트를 하기 전에 이벤트 핸들러의 모든 코드가 실행될 때까지 기다린다.
+이 때문에 리렌더링은 모든 `setNumber()` 호출이 완료된 이후에만 일어난다.
+
+이렇게 하면 너무 많은 리렌더링이 발생하지 않고도 여러 컴포넌트에서 나온 다수의 state 변수를 업데이트할 수 있다.
+하지만 이는 이벤트 핸들러와 그 안에 있는 코드가 완료될 때까지 UI가 업데이트되지 않는다는 의미이기도 한다. `batching`라고도 하는 이 동작은 React 앱을 훨씬 빠르게 실행할 수 있게 해준다. 또한 일부 변수만 업데이트된 “반쯤 완성된” 혼란스러운 렌더링을 처리하지 않아도 된다.
+
+React는 클릭과 같은 여러 의도적인 이벤트에 대해 batch를 수행하지 않으며, 각 클릭은 개별적으로 처리된다. 즉, React는 안전한 경우에만 batch를 수행한다. 예를 들어 첫 번째 버튼 클릭으로 양식이 비활성화되면 두 번째 클릭으로 양식이 다시 제출되지 않도록 보장한다.
+
+```tsx
+import { useState } from 'react';
+
+export default function Counter() {
+  const [number, setNumber] = useState(0);
+
+  return (
+    <>
+      <h1>{number}</h1>
+      <button
+        onClick={() => {
+          setNumber((n) => n + 1);
+          setNumber((n) => n + 1);
+          setNumber((n) => n + 1);
+        }}
+      >
+        +3
+      </button>
+    </>
+  );
+}
+```
+
+여기서 `n => n + 1` 은 업데이터 함수(updater function)라고 부른다. 이를 state 설정자 함수에 전달 할 때,
+
+React는 이벤트 핸들러의 다른 코드가 모두 실행된 후에 이 함수가 처리되도록 큐에 넣는다.
+다음 렌더링 중에 React는 큐를 순회하여 최종 업데이트된 state를 제공한다.
+
+React가 이벤트 핸들러를 수행하는 동안 여러 코드를 통해 작동하는 방식은 다음과 같다.
+
+- 1. `setNumber(n => n + 1)`: `n => n + 1` 함수를 큐에 추가한다.
+- 2. `setNumber(n => n + 1)`: `n => n + 1` 함수를 큐에 추가한다.
+- 3. `setNumber(n => n + 1)`: `n => n + 1` 함수를 큐에 추가한다.
+
+다음 렌더링 중에 useState 를 호출하면 React는 큐를 순회한다. 이전 number state는 0이었으므로 React는 이를 첫 번째 업데이터 함수에 n 인수로 전달한다. 그런 다음 React는 이전 업데이터 함수의 반환 값을 가져와서 다음 업데이터 함수에 n으로 전달하는 식으로 반복한다.
+
+React는 3을 최종 결과로 저장하고 useState에서 반환한다.
+이것이 위 예시 “+3”을 클릭하면 값이 3씩 올바르게 증가하는 이유이다.
+
+정리를 하자면,
+
+- 업데이터 함수 (예. n => n + 1) 가 큐에 추가된다.
+- 다른 값 (예. 숫자 5) 은 큐에 “5로 바꾸기”를 추가하며, 이미 큐에 대기 중인 항목은 무시한다.
+
+이벤트 핸들러가 완료되면 React는 리렌더링을 실행한다. 리렌더링하는 동안 React는 큐를 처리한다. 업데이터 함수는 렌더링 중에 실행되므로, 업데이터 함수는 순수해야 하며 결과만 반환 해야 한다. 업데이터 함수 내부에서 state를 변경하거나 다른 사이드 이팩트를 실행하려고 하지 말자. Strict 모드에서 React는 각 업데이터 함수를 두 번 실행(두 번째 결과는 버림)하여 실수를 찾을 수 있도록 도와준다.
+
+#### 명명 규칙
+
+업데이터 함수 인수의 이름은 해당 state 변수의 첫 글자로 지정하는 것이 일반적이다.
+
+```tsx
+setEnabled((e) => !e);
+setLastName((ln) => ln.reverse());
+setFriendCount((fc) => fc * 2);
+```
