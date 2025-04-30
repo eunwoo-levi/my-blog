@@ -1,0 +1,170 @@
+---
+title: 'NPM Module 배포하기'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-05-01'
+categoryId: 6
+---
+
+# 모듈 배포를 왜 하는가?
+
+해당 컴포넌트를 배포 후, 다른 프로젝트에서도 불러와 활용할 수 있게끔 함
+
+→ 컴포넌트와 라이브러리를 재사용하기 위함
+
+# 버튼 컴포넌트 스토리북 및 npm 배포 예시
+
+아래 작업은 컴포넌트 제작 / 스토리북 제작 / 작동 확인 후 진행된다 (버튼은 /lib 폴더에 위치한 상태)
+
+## 1. 버튼 컴포넌트 배포 설정
+
+- src/lib/index.ts 파일 생성
+- 아래 코드 입력
+
+```tsx
+export { default as Button } from './Button';
+```
+
+## 2. 컴포넌트 빌드
+
+- dist 정적 파일 빌드
+
+```tsx
+npm run build
+```
+
+- package.json 파일 수정
+
+```json
+{
+  "name": "button", //고유한 이름
+  "version": "0.0.0",
+  "description": "description"
+}
+```
+
+- name : 패키지의 이름, npm 배포시에는 고유한 이름 사용 필수
+- version : 패키지의 버전, 시맨틱 버저닝 규칙 (메이저.마이너.패치) 를 따를 것
+  → 메이저 버전은 기존 버전과 호환되지 않는 변경사항, 마이너 버전은 기능추가나 개선
+- description : 패키지에 대한 간단한 설명
+
+## 3. npm 로그인 및 배포
+
+```
+npm login // npm 창에서 로그인
+npm publish // 패키지 배포
+
+ "name": "@ihanhui/my-a
+```
+
+이름이 이미 존재하는 경우 오류 남
+
+## 4. 배포 확인
+
+업데이트 및 재배포
+
+- 동일한 버전을 재배포하는 것은 불가능 → 재배포를 위해선 patch 명령어를 통해 버전을 증가시키고 배포
+
+```
+npm version patch
+npm publish
+```
+
+## 5. 컴포넌트 사용
+
+- `npm i levi-compoenent` (package.json에 적었던 패키지명)
+- `import {배포한 컴포넌트명} from “패키지명`
+
+```tsx
+import React from 'react';
+import { Button } from 'hanheel-component';
+
+import './App.css';
+
+function App() {
+  const handleClick = () => {
+    alert('Button clicked!');
+  };
+
+  return (
+    <div>
+      <h1>Button Component Example</h1>
+      <Button label='Click me' onClick={handleClick} />
+    </div>
+  );
+}
+
+export default App;
+```
+
+---
+
+# index.d.ts 파일이 안생기는 오류 발생 시 해결방법 (vite, emotion 사용)
+
+- tsconfig.json 파일에 아래 코드 추가
+
+```json
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationDir": "dist",
+    "emitDeclarationOnly": true,
+    "outDir": "dist",
+    "jsxImportSource": "@emotion/react",
+    "jsx": "react-jsx",
+    "moduleResolution": "Node",
+    "module": "ESNext",
+    "target": "ESNext",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true
+  },
+  "include": ["src/lib", "src/Modal.stories.tsx"],
+  "exclude": ["node_modules", "dist"]
+}
+```
+
+- vite.config.ts 파일에 아래 코드 추가 - `external` 부분에 emotion 관련 라이브러리 추가
+
+```ts
+import * as path from 'path';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react-swc';
+import dts from 'vite-plugin-dts';
+export default defineConfig({
+  build: {
+    lib: {
+      entry: path.resolve(__dirname, 'src/lib/index.ts'),
+      name: 'index',
+      fileName: 'index',
+    },
+    rollupOptions: {
+      external: ['react', 'react-dom', '@emotion/react', '@emotion/styled'],
+      output: {
+        globals: {
+          react: 'React',
+        },
+      },
+    },
+    commonjsOptions: {
+      esmExternals: ['react'],
+    },
+  },
+  plugins: [
+    react({
+      // @ts-expect-error
+      emotion: {
+        sourceMap: true,
+        autoLabel: 'dev-only',
+        labelFormat: '[local]',
+        cssPropOptimization: true,
+      },
+    }),
+    dts({
+      insertTypesEntry: true,
+      outDir: 'dist',
+    }),
+  ],
+});
+```
