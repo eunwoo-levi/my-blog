@@ -1,0 +1,262 @@
+---
+title: 'HTTP 클라이언트, 웹 비동기 통신의 진화: XMLHttpRequest 와 fetch 그리고 axios'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/network.webp'
+publishDate: '2025-05-10'
+categoryId: 6
+---
+
+# Server와 Client
+
+서버란, 서비스를 제공하는 컴퓨터이다. 페이지의 지원이나, 공유 데이터의 처리 및 저장 등의 비즈니스 로직을 수행하며 DB와 커뮤니케이션을 수행한다.
+웹브라우저와 같이 서버에 접속하기 위한 단말기(사용자)를 클라이언트라고 한다. 사용자의 입력을 수행하고, 서버에 대한 응답을 화면에 표시한다.
+서버와 클라이언트의 역할을 동시에 수행하는 경우도 있는데, p2p 사이트나, 블록체인이 이에 속한다.
+
+# HTTP 통신의 특징
+
+서버와 클라이언트는 프로토콜이라는 정해진 규약에 따라 통신하는데, HTTP는 HTML 문서와 같은 리소스들을 가져올 수 있도록 해주는 프로토콜이다.
+
+HTTP 통신의 특징은 아래와 같다.
+
+- 1. Client의 요청(Request)이 있을 때만 서버가 응답(Response)하는 `단방향 통신`이다.
+- 2. `connectionless`, 즉, 계속해서 서버와 브라우저가 연결되어 있지는 않다. 서버는 클라이언트가 요청한 정보를 전송하고 곧바로 연결을 종료한다. 이는 쿠키, 세션, 토큰등을 통해 독립적 요청에 대한 연결을 유지하는 방법이 있다.
+- 3. 서버가 요구하는 `API`에 맞게 요청해야 응답을 받을 수 있다.
+
+## HTTP Request Method
+
+- GET : 필요한 resource를 요청하여 받는 것으로 DB에는 변동이 없다.
+- POST : 서버에 resource를 보내면서 생성해 달라고 요청.
+- PUT : 서버에게 resource의 업데이트 하거나 resource가 없다면 새로운 resource를 생성해 달라고 요청.
+- PATCH : 서버에게 resource의 일부를 업데이트 하라고 요청.
+- DELETE : 서버에게 resource의 삭제 요청.
+
+## HTTP Status Code
+
+- 100번 대 : 처리중에 있음
+- 200번 대 : 성공
+- 300번 대 : 리디렉션, 요청을 성공적으로 처리하기 위해 추가 동작이 필요함.
+- 400번 대 : 클라이언트 요청 오류
+- 500번 대 : 서버 오류
+
+# AJAX란?
+
+`Asynchronous Javascript And Xml`(비동기식 자바스크립트와 xml)의 약자로 웹페이지의 전체 페이지를 새로 고치지 않고, 페이지의 일부분만을 서버에서 가지고 와서 ‘웹페이지 화면을 동적으로 변경하는 방식’을 의미한다.
+즉, 자바스크립트를 이용해 백엔드 서버의 데이터만 가져와서 웹페이지의 일부분을 동적으로 바꾸는 기술’을 의미한다.
+
+AJAX는 다음과 같은 특징을 가진다.
+
+- 비동기 통신
+  - Ajax는 비동기적인 통신을 지원합니다. 즉, 웹 페이지와 서버 간의 데이터 교환을 페이지 전체를 다시 로드하지 않고도 수행할 수 있다.
+- DOM 조작
+  - 서버에서 수신한 데이터를 Javascript를 사용하여 웹페이지의 DOM (Document Object Model)을 동적으로 조작해서 실시간으로 업데이트되는 웹페이지를 구현할 수 있다.
+- 부분 업데이트
+  - 전체 페이지를 다시 로드하지 않고도 필요한 부분만 업데이트할 수 있다. 이는 사용자 경험을 개선하고 서버 부하를 줄여준다. 이를 통해 실시간으로 웹페이지를 업데이트할 수 있고 동적 웹 애플리케이션을 개발할 수 있다.
+
+서버에 Ajax 요청을 보내는 방법으로는 브라우저 자체 내장되어 있는 XMLHttpRequest, fetch를 사용하거나, 외부 라이브러리인 jQuery, axios 등을 사용할 수 있다.
+
+![AJAX](https://ems.elancer.co.kr/99_upload/Append/T_Blog/editor/2023091110302556267.gif)
+
+Ajax가 소개된 당시에는 백엔드 서버에서 데이터를 가져올 때 주로 XML 방식으로 가져왔기 때문에 이름에 Ajax 이름에 XML이 포함되어 사용되었다.
+하지만, 현재는 대부분의 경우 데이터 송수신에 `JSON` 포맷이라는 더 효율적인 전송 포맷을 이용하여 데이터를 송수신하고 있다.
+용어와 현재 사용되는 기술 간에 괴리가 있지만, Ajax라는 용어는 최초에 사용된 약어를 그대로 사용하여 고유명사의 의미로 Ajax로 계속 불리고 있다.
+
+`Ajax`는 ‘자바스크립트를 이용해 백엔드 서버의 데이터만 가져와서 웹페이지의 일부분을 동적으로 바꾸는 기술’을 의미한다.
+
+#### JSON?
+
+JSON은 JavaScript Object Notation의 약자로, 자바스크립트 객체 표기법을 기반으로 한 데이터 포맷이다. JSON은 데이터를 저장하고 전송하는 데 사용되는 경량의 데이터 교환 형식으로, 사람이 읽고 쓰기 쉽고 기계가 분석하고 생성하기 쉬운 구조를 가지고 있다.
+JSON은 텍스트 형식으로 데이터를 표현하며, 주로 웹 애플리케이션에서 서버와 클라이언트 간의 데이터 전송에 사용된다. JSON은 자바스크립트에서 객체를 표현하는 방식과 유사하여, 자바스크립트와의 호환성이 뛰어나고 다양한 프로그래밍 언어에서도 쉽게 사용할 수 있다.
+
+```json
+{
+  "name": "수빈",
+  "age": 24,
+  "isStudent": true
+}
+```
+
+## 비동기 방식이란?
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/d5316441-b6a8-4a2a-91a6-00055d359d3d/image.png)
+
+‘비동기적 방식’은 동기적 방식과는 반대로 서버의 응답이 올 때까지 대기하지 않고, 서버의 데이터가 준비되는 동안에도 사용자가 웹페이지에서 다른 작업을 수행할 수 있는 방식을 의미한다.
+예를 들면 회원가입을 하기 위해 회원가입 정보를 웹페이지의 Form의 Input 항목에 입력 후 전송(가입) 버튼을 클릭하면 서버로 제어권이 넘어가서 서버에서 회원가입이 완료되고 새로운 웹페이지가 생성되어 브라우저에 웹페이지가 표시되어야 그다음 작업을 진행할 수 있다.
+하지만 브라우저에 웹페이지가 표시되기까지 시간이 오래 걸릴 경우 고객 이탈이 발생할 수 있는데, 비동기적 방식을 택할경우, 화면전환으로 인한 지연 없이 움직임을 일으킬 수 있어 웹페이지 내 움직이는 효과가 필요한 경우 비동기 방식을 사용한다.
+
+![ajax example1](https://ems.elancer.co.kr/99_upload/Append/T_Blog/editor/2023091110311564414.gif)
+출처: [Google Earth](https://mapsplatform.google.com/maps-products/earth/capabilities/?utm_source=google_earth&utm_medium=site&utm_campaign=next-25&utm_content=legacy)
+
+Google Earth는 Ajax의 기술이 적용된 웹 페이지 예시 중 하나이다. Ajax를 적용한 덕분에 명령어를 입력해도 새로운 페이지로 넘어가지 않고, 보고 있는 페이지에서 바로 확인이 가능 한 것이다.
+
+![ajax example2](https://ems.elancer.co.kr/99_upload/Append/T_Blog/editor/2023091110315339425.jpg)
+
+우리가 흔히 사용하는 네이버 검색창에 검색어를 입력하면 자동으로 연관 검색어가 뜨는 것을 볼 수 있습니다. 이 또한 Ajax가 활용된 것입니다.
+전체 HTML 태그와 CSS 스타일이 포함된 웹페이지가 아닌, 필요한 데이터만 JSON이나 XML 형태로 받아오기 때문에, 페이지를 이탈하지 않고도 빠르게 동적으로 웹페이지 갱신이 가능하며, 사용자 경험이 향상된다.
+
+# XMLHttpRequest (XHR)
+
+AJAX(XML) 등장 이전에는 사용자가 action을 취하면 브라우저가 서버로 전체 요청(GET, POST)를 보내고 서버가 새 HTML 페이지 전체를 렌더링해서 반환했다. 이후, 브라우저는 기존 페이지를 완전히 날리고 새 페이지로 교체했다.
+이 방식은 매번 페이지 전체를 새로고침 해야 했으므로 서버와 클라이언트 간의 통신이 비효율적이고 느리며, 사용자 경험(UX)을 저하시켰다.
+
+```html
+// AJAX 방식 이전 댓글 달기 예시
+<form action="/add-comment" method="POST">
+  <input name="comment" />
+  <button type="submit">등록</button>
+</form>
+```
+
+현대 웹은 매력적이고 반응성이 뛰어난 사용자 경험을 요구한다. 이를 달성하기 위해 XMLHttpRequest (XHR) 객체는 중요한 역할을 한다.
+비동기 통신의 기초로 기능하며, XHR은 웹 애플리케이션이 서버와 원활하게 데이터를 교환할 수 있도록 하여, 사용자 상호작용을 방해하는 전체 페이지 새로 고침의 필요성을 없애준다.
+`XMLHttpRequest`는 웹 브라우저에 내장된 객체로, JavaScript 코드가 웹 서버와 통신할 수 있도록 한다.
+XMLHttpRequest는 `Callback`기반으로 동작하며, 비동기적으로 데이터를 요청하고 응답을 처리할 수 있다.
+
+```js
+const xhr = new XMLHttpRequest();
+xhr.open('GET', 'https://jsonplaceholder.typicode.com/posts');
+xhr.onreadystatechange = () => {
+  if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+    const data = JSON.parse(xhr.responseText);
+    console.log(data);
+  }
+};
+xhr.send();
+```
+
+위 코드는 XMLHttpRequest를 사용하여 서버에 GET 요청을 보내고, 응답을 처리하는 예시이다.
+
+처음에 `XMLHttpRequest` 객체를 생성한다. 이 객체는 서버와 데이터를 주고받기 위한 브라우저 내장 API이다.
+
+`xhr.open()` 메서드는 요청을 초기화한다. 첫 번째 인자는 HTTP 요청 방식이고, 두 번째 인자는 요청을 보낼 URL이다.
+이 단계는 요청을 설정만 하는 것이고, 실제 전송은 아직 안 된다.
+
+`xhr.onreadystatechange`는 요청의 상태가 변경될 때 호출되는 콜백 함수를 설정한다.
+현재 코드에서는 요청이 완료된 상태(`XMLHttpRequest.DONE`)이고, HTTP 응답 상태 코드가 200(성공)일 때만 응답을 처리한다.
+`xhr.responseText`는 서버로부터 받은 응답 데이터를 문자열 형태로 반환한다.
+
+`xhr.send()` 메서드는 위에서 설정한 요청을 서버에 전송한다.
+
+# Fetch
+
+`fetch()`는 XMLHttpRequest보다 더 현대적인 방식으로 네트워크 요청을 다룬다.
+내부적으로 Promise를 반환하므로, async/await이나 .then()으로 비동기 흐름 제어가 가능하다.
+
+`fetch()`는 ES6(2015년) 이후 대부분의 모던 브라우저에서 기본적으로 제공하는 비동기적으로 네트워크 요청을 처리하기 위한 브라우저 내장 API다.
+따라서 별도의 import 없이 전역 객체에서 사용 가능하다.
+내부적으로는 **XHR(XMLHttpRequest)**가 아닌 XMLHttpRequest 객체의 대체제로서 더 현대적인 방법이다.
+callback 기반의 XHR과는 달리 `service workers` and `Cross-Origin Resource Sharing (CORS)` 와 같은 모던 웹 기술과 통합된 Promise 기반 API이다.
+따라서 네트워크 요청을 처리하는 데 더 유연하고 강력한 기능을 제공한다.
+
+```js
+try {
+  const res = await fetch('https://jsonplaceholder.typicode.com/posts', { method: 'GET' });
+  if (!res.ok) throw new Error('HTTP error: ' + res.status);
+
+  const data = res.json();
+  console.log(data);
+} catch (error) {
+  console.error('Fetch error:', error);
+}
+```
+
+res는 Response 객체로, HTTP 응답의 상태 정보와 본문(body)을 포함하는 fetch API의 결과 객체이다.
+
+위의 코드에서 `res`를 console.log 찍어보면 아래와 같이 나온다.
+
+```
+Response {type: 'cors', url: 'https://jsonplaceholder.typicode.com/posts', redirected: false, status: 200, ok: true, …}
+body: (...)
+bodyUsed: true
+headers: Headers {}
+ok: true
+redirected: false
+status: 200
+statusText: ""
+type: "cors"
+url: "https://jsonplaceholder.typicode.com/posts"
+[[Prototype]]: Response
+```
+
+이처럼 Response 객체는 HTTP 응답의 메타데이터(status, headers 등)와 함께, 응답 본문인 body를 포함하고 있다.
+단, `fetch()`는 Stream 기반의 Request/Response 객체 시스템을 따르기 때문에, 응답 본문은 body 속성에 ReadableStream 형태로 담겨 있으며,
+이는 한 번만 소비 가능한 구조이다.
+
+따라서 응답 데이터를 실제로 사용하려면 `res.json()`과 같이 `.json()` 메서드를 호출해야 하며,
+이 메서드는 내부적으로 body 스트림을 읽고 파싱해, JavaScript 객체로 변환된 데이터를 `Promise`로 반환한다.
+
+결과적으로 `response.json()`을 호출하기 전까지는 응답 body의 내용을 직접 확인할 수 없으며,
+한 번 `json()`이나 `text()` 등의 메서드로 읽고 나면 bodyUsed가 true로 바뀌고, 이후 다시 읽을 수 없다.
+
+### ReadableStream (Streams API)
+
+응답의 body는 스트림(ReadableStream) 형태로 제공된다.
+덕분에 큰 파일을 부분적으로 읽으며 처리할 수 있는 기능이 지원된다.
+`resonse.json()`을 호출하면 내부적으로 Stream API를 사용하여 body를 읽고 JSON으로 파싱한다.
+그래서 직접 `getReader()`를 사용하지 않아도, 실제 네트워크 레벨에서는 데이터가 chunk 단위로 스트리밍되어 옵니다.
+
+### fetch 특징 정리
+
+- fetch는 `Promise`를 반환하므로, `async/await`이나 `.then()`으로 비동기 흐름 제어가 가능하다. (XMLHttpRequest 기반 X)
+- 기본적으로 JSON 자동 파싱을 지원하지 않으므로, 응답을 JSON으로 변환하려면 `res.json()`을 호출해야 한다.
+- HTTP 에러 시 reject 안 됨 (200만 나오면 resolve) → res.ok 체크 필요
+- 취소: AbortController 사용
+- Streams API, Request, Response 객체 활용
+- node.js 18 이상에서는 `fetch` 내장
+
+# axios
+
+많은 사람들이 `axios`는 `fetch`를 보완하기 위해서 나온 라이브러리라고 착각하는 경우가 많다.
+fetch는 2015년에 등장했지만, 실질적으로 모든 브라우저가 안정적으로 지원하기 시작한 건 그보다 나중(2017~2018)이다.
+Axios가 2016년에 등장했을 당시, 브라우저 대부분은 fetch를 지원하지 않았고, HTTP 요청은 여전히 XMLHttpRequest 기반으로 작성해야 했다.
+XMLHttpRequest는 너무 번거롭고, 콜백 지옥, JSON 파싱 수동 처리 등 불편함이 많았다.
+
+| 문제 (XHR 기준)         | Axios에서 보완한점                     |
+| ----------------------- | -------------------------------------- |
+| 콜백 지옥               | `Promise` 기반 API 도입                |
+| JSON 수동 파싱          | 응답 자동 파싱 (`res.data`)            |
+| 상태 추적 복잡          | 간단한 `.then()` / `.catch()`          |
+| 요청 취소 어렵          | `CancelToken` → `AbortController` 지원 |
+| 응답 처리 로직 중복     | `interceptors`로 코드 재사용 가능      |
+| 브라우저/Node 호환 안됨 | Axios는 둘 다 지원함                   |
+
+## 1. 자체 구현된 HTTP 클라이언트
+
+`axios`는 JavaScript로 만들어진 서드파티 `라이브러리`이다.
+npm install axios로 설치해서 사용한다.
+
+## 2. 브라우저에서는 XMLHttpRequest(XHR) 기반
+
+axios는 브라우저에서 HTTP 요청을 보낼 때 내부적으로 XHR을 사용한다.
+따라서 실제 네트워크 요청은 XMLHttpRequest.open(), send() 등을 통해 이루어진다.
+
+## 3. Node.js에서는 http 모듈 사용
+
+axios는 Node.js에서도 동작 가능한 유니버설 라이브러리이다.
+Node 환경에서는 XMLHttpRequest가 없기 때문에, 내부적으로 Node의 http/https 모듈을 활용한다.
+
+## 4. 기능을 추상화/자동화한 wrapper
+
+axios는 Promise기반은 같지만 fetch()보다 더 많은 기능을 기본 제공하여 고수준 API를 제공한다.
+
+- JSON 자동 직렬화/역직렬화
+- 요청/응답 인터셉터
+- timeout, cancelToken 등 고급 설정
+- status code 기반 에러 처리
+
+| 기능               | fetch                | axios                                                 |
+| ------------------ | -------------------- | ----------------------------------------------------- |
+| 자동 JSON 변환     | X                    | O                                                     |
+| timeout 설정       | 복잡함               | 간단하게 지원                                         |
+| 요청/응답 인터셉터 | X                    | O                                                     |
+| 에러 핸들링        | 직접 `res.ok` 확인   | HTTP status 기반 reject                               |
+| 취소               | AbortController 필요 | cancelToken 사용 (v0.x), abortSignal도 지원 (v1 이후) |
+| 기본 헤더 설정     | X                    | O (Content-Type: application/json)                    |
+
+# 6. 개발자 관점에서의 선택 기준
+
+| 상황                           | 추천    |
+| ------------------------------ | ------- |
+| 빠르고 가벼운 단일 요청        | `fetch` |
+| 유지보수 쉽고, 공통 로직 필요  | `axios` |
+| 에러와 응답 처리 통합하고 싶음 | `axios` |
+| 번들 크기 절대 줄여야 함       | `fetch` |
