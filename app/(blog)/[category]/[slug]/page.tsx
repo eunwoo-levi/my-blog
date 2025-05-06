@@ -3,7 +3,18 @@ import { ParamsProps } from '@/src/shared/model/type';
 import { notFound } from 'next/navigation';
 import { Giscus } from '@/src/shared/ui';
 
-export const revalidate = 3600; // 1시간
+export const revalidate = 3600;
+
+export async function generateMetadata({ params }: ParamsProps) {
+  const { category, slug } = await params;
+  const { frontmatter } = await getPostBySlug(category, slug);
+
+  if (!frontmatter) return {};
+
+  return {
+    title: frontmatter.title,
+  };
+}
 
 export default async function BlogDetailPage({ params }: ParamsProps) {
   const { category, slug } = await params;
