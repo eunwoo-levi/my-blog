@@ -2,7 +2,7 @@
 title: 'useState의 비동기 처리와 Batching 개념 완벽 이해하기'
 author: 'Eunwoo'
 thumbnail: '/thumbnail/reactjs.webp'
-publishDate: '2025-05-08'
+publishDate: '2025-05-10'
 categoryId: 6
 ---
 
@@ -122,7 +122,7 @@ export default function Example3() {
 위의 코드에서 console log를 찍어보면, 1이 나올거라 생각할 수 있지만, 0이 찍힌다.
 이 코드는 많은 사람들이 헷갈리는 부분이다. setNum이 비동기적으로 처리되기 때문에, 상태가 바뀌기 전에 콘솔 로그가 실행되어 0이 출력된다.
 
-setter 함수인 setNum은 비동기적으로 작동하기 때문에, num의 값이 업데이트 되기 전에 console.log(num)이 실행된다.
+setter 함수인 setNum은 비동기적으로 작동하기 때문에, num의 값이 업데이트 되기 전에 `console.log(num)`이 실행된다.
 그래서 num의 값은 여전히 0으로 찍히게 된다.
 
 # useState를 동기적으로 처리할 순 없을까?
@@ -152,7 +152,7 @@ useEffect(() => {
 
 setState를 사용할 때 value값에 의존하는 것 보다 `value => value + 1`과 같이 함수로 인자를 전달하게 되면 항상 최신값을 참조하기 때문에 동기적으로 처리할 수 있다.
 
-- 리액트 18 버전에서는Automatic Batching 기능이 추가되어서 setState 코드를 두 번 실행해도 두 번의 렌더링이 일어난다
+- 리액트 18 버전에서는 Automatic Batching 기능이 추가되어서 setState 코드를 두 번 실행해도 두 번의 렌더링이 일어난다.
 
 ```tsx
 import { useState } from 'react';

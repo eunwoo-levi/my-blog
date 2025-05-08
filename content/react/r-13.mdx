@@ -1,0 +1,568 @@
+---
+title: 'State 관리하기 - [React 공식문서]'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-05-08'
+categoryId: 6
+---
+
+애플리케이션이 커짐에 따라, state가 어떻게 구성되는지 그리고 데이터가 컴포넌트 간에 어떻게 흐르는지에 대해 의식적으로 파악하면 도움이 된다. 불필요하거나 중복된 state는 버그의 흔한 원인이다.
+이 장에서는 state를 잘 구성하는 방법, state 업데이트 로직을 유지 보수 가능하게 관리하는 방법, 그리고 멀리 있는 컴포넌트 간에 state를 공유하는 방법을 [React 공식문서](https://react.dev/learn/managing-state)를 통해 알아보자.
+
+# 선언형 UI와 명령형 UI 비교
+
+`React`는 `선언적인` 방식으로 UI를 조작한다. 개별적인 UI를 직접 조작하는 것 대신에 컴포넌트 내부에 여러 state를 묘사하고 사용자의 입력에 따라 state를 변경한다.
+
+UI 상호작용을 디자인할 때 사용자가 액션을 하면 어떻게 UI를 변경 해야 할지 고민해본 적이 있을 것이다. 사용자가 폼을 제출한다고 생각해보자.
+
+- 폼에 무언가를 입력하면 “제출” 버튼이 활성화될 것이다.
+- ”제출” 버튼을 누르면 폼과 버튼이 비활성화되고 스피너가 나타날 것이다.
+- 네트워크 요청이 성공하면 폼은 숨겨질 것이고 “감사합니다.” 메시지가 나타날 것이다.
+- 네트워크 요청이 실패하면 오류 메시지가 보일 것이고 폼은 다시 활성화될 것이다.
+
+내용은 `명령형` 프로그래밍에서 상호작용을 구현하는 방법이다. UI를 조작하기 위해서는 발생한 상황에 따라 정확한 지침을 작성해야만 한다.
+
+아래의 명령형 UI 프로그래밍 예시는 React 없이 만들어진 폼입니다. 브라우저에 내장된 DOM을 사용하였다.
+
+```jsx
+async function handleFormSubmit(e) {
+  e.preventDefault();
+  disable(textarea);
+  disable(button);
+  show(loadingMessage);
+  hide(errorMessage);
+  try {
+    await submitForm(textarea.value);
+    show(successMessage);
+    hide(form);
+  } catch (err) {
+    show(errorMessage);
+    errorMessage.textContent = err.message;
+  } finally {
+    hide(loadingMessage);
+    enable(textarea);
+    enable(button);
+  }
+}
+
+function handleTextareaChange() {
+  if (textarea.value.length === 0) {
+    disable(button);
+  } else {
+    enable(button);
+  }
+}
+
+function hide(el) {
+  el.style.display = 'none';
+}
+
+function show(el) {
+  el.style.display = '';
+}
+
+function enable(el) {
+  el.disabled = false;
+}
+
+function disable(el) {
+  el.disabled = true;
+}
+
+function submitForm(answer) {
+  // 네트워크에 접속한다고 가정해보자.
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (answer.toLowerCase() === 'istanbul') {
+        resolve();
+      } else {
+        reject(new Error('Good guess but a wrong answer. Try again!'));
+      }
+    }, 1500);
+  });
+}
+
+let form = document.getElementById('form');
+let textarea = document.getElementById('textarea');
+let button = document.getElementById('button');
+let loadingMessage = document.getElementById('loading');
+let errorMessage = document.getElementById('error');
+let successMessage = document.getElementById('success');
+form.onsubmit = handleFormSubmit;
+textarea.oninput = handleTextareaChange;
+```
+
+위의 예시에서는 문제가 없겠지만 위와 같이 UI를 조작하면 더 복잡한 시스템에서는 난이도가 기하급수적으로 올라간다.
+로운 UI 요소나 새로운 상호작용을 추가하려면 버그의 발생을 막기 위해 기존의 모든 코드를 주의 깊게 살펴봐야만 할 것이다.
+
+React는 이러한 문제점을 해결하기 위해 만들어졌다. React에서는 직접 UI를 조작할 필요가 없다. 컴포넌트를 직접 활성화하거나 비활성화하거나 보여주거나 숨길 필요가 없다. 대신에 무엇을 보여주고 싶은지 `선언`하기만 하면 된다.
+
+## UI를 선언적인 방식으로 생각하기
+
+- 컴포넌트의 다양한 시각적 state를 확인.
+- 무엇이 state 변화를 트리거하는지 알아냄.
+- useState를 사용해서 메모리의 state를 표현.
+- 불필요한 state 변수를 제거.
+- state 설정을 위해 이벤트 핸들러를 연결.
+
+```jsx
+import { useState } from 'react';
+
+export default function Form() {
+  const [answer, setAnswer] = useState('');
+  const [error, setError] = useState(null);
+  const [status, setStatus] = useState('typing');
+
+  if (status === 'success') {
+    return <h1>That's right!</h1>;
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setStatus('submitting');
+    try {
+      await submitForm(answer);
+      setStatus('success');
+    } catch (err) {
+      setStatus('typing');
+      setError(err);
+    }
+  }
+
+  function handleTextareaChange(e) {
+    setAnswer(e.target.value);
+  }
+
+  return (
+    <>
+      <h2>City quiz</h2>
+      <p>In which city is there a billboard that turns air into drinkable water?</p>
+      <form onSubmit={handleSubmit}>
+        <textarea
+          value={answer}
+          onChange={handleTextareaChange}
+          disabled={status === 'submitting'}
+        />
+        <br />
+        <button disabled={answer.length === 0 || status === 'submitting'}>Submit</button>
+        {error !== null && <p className='Error'>{error.message}</p>}
+      </form>
+    </>
+  );
+}
+
+function submitForm(answer) {
+  // 네트워크에 접속한다고 가정해보자.
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      let shouldError = answer.toLowerCase() !== 'lima';
+      if (shouldError) {
+        reject(new Error('Good guess but a wrong answer. Try again!'));
+      } else {
+        resolve();
+      }
+    }, 1500);
+  });
+}
+```
+
+이러한 코드가 기존의 명령형 프로그래밍 예시보다는 길지만 그래도 조금 더 견고하다. 모든 상호작용을 state로 표현하게 되면 이후에 새로운 시각적 state가 추가되더라도 기존의 로직이 손상되는 것을 막을 수 있다. 또한 상호작용 자체의 로직을 변경하지 않고도 각각의 state에 표시되는 항목을 변경할 수 있다.
+
+# State 구조 선택하기
+
+State를 잘 구조화한다면 지속적인 버그의 원인이 되는 컴포넌트가 아닌, 수정과 디버깅이 용이한 컴포넌트를 만들 수 있다. 가장 중요한 원칙은 state가 중복되거나 불필요한 정보를 포함하지 않는 것이다. 불필요한 state가 있다면 업데이트하는 것을 잊어버려 버그가 발생하기 쉽다.
+
+## State 구조화 원칙
+
+- 1. `연관된 state 그룹화하기.` 두 개 이상의 state 변수를 항상 동시에 업데이트한다면, 단일 state 변수로 병합하는 것을 고려하자.
+- 2. `State의 모순 피하기.` 여러 state 조각이 서로 모순되고 “불일치”할 수 있는 방식으로 state를 구성하는 것은 실수가 발생할 여지를 만든다. 이를 피하자.
+- 3. `불필요한 state 피하기.` 렌더링 중에 컴포넌트의 props나 기존 state 변수에서 일부 정보를 계산할 수 있다면, 컴포넌트의 state에 해당 정보를 넣지 않아야 한다.
+- 4. `State의 중복 피하기.` 여러 상태 변수 간 또는 중첩된 객체 내에서 동일한 데이터가 중복될 경우 동기화를 유지하기가 어렵다. 가능하다면 중복을 줄이자.
+- 5. `깊게 중첩된 state 피하기.` 깊게 계층화된 state는 업데이트하기 쉽지 않다. 가능하면 state를 평탄한 방식으로 구성하는 것이 좋다.
+
+이러한 원칙 뒤에 있는 목표는 오류 없이 상태를 쉽게 업데이트하는 것이다. State에서 불필요하고 중복된 데이터를 제거하면 모든 데이터 조각이 동기화 상태를 유지하는 데 도움이 된다.
+
+To paraphrase Albert Einstein, “Make your state as simple as it can be—but no simpler.”
+
+## 연관된 state 그룹화하기
+
+단일 state 변수와 다중 state 변수 사이에서 무엇을 사용할지 불확실한 경우가 있다.
+
+```jsx
+const [x, setX] = useState(0);
+const [y, setY] = useState(0);
+```
+
+위의 두 개의 state 변수는 연관되어 있다. 두 개의 state 변수가 항상 함께 변경된다면, 단일 state 변수로 통합하는 것이 좋다.
+
+```jsx
+const [position, setPosition] = useState({ x: 0, y: 0 });
+```
+
+그러면 마우스 커서를 움직이면 빨간 점의 두 좌표가 모두 업데이트되는 이 예시처럼 항상 동기화를 유지하는 것을 잊지 않을 것이다.
+
+## 불필요한 state 피하기
+
+렌더링 중에 컴포넌트의 props나 기존 state 변수에서 일부 정보를 계산할 수 있다면, 컴포넌트의 state에 해당 정보를 넣지 않아야 한다.
+
+```jsx
+import { useState } from 'react';
+
+export default function Form() {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [fullName, setFullName] = useState('');
+
+  function handleFirstNameChange(e) {
+    setFirstName(e.target.value);
+    setFullName(e.target.value + ' ' + lastName);
+  }
+
+  function handleLastNameChange(e) {
+    setLastName(e.target.value);
+    setFullName(firstName + ' ' + e.target.value);
+  }
+
+  return (
+    <>
+      <h2>Let’s check you in</h2>
+      <label>
+        First name: <input value={firstName} onChange={handleFirstNameChange} />
+      </label>
+      <label>
+        Last name: <input value={lastName} onChange={handleLastNameChange} />
+      </label>
+      <p>
+        Your ticket will be issued to: <b>{fullName}</b>
+      </p>
+    </>
+  );
+}
+```
+
+이 양식에는 firstName, lastName, fullName의 세 가지 state 변수가 있다. 그러나 fullName은 불필요하다. 렌더링 중에 항상 firstName과 lastName에서 fullName을 계산할 수 있기 때문에 state에서 제거하는게 좋다.
+
+```jsx
+import { useState } from 'react';
+
+export default function Form() {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+
+  const fullName = firstName + ' ' + lastName;
+
+  function handleFirstNameChange(e) {
+    setFirstName(e.target.value);
+  }
+
+  function handleLastNameChange(e) {
+    setLastName(e.target.value);
+  }
+
+  return (
+    <>
+      <h2>Let’s check you in</h2>
+      <label>
+        First name: <input value={firstName} onChange={handleFirstNameChange} />
+      </label>
+      <label>
+        Last name: <input value={lastName} onChange={handleLastNameChange} />
+      </label>
+      <p>
+        Your ticket will be issued to: <b>{fullName}</b>
+      </p>
+    </>
+  );
+}
+```
+
+여기에서, fullName은 state 변수가 아니다. 대신 렌더링 중에 계산된다.
+
+```js
+const fullName = firstName + ' ' + lastName;
+```
+
+따라서 변경 핸들러는 이를 업데이트하기 위해 특별한 작업을 수행할 필요가 없다. setFirstName 또는 setLastName을 호출하면, 다시 렌더링하는 것을 유발하여, 다음 fullName이 새 데이터로 계산된다.
+
+# 컴포넌트 간 State 공유하기
+
+때때로 두 컴포넌트의 state가 항상 함께 변경되기를 원할 수 있다. 그렇게 하려면 각 컴포넌트에서 state를 제거하고 가장 가까운 공통 부모 컴포넌트로 옮긴 후 props로 전달해야 한다. 이 방법을 State 끌어올리기라고 하며 React 코드를 작성할 때 가장 흔히 하는 일 중 하나이다.
+
+```jsx
+import { useState } from 'react';
+
+export default function Accordion() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  return (
+    <>
+      <h2>Almaty, Kazakhstan</h2>
+      <Panel title='About' isActive={activeIndex === 0} onShow={() => setActiveIndex(0)}>
+        With a population of about 2 million, Almaty is Kazakhstan's largest city. From 1929 to
+        1997, it was its capital city.
+      </Panel>
+      <Panel title='Etymology' isActive={activeIndex === 1} onShow={() => setActiveIndex(1)}>
+        The name comes from <span lang='kk-KZ'>алма</span>, the Kazakh word for "apple" and is often
+        translated as "full of apples". In fact, the region surrounding Almaty is thought to be the
+        ancestral home of the apple, and the wild <i lang='la'>Malus sieversii</i> is considered a
+        likely candidate for the ancestor of the modern domestic apple.
+      </Panel>
+    </>
+  );
+}
+
+function Panel({ title, children, isActive, onShow }) {
+  return (
+    <section className='panel'>
+      <h3>{title}</h3>
+      {isActive ? <p>{children}</p> : <button onClick={onShow}>Show</button>}
+    </section>
+  );
+}
+```
+
+상태 끌어올리기는 종종 state로 저장하고 있는 것의 특성을 바꾼다. 위의 코드를 보면 상태 끌어올리기가 어떻게 동작하는지 알 수 있다.
+state를 공통 부모 컴포넌트로 옮기는 것은 두 패널을 조정할 수 있게 한다. 두 개의 “보임” 플래그 대신 활성화된 인덱스를 사용하는 것은 한 번에 하나의 패널만 활성화됨을 보장한다. 그리고 자식 컴포넌트로 이벤트 핸들러를 전달하는 것은 자식 컴포넌트에서 부모의 상태를 변경할 수 있게 한다.
+
+![State 끌어올리기](https://ko.react.dev/_next/image?url=%2Fimages%2Fdocs%2Fdiagrams%2Fsharing_state_parent_clicked.dark.png&w=1080&q=75)
+
+- Accordion의 activeIndex state가 1로 변경되면 두 번째 Panel은 isActive = true를 받게 된다.
+
+# State를 보존하고 초기화하기
+
+[참고하면 좋은 React 공식문서](https://ko.react.dev/learn/preserving-and-resetting-state)
+
+컴포넌트가 `리렌더링` 될 때, React는 트리에서 유지(및 업데이트) 할 부분과, 버리거나 다시 생성할 부분을 결정해야 한다. 대부분의 경우 React의 자동화된 동작이 충분히 잘 작동한다. 기본적으로 React는 기존에 렌더링 된 컴포넌트 트리와 “일치하는” 트리 부분을 보존한다.
+
+하지만 때로는 이것이 바람직한 동작이 아닐 수 있다. 아래 채팅 앱에서는 메시지를 입력한 후에 수신자를 변경하더라도 입력이 초기화되지 않는다. 따라서 사용자가 실수로 잘못된 사람에게 메시지를 보낼 수도 있다.
+
+## 다른 위치에 컴포넌트를 렌더링하기
+
+```jsx
+import { useState } from 'react';
+
+export default function Scoreboard() {
+  const [isPlayerA, setIsPlayerA] = useState(true);
+  return (
+    <div>
+      {isPlayerA && <Counter person='Taylor' />}
+      {!isPlayerA && <Counter person='Sarah' />}
+      <button
+        onClick={() => {
+          setIsPlayerA(!isPlayerA);
+        }}
+      >
+        Next player!
+      </button>
+    </div>
+  );
+}
+
+function Counter({ person }) {
+  const [score, setScore] = useState(0);
+  const [hover, setHover] = useState(false);
+
+  let className = 'counter';
+  if (hover) {
+    className += ' hover';
+  }
+
+  return (
+    <div
+      className={className}
+      onPointerEnter={() => setHover(true)}
+      onPointerLeave={() => setHover(false)}
+    >
+      <h1>
+        {person}'s score: {score}
+      </h1>
+      <button onClick={() => setScore(score + 1)}>Add one</button>
+    </div>
+  );
+}
+```
+
+처음에는 isPlayerA가 true입니다. 따라서 첫 번째 자리에 Counter가 있고 두 번째 자리는 비어있다.
+”Next player”를 클릭하면 첫 번째 자리는 비워지고 두 번째 자리에 Counter가 온다.
+
+![State 보존하기](https://velog.velcdn.com/images/eunwoo1341/post/0acbd239-5c38-4fb4-b7a6-e52e18695867/image.png)
+
+각 Counter의 state는 DOM에서 지워질 때마다 제거됩니다. 이것이 버튼을 누를 때마다 초기화되는 이유이다.
+만약 2개의 State가 같은 컴포넌트에 있다면, React는 두 개의 Counter를 같은 컴포넌트로 간주하고, 그 중 하나를 지우고 다른 하나를 업데이트한다. 따라서 state가 초기화되지 않고 유지가 될 것이다.
+
+이 방법은 같은 자리에 적은 수의 독립된 컴포넌트만을 가지고 있을 때 편리하다. 이 예시에서는 두 개밖에 없기 때문에 JSX에서 각각 렌더링하기 번거롭지 않다.
+
+## key를 이용해 state를 초기화하기
+
+```jsx
+import { useState } from 'react';
+import Chat from './Chat.js';
+import ContactList from './ContactList.js';
+
+export default function Messenger() {
+  const [to, setTo] = useState(contacts[0]);
+  return (
+    <div>
+      <ContactList
+        contacts={contacts}
+        selectedContact={to}
+        onSelect={(contact) => setTo(contact)}
+      />
+      <Chat contact={to} />
+    </div>
+  );
+}
+
+const contacts = [
+  { name: 'Taylor', email: 'taylor@mail.com' },
+  { name: 'Alice', email: 'alice@mail.com' },
+  { name: 'Bob', email: 'bob@mail.com' },
+];
+```
+
+`<Chat key={email} />` 처럼 다른 `key`를 전달함으로써 React의 기본 동작을 무시하고 강제로 컴포넌트의 상태를 초기화할 수 있다. 이를 통해 수신자가 다르다면 새로운 데이터(및 input과 같은 UI)로 처음부터 다시 생성해야 하는 별개의 Chat 컴포넌트로 간주해야 한다는 것을 React에 알려준다. 이제 수신자를 변경하면 같은 컴포넌트를 렌더링하더라도 input 필드가 초기화된다.
+
+```jsx
+import { useState } from 'react';
+import Chat from './Chat.js';
+import ContactList from './ContactList.js';
+
+export default function Messenger() {
+  const [to, setTo] = useState(contacts[0]);
+  return (
+    <div>
+      <ContactList
+        contacts={contacts}
+        selectedContact={to}
+        onSelect={(contact) => setTo(contact)}
+      />
+      <Chat key={to.email} contact={to} />
+    </div>
+  );
+}
+
+const contacts = [
+  { name: 'Taylor', email: 'taylor@mail.com' },
+  { name: 'Alice', email: 'alice@mail.com' },
+  { name: 'Bob', email: 'bob@mail.com' },
+];
+```
+
+리렌더링할 때 `state`를 유지하고 싶다면, 트리 구조가 “같아야” 한다. 만약 구조가 다르다면 React가 트리에서 컴포넌트를 지울 때 state로 지우기 때문에 state가 유지되지 않는다.
+
+### 주의 - 컴포넌트 함수를 중첩해서 정의하지 않는다.
+
+아래 예시를 보면 MyComponent 안에서 MyTextField 컴포넌트 함수를 정의하고 있다.
+
+```jsx
+import { useState } from 'react';
+
+export default function MyComponent() {
+  const [counter, setCounter] = useState(0);
+
+  function MyTextField() {
+    const [text, setText] = useState('');
+
+    return <input value={text} onChange={(e) => setText(e.target.value)} />;
+  }
+
+  return (
+    <>
+      <MyTextField />
+      <button
+        onClick={() => {
+          setCounter(counter + 1);
+        }}
+      >
+        Clicked {counter} times
+      </button>
+    </>
+  );
+}
+```
+
+버튼을 누를 때마다 입력 state가 사라진다. 이것은 MyComponent를 렌더링할 때마다 다른 MyTextField 함수가 만들어지기 때문이다. 따라서 같은 함수에서 다른 컴포넌트를 렌더링할 때마다 React는 그 아래의 모든 state를 초기화한다. 이런 문제를 피하려면 항상 컴포넌트를 중첩해서 정의하지 않고 최상위 범위에서 정의해야 한다.
+
+- `key`가 전역적으로 유일하지 않다는 것을 기억해야 합니다. key는 오직 부모 안에서만 자리를 명시하자.
+
+# State 로직을 reducer로 작성하기
+
+여러 이벤트 핸들러를 통해 많은 state 업데이트가 이루어지는 컴포넌트는 감당하기 힘들 수 있다. 이 때 컴포넌트 외부에서 `reducer`라는 단일 함수를 사용하여 모든 state 업데이트 로직을 통합할 수 있다. 이벤트 핸들러는 오로지 사용자의 “action”만을 명시하므로 간결해진다. 각 action에 대한 state 업데이트 방법은 파일 맨 마지막 부분의 reducer 함수에 명시되어 있다.
+
+예를 들어, 아래의 TaskApp 컴포넌트는 state에 tasks 배열을 보유하고 있으며, 세 가지의 이벤트 핸들러를 사용하여 task를 추가, 제거 및 수정한다.
+
+```jsx
+import { useReducer } from 'react';
+import AddTask from './AddTask.js';
+import TaskList from './TaskList.js';
+
+export default function TaskApp() {
+  const [tasks, dispatch] = useReducer(tasksReducer, initialTasks);
+
+  function handleAddTask(text) {
+    dispatch({
+      type: 'added',
+      id: nextId++,
+      text: text,
+    });
+  }
+
+  function handleChangeTask(task) {
+    dispatch({
+      type: 'changed',
+      task: task,
+    });
+  }
+
+  function handleDeleteTask(taskId) {
+    dispatch({
+      type: 'deleted',
+      id: taskId,
+    });
+  }
+
+  return (
+    <>
+      <h1>Prague itinerary</h1>
+      <AddTask onAddTask={handleAddTask} />
+      <TaskList tasks={tasks} onChangeTask={handleChangeTask} onDeleteTask={handleDeleteTask} />
+    </>
+  );
+}
+
+function tasksReducer(tasks, action) {
+  switch (action.type) {
+    case 'added': {
+      return [
+        ...tasks,
+        {
+          id: action.id,
+          text: action.text,
+          done: false,
+        },
+      ];
+    }
+    case 'changed': {
+      return tasks.map((t) => {
+        if (t.id === action.task.id) {
+          return action.task;
+        } else {
+          return t;
+        }
+      });
+    }
+    case 'deleted': {
+      return tasks.filter((t) => t.id !== action.id);
+    }
+    default: {
+      throw Error('Unknown action: ' + action.type);
+    }
+  }
+}
+
+let nextId = 3;
+const initialTasks = [
+  { id: 0, text: 'Visit Kafka Museum', done: true },
+  { id: 1, text: 'Watch a puppet show', done: false },
+  { id: 2, text: 'Lennon Wall pic', done: false },
+];
+```
