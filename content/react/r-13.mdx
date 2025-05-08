@@ -482,7 +482,7 @@ export default function MyComponent() {
 
 버튼을 누를 때마다 입력 state가 사라진다. 이것은 MyComponent를 렌더링할 때마다 다른 MyTextField 함수가 만들어지기 때문이다. 따라서 같은 함수에서 다른 컴포넌트를 렌더링할 때마다 React는 그 아래의 모든 state를 초기화한다. 이런 문제를 피하려면 항상 컴포넌트를 중첩해서 정의하지 않고 최상위 범위에서 정의해야 한다.
 
-- `key`가 전역적으로 유일하지 않다는 것을 기억해야 합니다. key는 오직 부모 안에서만 자리를 명시하자.
+- `key`가 전역적으로 유일하지 않다는 것을 기억해야 한다. key는 오직 부모 안에서만 자리를 명시하자.
 
 # State 로직을 reducer로 작성하기
 
@@ -566,3 +566,104 @@ const initialTasks = [
   { id: 2, text: 'Lennon Wall pic', done: false },
 ];
 ```
+
+위의 코드를 분석해보자.
+
+```jsx
+const [tasks, dispatch] = useReducer(tasksReducer, initialTasks);
+```
+
+- `tasks`는 현재 상태
+- `action`은 상태를 업데이트하기 위한 객체 (어떤 동작을 할지 담긴 객체)
+- `dispatch()`는 상태를 바꾸는 요청을 reducer에 전달하는 함수
+- `tasksReducer`는 상태를 어떻게 바꿀지 정의한 로직
+- `initialTasks`는 초기 상태 값
+
+# Context를 사용해 데이터를 깊게 전달하기
+
+보통의 경우 부모 컴포넌트에서 자식 컴포넌트로 props를 통해 정보를 전달한다. 그러나 중간에 많은 컴포넌트를 거쳐야 하거나, 애플리케이션의 많은 컴포넌트에서 동일한 정보가 필요한 경우에는 props를 전달하는 것이 번거롭고 불편할 수 있다. `Context`는 부모 컴포넌트가 트리 아래에 있는 모든 컴포넌트에 깊이에 상관없이 정보를 명시적으로 props를 통해 전달하지 않고도 사용할 수 있게 해준다.
+
+## Props 전달하기의 문제점
+
+Props 전달하기는 UI 트리를 통해 해당 데이터를 사용하는 컴포넌트에 명시적으로 데이터를 전달하는 훌륭한 방법이다.
+하지만 이 방식은 어떤 prop을 트리를 통해 깊이 전해줘야 하거나, 많은 컴포넌트에서 같은 prop이 필요한 경우에 장황하고 불편할 수 있다. 데이터가 필요한 여러 컴포넌트의 가장 가까운 공통 조상은 트리 상 높이 위치할 수 있고 그렇게 높게까지 state를 끌어올리는 것은 “Prop drilling”이라는 상황을 초래할 수 있다.
+
+![Props Drilling](https://ko.react.dev/_next/image?url=%2Fimages%2Fdocs%2Fdiagrams%2Fpassing_data_prop_drilling.dark.png&w=1920&q=75)
+
+데이터를 사용할 트리의 내부 컴포넌트에 props를 전달하는 대신 “순간이동”시킬 방법이 있다면 좋지 않을까? 그때 React의 context를 사용하면 된다.
+
+## Context: Props 전달하기의 대안
+
+`Context`는 부모 컴포넌트가 그 아래의 트리 전체에 데이터를 전달할 수 있도록 해준다.
+이렇게 하면 props를 통해 전달할 필요 없이 트리의 깊은 곳에 있는 컴포넌트에서 데이터를 사용할 수 있다. Context는 React의 기본 기능이며, React 애플리케이션에서 전역적으로 사용되는 데이터(예: 현재 사용자, UI 테마 등)를 제공하는 데 유용하다.
+
+### 1단계: Context 생성하기
+
+먼저 context를 만들어야 한다. 컴포넌트에서 사용할 수 있도록 파일에서 내보내야 한다.
+
+```jsx
+import { createContext } from 'react';
+
+export const LevelContext = createContext(1);
+```
+
+`createContext`의 유일한 인자는 기본값이다. 여기서 1은 가장 큰 제목 레벨을 나타내지만 모든 종류의 값을(객체까지) 전달할 수 있다. 다음 단계에서 기본값이 얼마나 중요한지 알게 된다.
+
+### 2단계: Context 사용하기
+
+React에서 `useContext` Hook과 생성한 Context를 가져온다.
+
+```jsx
+// Heading.js
+import { useContext } from 'react';
+import { LevelContext } from './LevelContext';
+
+export default function Heading({ children }) {
+  const level = useContext(LevelContext);
+  const Tag = `h${level}`;
+
+  return <Tag>{children}</Tag>;
+}
+```
+
+useContext는 Hook이다. useState, useReducer와 같이 Hook은 React 컴포넌트의 바로 안에서만 호출할 수 있다. (반복문이나 조건문 내부가 아니다.) useContext는 React에게 Heading 컴포넌트가 LevelContext를 읽으려 한다고 알려준다.
+
+### 3단계: Context 제공하기
+
+`<Provider>`를 이용해 Context의 값을 하위 컴포넌트에게 전달할 수 있다.
+
+```jsx
+// Section.js
+import { LevelContext } from './LevelContext';
+
+export default function Section({ children }) {
+  return <LevelContext.Provider value={2}>{children}</LevelContext.Provider>;
+}
+```
+
+이제 이 Section 안에 있는 Heading 컴포넌트는 level === 2를 받게 된다.
+
+| 기능            | 설명                                        |
+| --------------- | ------------------------------------------- |
+| `createContext` | Context를 생성 (기본값 포함 가능)           |
+| `useContext`    | 하위 컴포넌트에서 Context 값을 읽을 때 사용 |
+| `Provider`      | 하위 트리 컴포넌트에 Context 값을 공급      |
+
+## Context를 사용하기 전에 고려할 것
+
+Context는 사용하기에 꽤 유혹적이다. 그러나 이는 또한 남용하기 쉽다는 의미이기도 한다. 어떤 props를 여러 레벨 깊이로 전달해야 한다고 해서 해당 정보를 context에 넣어야 하는 것은 아니다.
+
+다음은 context를 사용하기 전 고려해볼 몇 가지 대안들이다.
+
+- 1. `Props 전달하기로 시작하기`. 사소한 컴포넌트들이 아니라면 여러 개의 props가 여러 컴포넌트를 거쳐 가는 것은 그리 이상한 일이 아니다. 힘든 일처럼 느껴질 수 있지만 어떤 컴포넌트가 어떤 데이터를 사용하는지 매우 명확히 해준다. 데이터의 흐름이 props를 통해 분명해져 코드를 유지보수 하기에도 좋다.
+- 2. 컴포넌트를 추출하고 `JSX를 children으로 전달하기`. 데이터를 사용하지 않는 많은 중간 컴포넌트 층을 통해 어떤 데이터를 전달하는 (더 아래로 보내기만 하는) 경우에는 컴포넌트를 추출하는 것을 잊은 경우가 많다. 예를 들어 posts처럼 직접 사용하지 않는 props를 `<Layout posts={posts} />`와 같이 전달할 수 있다. 대신 Layout은 children을 prop으로 받고 `<Layout><Posts posts={posts} /><Layout>`을 렌더링하자. 이렇게 하면 데이터를 지정하는 컴포넌트와 데이터가 필요한 컴포넌트 사이의 층수가 줄어든다.
+
+만약 이 접근 방법들이 잘 맞지 않는다면 context를 고려해보자.
+
+- `테마 지정하기`: 사용자가 모양을 변경할 수 있는 애플리케이션의 경우에 (e.g. 다크 모드) context provider를 앱 최상단에 두고 시각적으로 조정이 필요한 컴포넌트에서 context를 사용할 수 있다.
+- `현재 계정`: 로그인한 사용자를 알아야 하는 컴포넌트가 많을 수 있다. Context에 놓으면 트리 어디에서나 편하게 알아낼 수 있다. 일부 애플리케이션에서는 동시에 여러 계정을 운영할 수도 있다. (e.g. 다른 사용자로 댓글을 남기는 경우.) 이런 경우에는 UI의 일부를 서로 다른 현재 계정 값을 가진 provider로 감싸 주는 것이 편리하다.
+- `라우`팅: 대부분의 라우팅 솔루션은 현재 경로를 유지하기 위해 내부적으로 context를 사용한다. 이것이 모든 링크의 활성화 여부를 “알 수 있는” 방법입니다. 라우터를 만든다면 같은 방식으로 하고 싶을 것입이다.
+- `상태 관리`: 애플리케이션이 커지면 결국 앱 상단에 수많은 state가 생기게 된다. 아래 멀리 떨어진 많은 컴포넌트가 그 값을 변경하고 싶어할 수 있다. 흔히 reducer를 context와 함께 사용하는 것은 복잡한 state를 관리하고 번거로운 작업 없이 멀리 있는 컴포넌트까지 값을 전달하는 방법이다.
+
+Context는 정적인 값으로 제한되지 않는다. 다음 렌더링 시 다른 값을 준다면 React는 아래의 모든 컴포넌트에서 그 값을 갱신한다. 이것은 context와 state가 자주 조합되는 이유다.
+일반적으로 트리의 다른 부분에서 멀리 떨어져 있는 컴포넌트들이 같은 정보가 필요하다는 것은 context를 사용하기 좋다는 징조이다.
