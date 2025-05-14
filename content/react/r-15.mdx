@@ -170,7 +170,7 @@ React 컴포넌트는 기본적으로 **순수 함수(pure function)**처럼 작
 
 # 부록: useLayoutEffect는 언제?
 
-- `useLayoutEffect`는 렌더링 직후지만, 브라우저에 그리기 전에 실행됩니다
+- `useLayoutEffect`는 렌더링 직후지만, 브라우저에 그리기 전에 실행된다
 - DOM을 측정하거나 스크롤 위치를 제어할 때 사용
 
 ```tsx
@@ -179,7 +179,7 @@ useLayoutEffect(() => {
 });
 ```
 
-일반적으로는 useEffect로 충분하며, 성능상 이유로 useLayoutEffect는 꼭 필요할 때만 써야 합니다.
+일반적으로는 useEffect로 충분하며, 성능상 이유로 useLayoutEffect는 꼭 필요할 때만 써야 한다.
 
 # ⚠️ 주의사항: 의존성 배열의 정확한 관리
 

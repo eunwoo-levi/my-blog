@@ -1,0 +1,153 @@
+---
+title: 'useActionState Hook으로 폼 상태 관리하기'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-05-14'
+categoryId: 6
+---
+
+우리는 React에서 상태를 관리하기 위해 `useState`를 자주 사용합니다. 하지만, 복잡한 폼 상태를 관리할 때는 `useState`만으로는 부족할 수 있다.
+React Hook을 활용하여 폼 상태를 더 효율적으로 관리할 수 있는 방법을 소개한다.
+
+React 공식문서 원문과 함께 docs를 읽다가 [useActionState](https://github.com/reactjs/ko.react.dev/pull/1194)에서 우연히 번역에 업데이트가 필요한 부분을 발견하여 Contribute를 하게 되었다.
+
+`useActionState`는 React 18 이상에서 사용할 수 있는 Hook으로, 서버 액션(Server Actions) 과 함께 사용된다.
+이 Hook은 form 제출 결과를 기반으로 컴포넌트의 상태를 업데이트하는 데 사용된다.
+
+과거에는 `useFormState라는` 이름으로 존재했지만, 현재는 `useActionState로` 이름이 바뀌었다.
+
+# useActionState를 언제 사용해야 할까?
+
+- 서버에서 처리되는 액션 함수의 결과를 클라이언트에서 상태로 반영하고 싶을 때
+- form 제출 시 상태를 변경하고, 로딩 중 여부나 결과 메시지를 표시하고 싶을 때
+- HTML form의 action, 버튼의 formAction, 또는 수동 호출로 서버 액션을 실행할 때
+
+```tsx
+const [state, formAction, isPending] = useActionState(fn, initialState, permalink?);
+```
+
+# Parameters
+
+| 이름                 | 설명                                                                                                      |
+| -------------------- | --------------------------------------------------------------------------------------------------------- |
+| `actionFn`           | 실행할 액션 함수 (비동기 서버 함수 또는 클라이언트 함수)                                                  |
+| `initialState`       | form이 처음 제출되기 전 상태값                                                                            |
+| `permalink` _(선택)_ | 자바스크립트가 로드되지 않은 상태에서도 form이 작동할 수 있도록, form이 수정하는 페이지의 고유 URL을 지정 |
+
+# Returns
+
+| 반환값       | 설명                                                                     |
+| ------------ | ------------------------------------------------------------------------ |
+| `state`      | 현재 상태값 (초기엔 `initialState`, 이후엔 `actionFn`의 반환값)          |
+| `formAction` | `form`의 `action` 속성 또는 버튼의 `formAction` 속성에 넣을 수 있는 함수 |
+| `isPending`  | 현재 액션 실행 중인지 나타내는 boolean 값 (로딩 상태 체크용)             |
+
+# actionFn 의 signiture
+
+useActionState는 actionFn에 이전 상태값과 폼 데이터 (FormData) 를 함께 넘깁니다.
+
+```tsx
+async function actionFn(previousState, formData) {
+  // 액션 처리 로직
+  return updatedState;
+}
+```
+
+# useActionState Example
+
+```tsx
+// actions.ts (서버 함수)
+'use server';
+
+export async function increment(prevState: number, formData: FormData) {
+  return prevState + 1;
+}
+```
+
+```tsx
+// Client Component에서 사용
+'use client';
+
+import { useActionState } from 'react';
+import { increment } from './actions';
+
+export default function CounterForm() {
+  const [count, formAction, isPending] = useActionState(increment, 0);
+
+  return (
+    <form>
+      <p>현재 카운트: {count}</p>
+      <button formAction={formAction} disabled={isPending}>
+        {isPending ? '증가 중...' : '카운트 증가'}
+      </button>
+    </form>
+  );
+}
+```
+
+- 컴포넌트가 렌더링되면 `useActionState는` 초기 상태를 설정함
+- 사용자가 `<form>`을 제출하거나 버튼 클릭 → `formAction` 호출
+- `actionFn(previousState, formData)` 실행
+- 결과값이 `state로` 설정됨
+- 로딩 중이면 `isPending이` true가 되고 완료되면 false로 전환
+
+Form State는 form을 마지막으로 제출했을 때 액션에서 반환되는 값이다. 아직 form을 제출하지 않았다면, initialState로 설정된다.
+Server Function와 함께 사용하는 경우, `useActionState`를 통해 Hydration이 끝나기 전에도 form 제출에 대한 서버 응답을 표시할 수 있다.
+
+# 주의사항
+
+| 주의할 점                              | 설명                                                      |
+| -------------------------------------- | --------------------------------------------------------- |
+| 최상위에서 `useActionState`를 호출     | Hook은 반드시 컴포넌트 최상단에서만 사용 가능             |
+| `actionFn` 시그니처에 `prevState` 포함 | 일반 form action과 다르게 이전 상태를 첫 번째 인자로 받음 |
+| 클라이언트 컴포넌트에서만 사용         | `use client` 디렉티브가 필요                              |
+| 서버 액션이면 `use server` 필수        | 서버 액션 함수는 `use server` 선언이 있어야 함            |
+
+# Permalink란?
+
+선택적인 세 번째 인수 `permalink`는 자바스크립트가 로드되지 않은 상태에서도 form이 작동하게 해준다.
+
+```tsx
+const [state, formAction] = useActionState(myAction, null, '/posts/123');
+```
+
+- 주로 피드처럼 동적 콘텐츠가 있는 페이지에서 점진적 향상(Progressive Enhancement) 을 구현할 때 사용된다.
+
+# 실제 응답 값 사용 예시
+
+```tsx
+'use client';
+import { useActionState } from 'react';
+import { submitComment } from './actions';
+
+export default function CommentForm() {
+  const [state, formAction, isPending] = useActionState(submitComment, {
+    success: false,
+    message: '',
+  });
+
+  return (
+    <form action={formAction}>
+      <input name='comment' placeholder='댓글을 입력하세요' />
+      <button type='submit' disabled={isPending}>
+        {isPending ? '등록 중...' : '댓글 등록'}
+      </button>
+
+      {state.success && <p>✅ 댓글이 등록되었습니다: {state.message}</p>}
+    </form>
+  );
+}
+```
+
+# 요약
+
+| 항목      | 내용                                              |
+| --------- | ------------------------------------------------- |
+| 목적      | 서버 액션 실행 결과로 컴포넌트 상태를 관리        |
+| 형태      | `[state, formAction, isPending]` 반환             |
+| 사용 위치 | 클라이언트 컴포넌트 (`use client`)                |
+| 특징      | 서버-클라이언트 통합형 상태 업데이트              |
+| 초기값    | form이 제출되기 전까지는 `initialState` 유지      |
+| 장점      | 로딩 처리, 폼 제출 결과 표시 등 UX 향상           |
+| 단점      | 서버 액션과 함께 사용해야 하므로 제한적일 수 있음 |
+| 주의사항  | 최상위에서 호출, `actionFn` 시그니처 주의         |
