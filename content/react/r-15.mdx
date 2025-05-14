@@ -1,0 +1,222 @@
+---
+title: 'React 생명주기(Life Cycle)와 useEffect과의 관계'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-04-21'
+categoryId: 6
+---
+
+# React 생명주기(Lifecycle)와 useEffect 과의 관계
+
+React에서는 UI를 구성하기 위해 컴포넌트를 사용한다. 이 컴포넌트들은 생성되고, 업데이트되며, 제거되는 **생명주기(Lifecycle)**를 따른다.
+
+이 글에서는 **함수형 컴포넌트에서 생명주기를 어떻게 이해해야 하는지**, 그리고 그 흐름에서 **`useEffect`가 어떤 역할을 하는지**를 자세히 정리해보았다.
+
+---
+
+## 🧱 React 생명주기란?
+
+컴포넌트는 React 앱 안에서 다음과 같은 단계를 거친다:
+
+| 단계        | 설명                                         |
+| ----------- | -------------------------------------------- |
+| **Mount**   | 컴포넌트가 DOM에 처음 삽입될 때              |
+| **Update**  | state 또는 props 변경으로 인해 재렌더링될 때 |
+| **Unmount** | 컴포넌트가 DOM에서 제거될 때                 |
+
+과거에는 클래스형 컴포넌트에서 `componentDidMount`, `componentDidUpdate`, `componentWillUnmount` 같은 생명주기 메서드를 통해 각 단계에 코드를 넣었다.
+
+하지만 **함수형 컴포넌트**에서는 `useEffect`를 통해 이 모든 것을 처리한다.
+
+## 🧠 `useEffect`란?
+
+`useEffect`는 **렌더링 이후 특정 작업(부수 효과, side effect)**을 실행할 수 있게 도와주는 Hook이다.
+
+즉 내가 생각했을 때, `useEffect`는 React에 Life Cycle에 맞춰서, callback 함수를 실행하는 친구이다.
+
+```tsx
+useEffect(() => {
+  // 실행할 코드
+}, [dependency]);
+```
+
+# useEffect로 생명주기 흉내내기
+
+- 렌더링 후: 컴포넌트가 렌더링되어 DOM이 업데이트된 후에 `useEffect` 내부의 콜백 함수가 실행된다.
+- 의존성 배열: `useEffect`의 두 번째 인자로 전달되는 배열을 통해, 특정 값이 변경될 때만 효과를 실행하도록 제어할 수 있다.
+
+```tsx
+useEffect(() => {
+  // 이 코드는 의존성 배열에 있는 값이 변경될 때마다 실행됩니다.
+}, [dependency]);
+```
+
+![useEffect와 생명주기 관계](https://velog.velcdn.com/images/eunwoo1341/post/9d9b7a30-9a60-4c9f-a4e9-c8f5492a18fc/image.png);
+
+## 1. Mount (처음 한 번 실행)
+
+```tsx
+useEffect(() => {
+  console.log('컴포넌트가 마운트됨');
+}, []);
+```
+
+- 의존성 배열이 빈 배열([])이면 최초 1회 실행
+- API 호출, 이벤트 리스너 등록 등에 주로 사용
+
+## 2. Update (특정 값이 바뀔 때 실행)
+
+```tsx
+useEffect(() => {
+  console.log(`count가 ${count}로 변경됨`);
+}, [count]);
+```
+
+- count 값이 변경될 때마다 실행됨
+- 주로 상태 변화에 따라 동작하는 로직 처리 시 사용
+
+## 3. Unmount (정리 작업)
+
+```tsx
+useEffect(() => {
+  const timer = setInterval(() => {
+    console.log('작동 중...');
+  }, 1000);
+
+  return () => {
+    clearInterval(timer);
+    console.log('컴포넌트 언마운트됨, 정리 완료');
+  };
+}, []);
+```
+
+- useEffect의 return 함수는 컴포넌트가 언마운트되거나, 의존성이 바뀔 때 실행된다.
+- 주로 구독 해제, 타이머 제거, 이벤트 리스너 해제 등에 사용
+
+# 렌더링과 useEffect의 관계
+
+React의 렌더링 과정을 간단히 정리하면 다음과 같다:
+
+- 1. 컴포넌트 함수가 실행됨
+- 2. JSX 반환 → 가상 DOM 업데이트
+- 3. 실제 DOM 반영 → 화면에 보여짐
+- 4. 이 직후 `useEffect`가 비동기적으로 실행
+
+즉, useEffect는 렌더링이 끝나고 실행된다. 코드로 확인해보면 아래와 같다.
+
+```tsx
+function Example() {
+  console.log('1. 컴포넌트 실행');
+
+  useEffect(() => {
+    console.log('2. useEffect 실행');
+  }, []);
+
+  return <div>Hello</div>;
+}
+
+// 1. 컴포넌트 실행
+// 2. useEffect 실행
+```
+
+# ⚠️ 컴포넌트 함수에 async 쓰면 안 되는 이유
+
+```tsx
+async function MyComponent() {
+  await fetchSomething(); // ❌ 잘못된 사용
+
+  return <div>안됨</div>;
+}
+```
+
+- React는 컴포넌트 함수에서 동기적으로 JSX가 반환되길 기대한다.
+- async function을 쓰면 JSX 대신 Promise를 반환하게 되어 React 렌더링 흐름이 깨진다.
+
+-> 따라서 비동기 로직은 useEffect 안에서 실행해야 한다.
+
+```tsx
+function MyComponent() {
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await fetchSomething();
+      console.log(data);
+    };
+    fetchData();
+  }, []);
+
+  return <div>정상 작동</div>;
+}
+```
+
+# 부수 효과(side effects)란?
+
+React 컴포넌트는 기본적으로 **순수 함수(pure function)**처럼 작동하길 기대한다.
+순수함수는 입력(props, state)에 따라 항상 동일한 출력(JSX)을 내고 외부에 영향을 주지 않는 함수를 의미한다.
+하지만 현실적인 앱에서는 다음과 같은 "외부와 상호작용하는" 작업이 필요합니다. 이게 바로 `부수 효과(Side Effect)`입니다.
+`useEffect`에서 주로 처리하는 "부수 효과"란 컴포넌트 외부와 상호작용하는 작업을 말한다.
+
+| 종류                 | 예시                           |
+| -------------------- | ------------------------------ |
+| 데이터 패칭          | `fetch`, `axios`로 API 호출    |
+| 수동 DOM 조작        | `scrollTo`, `querySelector` 등 |
+| 타이머 설정          | `setTimeout`, `setInterval`    |
+| 이벤트 등록          | resize, keydown, WebSocket 등  |
+| 브라우저 저장소 접근 | `localStorage.getItem()` 등    |
+
+이러한 `(Side Effect)부수 효과`는 React의 렌더링 흐름을 방해하지 않기 위해, `useEffect`에서 처리해야 합니다.
+렌더링 전에 실행하면 렌더링이 지연되거나, 비동기 코드 때문에 예기치 않은 결과 발생 가능하다.
+
+`useEffect`는 렌더링 후 실행되므로 안전하게 외부 작업을 수행할 수 있습니다.
+
+# 부록: useLayoutEffect는 언제?
+
+- `useLayoutEffect`는 렌더링 직후지만, 브라우저에 그리기 전에 실행됩니다
+- DOM을 측정하거나 스크롤 위치를 제어할 때 사용
+
+```tsx
+useLayoutEffect(() => {
+  // 화면에 그리기 전에 실행됨
+});
+```
+
+일반적으로는 useEffect로 충분하며, 성능상 이유로 useLayoutEffect는 꼭 필요할 때만 써야 합니다.
+
+# ⚠️ 주의사항: 의존성 배열의 정확한 관리
+
+useEffect의 의존성 배열을 정확하게 관리하지 않으면, 예상치 못한 동작이 발생할 수 있다. 예를 들어, 의존성 배열을 빈 배열([])로 설정하면, 컴포넌트가 마운트될 때만 효과가 실행되고 이후에는 실행되지 않다. 그러나 효과 내부에서 사용하는 모든 변수나 함수는 의존성 배열에 포함되어야 한다.
+
+```tsx
+useEffect(() => {
+  // isPlaying이 변경될 때마다 실행되어야 함
+  if (isPlaying) {
+    videoRef.current.play();
+  } else {
+    videoRef.current.pause();
+  }
+}, [isPlaying]); // isPlaying을 의존성 배열에 포함
+```
+
+## 왜 ref는 의존성 배열에서 생략해도 되나?
+
+이것은 `ref` 객체가 *안정된 식별성(stable identity)*을 가지기 때문이다. React는 동일한 `useRef` 호출에서 항상 같은 객체를 얻을 수 있음을 보장한다. 이 객체는 절대 변경되지 않기 때문에 자체적으로 Effect를 다시 실행시키지 않는다. 따라서 ref는 의존성 배열에 포함하든 포함하지 않든 상관없다. 포함해도 문제없다.
+
+# 클린업 함수: 효과의 정리
+
+useEffect에서 반환하는 함수는 클린업 함수로, 컴포넌트가 언마운트되거나 의존성 배열에 포함된 값이 변경될 때 실행된다. 이를 통해 이벤트 리스너 제거, 타이머 해제 등 정리 작업을 수행할 수 있다.
+
+```tsx
+useEffect(() => {
+  const subscription = someAPI.subscribe();
+
+  return () => {
+    // 구독 해제
+    subscription.unsubscribe();
+  };
+}, []);
+```
+
+# 결론
+
+useEffect는 React 함수형 컴포넌트에서 렌더링 이후의 부수 효과를 처리하는 핵심적인 도구이다. 이를 통해 외부 시스템과의 동기화, 이벤트 리스너 관리, 타이머 설정 등 다양한 작업을 수행할 수 있다. 그러나 의존성 배열을 정확하게 관리하고, 클린업 함수를 적절히 사용하는 것이 중요하다.
+
+더 자세한 내용은 React 공식 문서의 Effect로 동기화하기 섹션을 참고하시기 바란다.
