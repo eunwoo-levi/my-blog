@@ -1,0 +1,180 @@
+---
+title: 'React.lazy와 Suspense 완벽 가이드: 코드 분할과 로딩 UI의 모든 것'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-05-17'
+categoryId: 6
+---
+
+React 앱이 커질수록 사용자에게 보여주는 첫 화면까지의 로딩 시간이 점점 길어진다.
+이 문제를 해결하기 위해 `React.lazy`와 `Suspense`를 사용하면 필요한 시점에 필요한 코드만 로드할 수 있는 `코드 분할(Code Splitting)`이 가능해진다.
+
+이 글에서는 공식 문서를 기반으로 [React.lazy()](https://react.dev/reference/react/lazy)와 [Suspense](https://react.dev/reference/react/Suspense)에 대해 자세히 알아보겠다.
+이 두 가지 기능은 React 16.6에서 도입되었으며, 이후 React 18에서도 더욱 발전된 형태로 사용되고 있다.
+
+# React.lazy란?
+
+`React.lazy()`는 컴포넌트를 지연 로딩(lazy loading) 하기 위한 함수이다.
+이 기능을 사용하면 컴포넌트를 필요할 때 동적으로 불러올 수 있어, 초기 로딩 속도를 개선하고 코드 분할을 쉽게 구현할 수 있다.
+
+## 사용법
+
+```tsx
+import { lazy } from 'react';
+
+const MyComponent = lazy(() => import('./MyComponent'));
+```
+
+- `import()`는 동적 import로, Webpack이나 Vite가 해당 컴포넌트를 별도의 청크로 분리한다.
+- MyComponent는 실제로 필요할 때까지 로드되지 않으며, 로딩 중인 상태를 처리하려면 반드시 `Suspense`로 감싸야 한다.
+
+# Suspense란?
+
+`<Suspense>`는 비동기적으로 로드되는 컴포넌트를 감싸서, 로딩 중일 때 보여줄 UI(`fallback`)를 지정하는 컴포넌트이다.
+
+```tsx
+import { Suspense } from 'react';
+
+<Suspense fallback={<div>로딩 중...</div>}>
+  <MyComponent />
+</Suspense>;
+```
+
+`fallback` prop은 컴포넌트가 로딩되는 동안 보여줄 React 요소입니다.
+
+`Suspense`는 `lazy()`뿐 아니라, 나중에는 서버 컴포넌트, 데이터 패칭 라이브러리(React Query 등)와도 잘 통합됩니다.
+
+## 예시 1 - 간단한 Lazy 로딩 컴포넌트
+
+### 1. 컴포넌트 분리
+
+```tsx
+// Chart.tsx
+export default function Chart() {
+  return <div>📊 차트 컴포넌트 로드됨!</div>;
+}
+```
+
+### 2. Lazy와 Suspense 사용
+
+```tsx
+// App.tsx
+import { lazy, Suspense } from 'react';
+
+const LazyChart = lazy(() => import('./Chart'));
+
+export default function App() {
+  return (
+    <div>
+      <h1>대시보드</h1>
+      <Suspense fallback={<div>차트를 불러오는 중...</div>}>
+        <LazyChart />
+      </Suspense>
+    </div>
+  );
+}
+```
+
+이렇게 하면 `Chart`는 App 로드 시점에 포함되지 않고, `LazyChart`가 처음 렌더링될 때 네트워크 요청을 통해 로드된다.
+
+`React.lazy()`를 사용하면 번들러가 각 컴포넌트를 개별 청크로 분리하여, 필요한 시점에만 로드할 수 있도록 해줍니다.
+
+```js
+bundle.js         <-- App 등 공통 코드 포함
+chunk-Chart.js    <-- Chart 컴포넌트만 포함된 파일 (필요할 때 로드됨)
+```
+
+이 방식은 대규모 앱에서 초기 로딩 속도를 크게 줄일 수 있는 효과적인 방법이다.
+
+## 예시 2 - 버튼 클릭 시 Lazy 로딩하기
+
+```tsx
+import { useState, lazy, Suspense } from 'react';
+
+const LazySettings = lazy(() => import('./Settings'));
+
+function App() {
+  const [showSettings, setShowSettings] = useState(false);
+
+  return (
+    <div>
+      <button onClick={() => setShowSettings(true)}>설정 열기</button>
+
+      {showSettings && (
+        <Suspense fallback={<div>설정을 불러오는 중...</div>}>
+          <LazySettings />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+```
+
+이렇게 하면 사용자가 버튼을 클릭할 때까지 Settings 컴포넌트는 아예 로드되지 않아서, 효율적인 코드 분할 방식으로 볼 수 있다.
+
+## Suspense 중첩으로 사용 가능
+
+컴포넌트가 일시 중단되면 가장 가까운 상위 `Suspense` 컴포넌트가 `Fallback`을 보여준다. 이를 통해 여러 Suspense 컴포넌트를 중첩하여 로딩 순서를 만들 수 있다. 각 Suspense의 Fallback은 다음 레벨의 콘텐츠를 사용할 수 있게 되면 채워진다. 예를 들어 앨범 목록에 자체 Fallback을 지정할 수 있다.
+
+```tsx
+<Suspense fallback={<BigSpinner />}>
+  <Biography />
+  <Suspense fallback={<AlbumsGlimmer />}>
+    <Panel>
+      <Albums />
+    </Panel>
+  </Suspense>
+</Suspense>
+```
+
+이 변경으로 Biography를 보여줄 때 Albums가 로딩될 때까지 기다릴 필요가 없다.
+
+위 코드의 실행 순서는 다음과 같다.
+
+- 1. Biography가 아직 로딩되지 않은 경우, 전체 콘텐츠 영역 대신 BigSpinner가 표시된다.
+- 2. Biography의 로딩이 완료되면 BigSpinner가 콘텐츠로 대체된다.
+- 3. Albums가 아직 로딩되지 않은 경우, Albums와 그 상위 Panel 대신 AlbumsGlimmer가 표시된다.
+- 4. 마지막으로 Albums가 로딩을 완료하면 AlbumsGlimmer를 대체한다.
+
+# 주의사항
+
+## 1. React.lazy는 default export만 지원
+
+```tsx
+// ❌ 잘못된 예
+const MyComponent = lazy(() => import('./MyComponent').then((m) => m.NamedExport));
+```
+
+따라서 `default export`로 내보내거나, 중간 컴포넌트를 만들어 감싼다.
+
+## 2. lazy 컴포넌트는 항상 모듈의 최상위 수준에서 선언
+
+lazy 컴포넌트를 다른 컴포넌트 내부에서 선언하지 말자
+
+```tsx
+import { lazy } from 'react';
+
+function Editor() {
+  // 🔴 잘못된 방법: 이렇게 하면 다시 렌더링할 때 모든 상태가 재설정됩니다.
+  const MarkdownPreview = lazy(() => import('./MarkdownPreview.js'));
+  // ...
+}
+```
+
+대신 항상 모듈의 최상위 수준에서 선언해야 한다.
+
+```tsx
+import { lazy } from 'react';
+
+// ✅ 올바른 방법: `lazy` 컴포넌트를 컴포넌트 외부에 선언합니다.
+const MarkdownPreview = lazy(() => import('./MarkdownPreview.js'));
+
+function Editor() {
+  // ...
+}
+```
+
+## 3. Suspense는 클라이언트에서만 사용 가능 (SSR에 주의)
+
+현재까지 React.lazy + Suspense 조합은 서버 사이드 렌더링(SSR) 환경에서는 제한적이다. React 18부터는 Suspense for Data Fetching 기능이 도입되었지만, 아직 모든 사용 사례에 적용되진 않는다.
+Next.js 등에서는 `next/dynamic`을 활용한 코드 분할을 사용하는 것이 일반적이다.
