@@ -36,13 +36,30 @@ API 모킹을 통해 실제 백엔드 서비스 없이도 프론트엔드 애플
 
 # MSW 세팅하기
 
-## 1. MSW 설치
+## 1. Service Worker 파일 생성
+
+MSW는 Service Worker를 사용하여 네트워크 요청을 가로채기 때문에, 먼저 Service Worker 파일을 생성해야 한다.
+
+아래 명령어로 MSW의 서비스 워커 파일을 생성한다.
+
+이 명령은 public/mockServiceWorker.js 파일을 생성한다.
+
+- public/ 폴더에 넣는 이유: 이 폴더 안의 파일은 Vite에서 루트 경로(/)에 그대로 노출된다.
+- 생성된 파일은 자동으로 /mockServiceWorker.js 경로에서 접근 가능해진다.
+
+```bash
+npx msw init public --save
+```
+
+서비스 워커 파일을 생성한 후에는 반드시 Vite dev 서버를 다시 시작하는 것이 좋다.
+
+## 2. MSW 설치
 
 ```bash
 npm install msw@latest --save-dev
 ```
 
-## 2. MSW 폴더 구조
+## MSW 폴더 구조
 
 MSW를 사용하기 위해 필요한 구성은 다음과 같다.
 본인은 dummy.json 파일을 사용하여 더미 데이터를 만들고, handlers.ts에서 API 모킹을 정의하였다.
@@ -219,7 +236,7 @@ afterAll(() => server.close());
 - 📄 vite.config.ts 테스트 설정 추가
 
 ```ts
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config'; //  vitest 전용 설정
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
