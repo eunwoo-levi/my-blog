@@ -5,6 +5,7 @@ import { PostData } from '@/src/shared/lib/mdx/type';
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -43,22 +44,62 @@ export default function BlogContainer({ posts }: { posts: PostData[] }) {
                 className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
               />
             </PaginationItem>
+            {(() => {
+              const pageNumbers: (number | 'ellipsis')[] = [];
 
-            {/* 페이지 번호 */}
-            {[...Array(totalPages)].map((_, index) => {
-              const pageNumber = index + 1;
-              return (
-                <PaginationItem key={pageNumber}>
-                  <PaginationLink
-                    isActive={currentPage === pageNumber}
-                    onClick={() => onPageChange(pageNumber)}
-                  >
-                    {pageNumber}
-                  </PaginationLink>
+              if (totalPages <= 5) {
+                for (let i = 1; i <= totalPages; i++) {
+                  pageNumbers.push(i);
+                }
+              } else {
+                // always showing first page
+                if (currentPage > 3) {
+                  pageNumbers.push(1);
+                  pageNumbers.push('ellipsis');
+                } else {
+                  for (let i = 1; i <= 3; i++) {
+                    pageNumbers.push(i);
+                  }
+                }
+
+                // middle page
+                if (currentPage > 3 && currentPage < totalPages - 2) {
+                  pageNumbers.push(currentPage - 1);
+                  pageNumbers.push(currentPage);
+                  pageNumbers.push(currentPage + 1);
+                }
+
+                // nearby last page
+                if (currentPage >= totalPages - 2) {
+                  for (let i = totalPages - 2; i <= totalPages; i++) {
+                    if (i > 1) pageNumbers.push(i);
+                  }
+                }
+
+                // always showing last page
+                if (currentPage < totalPages - 2) {
+                  pageNumbers.push('ellipsis');
+                  pageNumbers.push(totalPages);
+                }
+              }
+
+              const uniquePages = Array.from(new Set(pageNumbers));
+
+              return uniquePages.map((page, idx) => (
+                <PaginationItem key={idx}>
+                  {page === 'ellipsis' ? (
+                    <PaginationEllipsis />
+                  ) : (
+                    <PaginationLink
+                      isActive={currentPage === page}
+                      onClick={() => onPageChange(page)}
+                    >
+                      {page}
+                    </PaginationLink>
+                  )}
                 </PaginationItem>
-              );
-            })}
-
+              ));
+            })()}
             <PaginationItem>
               <PaginationNext
                 onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
