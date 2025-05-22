@@ -1,5 +1,7 @@
 import type { Config } from 'tailwindcss';
 
+type ThemeFunction = (path: string) => string | number | undefined;
+
 export default {
   darkMode: ['class'],
   content: [
@@ -13,6 +15,18 @@ export default {
   ],
   theme: {
     extend: {
+      typography: (theme: ThemeFunction) => {
+        return {
+          DEFAULT: {
+            css: {
+              h1: {
+                paddingTop: '1rem',
+              },
+            },
+          },
+        };
+      },
+
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
