@@ -27,7 +27,7 @@ export default async function BlogDetailPage({ params }: ParamsProps) {
   return (
     <article className='mx-auto max-w-7xl px-4 py-12'>
       <header className='mb-12'>
-        <h1 className='mb-10 text-5xl font-bold lg:text-7xl'>{frontmatter.title}</h1>
+        <h1 className='mb-10 text-4xl font-bold lg:text-6xl'>{frontmatter.title}</h1>
         <div className='mb-8 flex flex-wrap items-center gap-4 text-gray-600 dark:text-gray-400'>
           <div className='flex items-center gap-2'>
             <span className='font-medium'>By</span>
