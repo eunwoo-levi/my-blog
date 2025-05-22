@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { PostData } from '@/src/shared/lib/mdx/type';
 import {
   Pagination,
@@ -18,17 +18,20 @@ export default function BlogContainer({ posts }: { posts: PostData[] }) {
   const postsPerPage = 9;
   const totalPages = Math.ceil(posts.length / postsPerPage);
 
+  const topRef = useRef<HTMLDivElement>(null);
+
   const startIdx = (currentPage - 1) * postsPerPage;
   const currentPosts = posts.slice(startIdx, startIdx + postsPerPage);
 
   const onPageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
+      topRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
   return (
-    <div className='mb-32 flex w-full flex-col items-center justify-center'>
+    <div ref={topRef} className='mb-32 flex w-full flex-col items-center justify-center'>
       <div className='grid w-full max-w-[1200px] grid-cols-1 justify-items-center gap-8 lg:grid-cols-3'>
         {currentPosts.map((post) => (
           <BlogPost key={post.slug} post={post} />
@@ -40,10 +43,11 @@ export default function BlogContainer({ posts }: { posts: PostData[] }) {
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious
-                onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
+                onClick={() => onPageChange(currentPage - 1)}
                 className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
               />
             </PaginationItem>
+
             {(() => {
               const pageNumbers: (number | 'ellipsis')[] = [];
 
@@ -52,7 +56,6 @@ export default function BlogContainer({ posts }: { posts: PostData[] }) {
                   pageNumbers.push(i);
                 }
               } else {
-                // always showing first page
                 if (currentPage > 3) {
                   pageNumbers.push(1);
                   pageNumbers.push('ellipsis');
@@ -62,21 +65,18 @@ export default function BlogContainer({ posts }: { posts: PostData[] }) {
                   }
                 }
 
-                // middle page
                 if (currentPage > 3 && currentPage < totalPages - 2) {
                   pageNumbers.push(currentPage - 1);
                   pageNumbers.push(currentPage);
                   pageNumbers.push(currentPage + 1);
                 }
 
-                // nearby last page
                 if (currentPage >= totalPages - 2) {
                   for (let i = totalPages - 2; i <= totalPages; i++) {
                     if (i > 1) pageNumbers.push(i);
                   }
                 }
 
-                // always showing last page
                 if (currentPage < totalPages - 2) {
                   pageNumbers.push('ellipsis');
                   pageNumbers.push(totalPages);
@@ -100,9 +100,10 @@ export default function BlogContainer({ posts }: { posts: PostData[] }) {
                 </PaginationItem>
               ));
             })()}
+
             <PaginationItem>
               <PaginationNext
-                onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
+                onClick={() => onPageChange(currentPage + 1)}
                 className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
               />
             </PaginationItem>
