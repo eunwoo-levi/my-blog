@@ -6,7 +6,7 @@ publishDate: '2025-05-23'
 categoryId: 6
 ---
 
-[FE test diagram](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*pwaKYTv5emM7ctxuj6RAKg.png)
+![FE test diagram](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*pwaKYTv5emM7ctxuj6RAKg.png)
 
 # 프론트엔드 테스트, 왜 중요할까?
 
@@ -57,6 +57,26 @@ categoryId: 6
 - `Cypress`: 브라우저에서 동작을 실제로 수행하며 검증
 - `MSW`: 백엔드가 완성되지 않은 상태에서도 전체 흐름 테스트 가능
 
+## 현업에서는 어떻게 쓸까?
+
+## 💡 단위 테스트
+
+컴포넌트 로직, 포맷터, 유틸 함수를 중심으로 작성
+
+개발 속도를 방해하지 않으면서 높은 커버리지 확보
+
+## 💡 통합 테스트
+
+페이지 단위로 작성
+
+상태관리(Context, Redux)나 API 호출의 연결 고리를 검증
+
+## 💡 E2E 테스트
+
+핵심 사용자 흐름(회원가입, 로그인, 결제 등)만 선택적으로 작성
+
+QA 자동화를 위한 핵심 수단 (CI/CD 파이프라인에 포함)
+
 ## 정리
 
 | 항목                          | 단위 테스트 (Unit)                 | 통합 테스트 (Integration) | E2E 테스트 (End-to-End)              |
@@ -69,3 +89,12 @@ categoryId: 6
 | **신뢰성**                    | 낮음                               | 중간                      | 높음                                 |
 | **주요 테스트 라이브러리**    | Jest, Vitest, RTL, Storybook       | RTL, MSW, Vitest, Jest    | Cypress, Playwright, MSW             |
 | **보조 도구/역할**            | Storybook (UI 확인용)              | MSW (API 목킹)            | MSW (백엔드 목킹), 테스트 서버 구성  |
+
+# 마무리
+
+프론트엔드 테스트는 단순히 "버그를 줄이기 위한 도구" 그 이상이다. 좋은 테스트 코드는 설계가 잘 되었다는 증거이고, 팀의 생산성과 안정성을 높이는 기반이다. 단위 → 통합 → E2E로 이어지는 계층적 테스트 전략을 잘 세우고, Storybook, RTL, Vitest, MSW, Cypress 같은 도구를 적절히 조합하면 훨씬 더 안정적이고 신뢰할 수 있는 프론트엔드 개발이 가능하다.
+
+아래 블로그를 참고하면 매우 도움되니 시간될 때 꼭 읽어보길 바란다.
+
+- [Static vs Unit vs Integration vs E2E Testing for Frontend Apps](https://kentcdodds.com/blog/static-vs-unit-vs-integration-vs-e2e-tests)
+- [https://kentcdodds.com/blog/write-tests](https://kentcdodds.com/blog/write-tests)
