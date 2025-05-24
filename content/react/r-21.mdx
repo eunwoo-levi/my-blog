@@ -1,0 +1,228 @@
+---
+title: '[React] useDebounce와 useThrottle 완벽 가이드: 성능 최적화의 핵심'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-05-24'
+categoryId: 6
+---
+
+React에서 성능 최적화는 매우 중요한 주제이다. 특히, 사용자 경험을 향상시키기 위해 입력 이벤트에 대한 반응성을 조절하는 것이 필요하다. 이를 위해 `useDebounce`와 `useThrottle` 훅을 사용하여 성능을 최적화할 수 있다. 이 글에서는 이 두 가지 훅의 개념과 사용법을 자세히 알아보겠다.
+
+이 글에서는 이 두 개념을 **React 훅 형태로 직접 구현**하고, 어떤 상황에서 어떤 훅을 사용하는 것이 좋은지, 그리고 각 훅의 **사용 예제**와 **장단점**까지 상세하게 설명해보려고 한다.
+
+# useDebounce란?
+
+연속된 이벤트 중 **마지막 이벤트만 처리**하는 방식이다.
+예를 들어, 사용자가 검색어를 입력할 때 **입력이 멈춘 뒤 일정 시간 후**에만 API 요청을 보내는 패턴이 바로 `Debounce`이다.
+
+추가로 본인은 왜 Hook 이름이 `useDebounce`인지 궁금했는데, `bounce` 즉, 공이 튕기는 것을, `De-` 의 접두사가 붙어서 공이 튕겨져 나오는 것을 `방지`하는 것에서 유래되었다고 한다. 즉, 연속된 이벤트 중 마지막 이벤트만 처리하여 불필요한 작업을 줄이는 것이다.
+
+## 사용 예시
+
+- 검색어 자동 완성
+- 입력값에 대한 실시간 검증
+- 무분별한 API 호출 방지
+
+## useDebounce Hook 구현
+
+```tsx
+import { useCallback, useRef } from 'react';
+
+const useDebounce = (callback: () => void, term: number) => {
+  const timer = useRef<ReturnType<typeof setTimeout>>(null);
+
+  const dispatchDebounce = useCallback(() => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
+    const newTimer = setTimeout(() => {
+      callback();
+    }, term);
+    timer.current = newTimer;
+  }, [callback, term]);
+
+  return dispatchDebounce;
+};
+
+export default useDebounce;
+```
+
+`useDebounce` 훅은 `callback` 함수와 `term` 즉 delay시간을 인자로 받는다.
+반환값으로는 `callback`을 `term` 밀리초 후에 실행하는 함수를 반환한다.
+
+`useRef`는 컴포넌트가 리렌더링되어도 값이 유지되므로, 타이머 추적에 적합하다.
+(값이 매번 바뀔때마다 리랜더링 되는 것을 방지한다.)
+
+```tsx
+if (timer.current) {
+  clearTimeout(timer.current);
+}
+```
+
+위 코드를 살펴보면, 이전에 실행 예정이었던 타이머가 있다면, 그것을 취소한다. 이를 통해 연속된 이벤트 중 마지막 이벤트만 처리할 수 있다.
+이것이 `debouncing`의 핵심이다.
+
+```tsx
+const newTimer = setTimeout(() => {
+  callback();
+}, term);
+timer.current = newTimer;
+```
+
+이후, 새로운 타이머를 설정하여 `term` 밀리초 후에 `callback()`을 실행한다.
+새 타이머의 ID를 `timer.current`에 저장하여 다음에 또 취소할 수 있게 한다.
+
+## 사용 예시
+
+```tsx
+'use client';
+
+import { useEffect, useState } from 'react';
+import useDebounce from './useDebounce';
+
+function SearchInput() {
+  const [input, setInput] = useState('');
+  const debouncedInput = useDebounce(input, 500);
+
+  useEffect(() => {
+    if (debouncedInput) {
+      // API 호출 등
+      console.log('API 요청:', debouncedInput);
+    }
+  }, [debouncedInput]);
+
+  return <input value={input} onChange={(e) => setInput(e.target.value)} />;
+}
+```
+
+위 예시에서 사용자가 입력할 때마다 `setInput`이 호출되지만, `useDebounce` 훅을 통해 마지막 입력 후 500ms가 지나야 API 요청이 발생한다.
+즉, 사용자가 빠르게 입력해도 마지막 입력 후에만 `console.log()`가 실행된다.
+
+### 장점
+
+- API 호출 최소화 (server 부하 감소)
+- UX 개선 (사용자가 입력 중일 때 불필요한 응답 방지)
+
+### 단점
+
+- 마지막 입력만 처리됨 (중간 이벤트는 무시)
+- delay가 짧으면 debounce 효과가 약함
+
+---
+
+# useThrottle란?
+
+지정한 시간 동안 최대 한 번만 실행되도록 제한하는 방식이다.
+스크롤 이벤트나 마우스 움직임처럼 짧은 시간에 반복 호출되는 이벤트에 적합하다.
+
+`Throttle`은 `Debounce`와는 달리, 이벤트가 발생할 때마다 즉시 반응하지만, 지정한 시간 간격으로만 실행된다. 즉, 연속된 이벤트를 일정 주기로 나누어 처리하는 것이다.
+예를 들어, 사용자가 스크롤을 할 때, 매번 스크롤 이벤트가 발생하는 것이 아니라, 100ms마다 한 번씩만 처리하는 방식이다.
+이런 방식은 성능을 최적화하면서도 사용자 경험을 해치지 않도록 도와준다.
+
+`throttle`는 기계적 용어로, 어떤 작업을 일정한 속도로 제한하는 것을 의미한다. 즉, 연속된 이벤트를 일정 간격으로 나누어 처리하는 것이다.
+
+## 사용 예시
+
+- 스크롤 위치 기반 애니메이션
+- 버튼 반복 클릭 방지
+- 실시간 입력 반응 (하지만 너무 자주 실행되면 비효율적)
+
+## useThrottle Hook 구현
+
+```tsx
+import { useCallback, useState } from 'react';
+
+const useThrottle = () => {
+  const [timeoutId, setTimeoutId] = useState<ReturnType<typeof setTimeout> | null>(null);
+
+  const makeThrottle = useCallback(
+    (callback: () => void, throttleTime: number) => () => {
+      if (timeoutId) return;
+      const newTimeoutId = setTimeout(() => {
+        callback();
+        setTimeoutId(null);
+      }, throttleTime);
+      setTimeoutId(newTimeoutId);
+    },
+    [timeoutId],
+  );
+
+  const cleanup = useCallback(() => {
+    if (!timeoutId) return;
+    clearTimeout(timeoutId);
+  }, [timeoutId]);
+
+  return { makeThrottle, cleanup };
+};
+
+export default useThrottle;
+```
+
+`makeThrottle(callback, throttleTime)` 함수를 호출하면, 지정한 `throttleTime` 동안 `callback`이 한 번만 실행되도록 제한한다.
+`useThrottle` 훅은 내부적으로 `timeoutId` 상태를 관리하여, 현재 실행 중인 타이머가 있는지 확인한다.
+
+```tsx
+if (timeoutId) return;
+```
+
+위 코드는 현재 throttle 타이머가 실행 중이면 `callback()` 실행하지 않음을 의미한다 → `throttle` 효과
+
+```tsx
+const newTimeoutId = setTimeout(() => {
+  callback();
+  setTimeoutId(null); // 일정 시간 후 다시 실행 가능하도록 초기화
+}, throttleTime);
+setTimeoutId(newTimeoutId);
+```
+
+`callback()`을 `throttleTime` 밀리초 후에 실행하고 타이머 종료 후에는 `timeoutId`를 null로 초기화한다. → 다음 실행 허용
+타이머가 끝나기 전까지는 `timeoutId`가 유지되므로, 같은 함수는 실행되지 않는다.
+
+즉, 이 훅은 어떤 함수든 "지금 실행하면, 일정 시간동안 다시 못 실행하게 만드는" throttle 로직을 생성합니다.
+
+## 사용 예시
+
+```tsx
+import { useState } from 'react';
+import useThrottle from './useThrottle';
+
+function ThrottleButton() {
+  const [count, setCount] = useState(0);
+  const { makeThrottle } = useThrottle();
+
+  const handleClick = makeThrottle(() => {
+    setCount((prev) => prev + 1);
+  }, 1000);
+
+  return <button onClick={handleClick}>Click Me ({count})</button>;
+}
+```
+
+위 예시에서 버튼을 클릭할 때마다 `setCount`가 호출되지만, `useThrottle` 훅을 통해 1초에 한 번만 카운트가 증가한다.
+
+## 장점
+
+- 연속 이벤트를 제한하면서도 반응성 유지
+- 성능 최적화에 적합
+
+## 단점
+
+- 마지막 이벤트가 무시될 수 있음
+- debounce보다 UX가 거칠게 느껴질 수 있음
+
+# useDebounce vs useThrottle 비교
+
+| 항목        | Debounce                        | Throttle                              |
+| ----------- | ------------------------------- | ------------------------------------- |
+| 실행 타이밍 | 마지막 이벤트 후 일정 시간      | 일정 간격마다 한 번씩 실행            |
+| 대표 예시   | 입력 필드 검색, API 호출        | 스크롤, 버튼 클릭 등 빠른 반복 이벤트 |
+| UX 측면     | 사용자 입력이 끝났을 때만 응답  | 중간에도 응답 가능 (일정 주기마다)    |
+| 데이터 처리 | 가장 마지막 값이 중요할 때 적합 | 중간 과정의 반응이 필요한 경우 적합   |
+
+# 마무리
+
+`useDebounce`는 최소한의 호출로 정확한 데이터를 원할 때 유용하다.
+`useThrottle`는 빈번한 이벤트에 대응하면서도 과도한 처리 방지에 적합하다.
+
+둘 다 사용자 경험과 성능 사이의 균형을 잡는 데 핵심적인 도구이다.
+상황에 맞는 도구를 적절히 사용하면 React 앱의 성능과 반응성을 모두 개선할 수 있다.
