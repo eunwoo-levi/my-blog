@@ -263,6 +263,78 @@ test('사용자 정보를 렌더링한다', async () => {
 });
 ```
 
+# 오류가 발생했을 경우
+
+```
+Uncaught (in promise) Error: [MSW] Failed to register a Service Worker for scope ('https://your-github-id.github.io/') with script ('https://your-github-id.github.io/mockServiceWorker.js'): Service Worker script does not exist at the given path.
+Did you forget to run "npx msw init <PUBLIC_DIR>"?
+Learn more about creating the Service Worker script: https://mswjs.io/docs/cli/init
+    at getWorkerInstance (index-CW2z-yh0.js:25297:13)
+    at async startWorkerInstance (index-CW2z-yh0.js:26227:24)
+    at async SetupWorkerApi.start (index-CW2z-yh0.js:27870:12)
+```
+
+혹시 개발자도구의 네트워크탭에서 위와 같은 에러가 발생한다면, `public/mockServiceWorker.js` 파일이 존재하는지 확인해보자.
+있음에도 불구하고 여전히 같은 에러가 발생한다면,
+
+vite.config.ts 파일의 defineConfig에 아래 코드와 같이 base와 test를 추가했는지 확인해보자.
+
+- vite.config.ts
+
+```ts
+export default defineConfig(({ mode }) => ({
+  plugins: [react()],
+  base: mode === 'production' ? '/react-shopping-products/' : '/',
+  test: {
+    globals: true,
+    environment: 'jsdom',
+  },
+}));
+```
+
+위 설정에서,
+
+`globals: true`는 `describe`, `it`, `expect`, `beforeEach` 같은 테스트 함수들을 전역(global) 으로 사용할 수 있게 한다.
+
+그리고 `environment: 'jsdom'`은 테스트가 실행될 환경을 브라우저처럼 흉내 내는 jsdom으로 설정한다.
+`jsdom`은 브라우저의 `window`, `document`, `HTMLElement`, `localStorage` 같은 객체를 `Node.js` 환경에서 에뮬레이션한다.
+
+Vite가 빌드한 리소스들의 경로를 `base`에 맞게 조정한다.
+
+`vite build` 시 HTML 내 경로가 `/react-shopping-products/`를 기준으로 생성된다
+따라서 실제 빌드 결과가 GitHub Pages에서 정확히 작동하게 된다.
+
+- main.tsx
+
+```ts
+async function enableMocking() {
+  // if (process.env.NODE_ENV !== 'development') {
+  //   return;
+  // }
+
+  const isLocalhost = location.hostname === 'localhost';
+
+  const { worker } = await import('./mocks/browser');
+  return worker.start({
+    serviceWorker: {
+      url: isLocalhost ? '/mockServiceWorker.js' : '/react-shopping-products/mockServiceWorker.js',
+    },
+    onUnhandledRequest: 'bypass',
+  });
+}
+
+enableMocking().then(() => {
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+});
+```
+
+위 설정은 개발 환경과 배포 환경에 따라 서비스 워커의 위치를 다르게 지정한다.
+`mockServiceWorker.js`는 `public/` 디렉토리에 들어 있고, `vite.config.ts`에서 `base`를 설정했기 때문에 배포 시엔 다음과 같은 경로에 위치한다.
+
 # 마무리
 
 MSW는 단순한 모킹 도구를 넘어서, 프론트엔드 개발자가 API와 독립적으로 개발하고 테스트할 수 있는 강력한 도구이다.
