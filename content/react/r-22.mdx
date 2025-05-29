@@ -2,7 +2,7 @@
 title: '[React] Context API로 전역 상태 관리하기'
 author: 'Eunwoo'
 thumbnail: '/thumbnail/reactjs.webp'
-publishDate: '2025-05-25'
+publishDate: '2025-05-29'
 categoryId: 6
 ---
 
@@ -192,6 +192,55 @@ const LoginPanel = () => {
   );
 };
 ```
+
+# Context API 업데이트 시점
+
+`Context`의 값이 변경되었을 때, `Provider`로 감싸진 모든 자식 컴포넌트가 리렌더링되는 것이 아니라, `useContext` 또는 `Context.Consumer`로 해당 Context를 구독하고 있는 컴포넌트만 리렌더링된다.
+
+#### React는 Context의 value가 변경될 때 다음을 수행한다.
+
+- Provider로 감싸진 하위 트리 전체를 top-down으로 탐색하면서
+- `useContext(SomeContext)` 혹은 `<SomeContext.Consumer>`를 통해 해당 context를 구독 중인 컴포넌트를 찾아내고
+- 그 컴포넌트만 리렌더링합니다.
+
+#### 구독하지 않은 컴포넌트는 리렌더링되지 않는다.
+
+아래 예제를 보면,
+
+```tsx
+const MyContext = React.createContext();
+
+function Parent() {
+  const [value, setValue] = useState(0);
+
+  return (
+    <MyContext.Provider value={value}>
+      <ChildA /> // useContext로 구독 X
+      <ChildB /> // useContext로 구독 O
+      <button onClick={() => setValue((v) => v + 1)}>Increment</button>
+    </MyContext.Provider>
+  );
+}
+
+function ChildA() {
+  console.log('ChildA rendered');
+  return <div>I'm A</div>;
+}
+
+function ChildB() {
+  const val = useContext(MyContext);
+  console.log('ChildB rendered');
+  return <div>Value: {val}</div>;
+}
+```
+
+ChildA는 context를 구독하지 않으므로 리렌더링되지 않는다.
+ChildB는 `useContext(MyContext)`로 context를 구독하므로 `context`가 바뀔 때마다 리렌더링된다.
+
+## 주의: 최적화를 하지 않으면 여전히 리렌더링될 수 있는 경우
+
+ChildA가 ChildB를 포함하거나, 상위 컴포넌트에서 리렌더링이 발생하면 그 영향으로 같이 리렌더링될 수 있다.
+이런 경우는 `React.memo`또는 `useMemo` 등을 통해 최적화해야 한다.
 
 # Context API 사용 시 주의사항
 
