@@ -188,11 +188,20 @@ return (
 
 # useQueries 사용법
 
-useQueries는 React Query의 훅으로, 여러 쿼리를 동시에 처리하고 관리하는 데 사용된다. 각 쿼리는 useQuery와 비슷하지만, 여러 쿼리의 결과를 배열 형태로 반환한다.
+React Query에서는 보통 하나의 데이터를 가져올 때 useQuery 훅을 사용한다. 하지만 여러 개의 API 요청을 동시에 병렬적으로 처리해야 하는 경우도 많다.
+이럴 때 유용하게 쓰이는 훅이 바로 **useQueries**입니다.
 
-```js
-import { useQueries } from "@tanstack/react-query";
-import axios from "axios";
+## 언제 useQueries를 써야 할까?
+
+- ID가 여러 개인 게시글 상세 데이터를 동시에 가져올 때
+- 여러 개의 API를 병렬로 호출해야 할 때
+- 각각의 요청을 따로 useQuery로 작성하기 귀찮을 때
+
+## useQueries 기본 사용법
+
+```tsx
+import { useQueries } from '@tanstack/react-query';
+import axios from 'axios';
 
 export default function ReactQueriesPage() {
   const ids = [1, 2, 3, 4];
@@ -204,7 +213,7 @@ export default function ReactQueriesPage() {
   const result = useQueries({
     queries: ids.map((id) => {
       return {
-        queryKey: ["posts", id],
+        queryKey: ['posts', id],
         queryFn: () => fetchPostDetail(id),
       };
     }),
@@ -216,7 +225,7 @@ export default function ReactQueriesPage() {
     },
   });
 
-  console.log("결과", result);
+  console.log('결과', result);
 
   return (
     <main>
@@ -224,5 +233,4 @@ export default function ReactQueriesPage() {
     </main>
   );
 }
-
 ```
