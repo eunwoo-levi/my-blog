@@ -297,3 +297,15 @@ export default function PostForm() {
   );
 }
 ```
+
+# 마무리
+
+이번 글에서는 **TanStack Query (React Query)**의 핵심 훅인 useQuery와 useMutation을 각각 살펴보았다.
+
+- 🔹 useQuery: 데이터를 가져오는(GET) 데 사용하는 훅
+  → 캐싱, 로딩 상태, 재요청, 자동 갱신 등 다양한 기능을 기본으로 제공
+
+- 🔸 useMutation: 데이터를 변경하는(POST/PUT/DELETE) 데 사용하는 훅
+  → 서버 요청 후 후처리, 에러 핸들링, 캐시 무효화 등을 유연하게 처리 가능
+
+tanstack query(react-query)를 사용하여 이 두 훅을 상황에 맞게 잘 조합하면 복잡한 비동기 로직도 훨씬 깔끔하고 선언적으로 구현할 수 있다.
