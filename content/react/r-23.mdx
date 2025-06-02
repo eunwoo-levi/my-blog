@@ -234,3 +234,66 @@ export default function ReactQueriesPage() {
   );
 }
 ```
+
+# useMutation 사용법
+
+`useQuery`는 주로 GET 요청을 처리할 때 사용한다.
+반면, POST / PUT / DELETE 등 변경 요청을 처리할 때는 **useMutation** 훅을 사용한다.
+
+`useMutation`은 서버의 데이터를 변경하는 작업(생성, 수정, 삭제 등)에 적합합니다.
+
+## useMutation 예제 – POST 요청
+
+```tsx
+// hooks/mutations/useCreatePost.ts
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createPost, PostInput } from '@/apis/postApi';
+
+export const useCreatePost = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createPost,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
+    onError: (error) => {
+      console.error('에러 발생:', error);
+      // toast.error("작성 실패!") 등
+    },
+    onSettled: () => {
+      // 성공이든 실패든 마지막에 무조건 실행
+    },
+  });
+};
+```
+
+- 사용 예: PostForm.tsx
+
+```tsx
+// components/PostForm.tsx
+import { useCreatePost } from '@/hooks/mutations/useCreatePost';
+import { useState } from 'react';
+
+export default function PostForm() {
+  const { mutate, isPending, isSuccess } = useCreatePost();
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    mutate({ title, content });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder='제목' />
+      <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder='내용' />
+      <button type='submit' disabled={isPending}>
+        작성하기
+      </button>
+      {isSuccess && <p>글 작성 완료!</p>}
+    </form>
+  );
+}
+```
