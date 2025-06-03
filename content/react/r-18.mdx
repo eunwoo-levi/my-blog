@@ -263,6 +263,84 @@ test('사용자 정보를 렌더링한다', async () => {
 });
 ```
 
+# Vitest + RTL 테스트에서 같은 API에서 다른 응답을 주고 싶다면?
+
+테스트 환경에서 특정 테스트 케이스에 대해 다른 응답을 주고 싶다면, MSW `overriding` 통해 특정 테스트 케이스에 대해 다른 응답을 설정할 수 있다.
+
+- setUpTests.ts 파일 설정
+
+```ts
+// /src/setUpTest.ts
+import { server } from './mocks/server';
+import '@testing-library/jest-dom';
+
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+```
+
+- overriding 핸들러 설정
+
+```tsx
+server.use(
+  http.get(`${BASE_URL}/cart-items`, () => {
+    return HttpResponse.json({ content: [] });
+  }),
+);
+```
+
+#### 테스트코드 예시
+
+```tsx
+import { http, HttpResponse } from 'msw';
+import { server } from '../../mocks/server';
+import { render, screen } from '@testing-library/react';
+import CartPage from '../CartPage';
+import { describe, it, expect } from 'vitest';
+import { CartProvider } from '../../shared/context/useCartContext'; /
+
+const BASE_URL = const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+describe('빈 장바구니 테스트', () => {
+  it('장바구니에 상품이 없으면 EmptyCartItemUI가 보인다', async () => {
+    // MSW 핸들러 오버라이드
+    server.use(
+      http.get(`${BASE_URL}/cart-items`, () => {
+        return HttpResponse.json({ content: [] });
+      })
+    );
+
+    render(
+      <CartProvider>
+        <CartPage />
+      </CartProvider>
+    );
+
+    const emptyMessage = await screen.findByText('장바구니에 담은 상품이 없습니다.');
+    expect(emptyMessage).toBeInTheDocument();
+  });
+});
+
+describe('장바구니에 상품이 1개 이상일 때의 Vitest + RTL 테스트', () => {
+  beforeEach(() => {
+    render(
+      <CartProvider>
+        <CartPage />
+      </CartProvider>
+    );
+  });
+
+  it('장바구니가 1개 이상일 때 장바구니 페이지에 장바구니 카드들이 잘 렌더링된다.', async () => {
+    const cartItemCards = await screen.findAllByTestId('cart-item-card');
+    expect(cartItemCards.length).toBeGreaterThan(0);
+  });
+
+...
+
+});
+
+```
+
 # 오류가 발생했을 경우
 
 ```
