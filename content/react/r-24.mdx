@@ -1,0 +1,217 @@
+---
+title: '[React] 리액트의 좋은 컴포넌트 설계 원칙 - OOP와 SOLID 원칙'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-06-05'
+categoryId: 6
+---
+
+우리가 보통 좋은 코드가 무엇인가? 라고 질문을 받으면, 보통은 가독성이 좋고, 유지보수가 용이하고, 확장성이 좋은 코드를 좋은 코드라고 생각한다.
+더 deep하게 말해보면, 좋은 설계란 높은 응집도와 늦은 결합도를 가진 모듈로 구성된 설계를 의미한다.
+높은 응집도는 모듈이 하나의 책임을 가지고 있다는 것을 의미하고, 늦은 결합도는 모듈 간의 의존성이 낮다는 것을 의미한다.
+
+컴퓨터 공학에서는 "잘 설계된 소프트웨어"를 만들기 위해 객체지향 프로그래밍(OOP) 4대 원칙인 **캡슐화(Encapsulation)**, **추상화(Abstraction)**, **상속(Inheritance)**, **다형성(Polymorphism)**을 강조한다.
+리액트는 컴포넌트 기반의 라이브러리로, OOP 원칙을 따르는 것이 좋은 코드 작성에 도움이 된다. 리액트에서 좋은 코드를 작성하기 위해서는 다음과 같은 원칙을 지켜야 한다.
+
+# OOP 원칙
+
+| 원칙       | 리액트에서의 적용 방식                                                                                           |
+| ---------- | ---------------------------------------------------------------------------------------------------------------- |
+| **캡슐화** | 컴포넌트나 훅의 내부 상태와 구현을 감추고, 필요한 props나 리턴값만 노출한다.                                     |
+| **추상화** | 복잡한 UI 로직이나 상태관리를 명확한 인터페이스로 감싸서 사용자는 내부 구조를 몰라도 동작을 이해할 수 있게 한다. |
+| **상속**   | React는 상속 대신 합성을 권장한다. 그러나 역할을 나눈 모듈 구조는 상속의 철학을 대체한다.                        |
+| **다형성** | 동일한 컴포넌트 인터페이스로 서로 다른 로직을 수행하게 함으로써, 다양한 컴포넌트를 유연하게 교체할 수 있다.      |
+
+OOP를 기반으로 현대적 설계 원칙인 SOLID 원칙을 적용하면, 리액트 컴포넌트의 구조와 설계를 더욱 견고하게 만들 수 있다.
+
+# SOLID 원칙
+
+| 원칙    | 의미            | 컴포넌트 설계에 적용                                                                  |
+| ------- | --------------- | ------------------------------------------------------------------------------------- |
+| **SRP** | 단일 책임       | 하나의 컴포넌트는 하나의 역할만 – UI 표시, 상태 제어, 비즈니스 로직은 분리            |
+| **OCP** | 개방-폐쇄       | 기존 컴포넌트는 변경하지 않고, props나 context 등을 통해 확장                         |
+| **LSP** | 리스코프 치환   | 유사한 props 구조를 가진 컴포넌트는 쉽게 교체 가능해야 함                             |
+| **ISP** | 인터페이스 분리 | 불필요한 props 전달을 피하고, 역할별 props를 분리해 인터페이스 최소화                 |
+| **DIP** | 의존 역전       | 고수준 컴포넌트는 특정 구현(useAxios 등)에 직접 의존하지 않고, 추상화된 의존성만 사용 |
+
+```tsx
+function CartItem({
+  cartItem,
+  isChecked,
+  setIsChecked,
+}: {
+  cartItem: CartItemType;
+  isChecked: boolean;
+  setIsChecked: React.Dispatch<React.SetStateAction<number[]>>;
+}) {
+  // ...
+}
+```
+
+위 코드와 같이 `setState` props 를 넣는게 안티패턴인 이유가 무엇일까?
+
+`OOP` 원칙 관점에서 문제 탐지를 해보자.
+
+### 🚫 **단일 책임 원칙 (SRP: Single Responsibility Principle) 위반**
+
+- `CartItem` 컴포넌트는 **화면을 렌더링하는 책임**과 **상위 상태를 직접 조작하는 책임**(즉, `setIsChecked`)을 **동시에** 갖고 있다.
+- 이는 하나의 컴포넌트가 너무 많은 일을 하게 되는 구조로, **변경 이유가 2가지 이상 존재**하게 되어 SRP를 위반한다.
+
+### 🚫 **캡슐화 (Encapsulation) 미흡**
+
+- `setIsChecked`는 **외부 상태 변경 로직**을 컴포넌트 내부로 직접 전달한다. 내부 로직이 외부 구현에 너무 많이 의존하게 되어, 컴포넌트 내부가 더 이상 **독립적**이지 않는다.
+
+### 🚫 **추상화 실패**
+
+- `CartItem`은 **어떤 식으로 isChecked 상태를 다루는지**에 대해 너무 많은 **구체적인 정보**를 알고 있어야만 동작한다. 추상적으로 "체크 여부"만 알면 되는데, **number[]를 다루는 상태 조작 로직**까지 전달받아야 한다.
+
+### 🚫 **높은 결합도 (High Coupling)**
+
+- `CartItem`은 외부 상태(`setIsChecked`, `isChecked`)에 너무 강하게 의존한다. 즉, **상위 컴포넌트가 상태를 어떻게 구성했는지**를 정확히 알아야만 작동한다.
+- 이는 컴포넌트 재사용성(reusability)을 떨어뜨리고, 테스트나 유지보수에도 악영향을 줍니다.
+
+---
+
+해당 코드를 위의 원칙에 맞게 개선해보자.
+
+```tsx
+// CartItem.tsx
+function CartItem({
+  cartItem,
+  isChecked,
+  onToggle,
+}: {
+  cartItem: CartItemType;
+  isChecked: boolean;
+  onToggle: (id: number) => void;
+}) {
+  return (
+    <div>
+      <input type='checkbox' checked={isChecked} onChange={() => onToggle(cartItem.id)} />
+      <span>{cartItem.name}</span>
+    </div>
+  );
+}
+```
+
+```tsx
+// CartList.tsx (상위 컴포넌트)
+function CartList({ items }: { items: CartItemType[] }) {
+  const [checkedIds, setCheckedIds] = useState<number[]>([]);
+
+  const handleToggle = (id: number) => {
+    setCheckedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  return (
+    <>
+      {items.map((item) => (
+        <CartItem
+          key={item.id}
+          cartItem={item}
+          isChecked={checkedIds.includes(item.id)}
+          onToggle={handleToggle}
+        />
+      ))}
+    </>
+  );
+}
+```
+
+앞서 지적한 SRP(단일 책임 원칙) 위반을 해결하기 위해, CartItem 컴포넌트를 UI 전용 컴포넌트로 바꾸고, 상태 변경 로직은 상위에서 처리하도록 리팩토링하였다.
+이렇게 하면 `CartItem`은 오직 **렌더링**과 **사용자 상호작용**에만 집중하게 되어, SRP를 준수하게 된다.
+
+---
+
+이제 리액트에서 좋은 컴포넌트를 설계하기 위해 OOP와 SOLID 원칙을 적용하는 방법을 이해했으니, 아래와 같이 역할이 많은 `useCartItem` 훅도 개선해보자.
+
+```tsx
+const {
+  cartItems,
+  isLoading,
+  errorMessage,
+  refetchCartItems,
+  selectedItemIds,
+  isAllChecked,
+  orderTotalPrice,
+  toggleAllCheckBox,
+  addOrderItem,
+  removeOrderItem,
+  updateOrderItem,
+} = useCartItem();
+```
+
+### 🔸 SRP (단일 책임 원칙) **위반 가능성 있음**
+
+- `useCartItem()` 훅이 다음과 같은 서로 **다른 역할**을 동시에 수행하고 있다:
+  - 장바구니 데이터 조회 (refetchCartItems, cartItems, isLoading, errorMessage)
+  - 선택 항목 체크 처리 (selectedItemIds, isAllChecked, toggleAllCheckBox)
+  - 주문 항목 처리 (addOrderItem, removeOrderItem, updateOrderItem)
+- 하나의 훅이 **3가지 이상의 책임**을 갖고 있으므로 **SRP 위반 가능성**이 높다.
+
+---
+
+### 🔸 캡슐화 (Encapsulation) 측면에서 **과도한 내부 노출**
+
+- 내부 상태(`cartItems`, `selectedItemIds`, `orderTotalPrice` 등)와 **상태 조작 함수들**이 모두 외부에 노출되고 있음.
+- 이 구조에서는 **훅의 내부 구현을 모두 외부가 통제 가능**하게 되어 있어, 캡슐화가 느슨하다.
+
+---
+
+### 🔸 OCP (개방-폐쇄 원칙) 위반 위험
+
+- `useCartItem()` 훅이 모든 기능을 내부에 직접 정의하고 있다면, 기능을 추가할 때마다 훅 내부를 **직접 수정**해야 할 가능성이 높다.
+- 예: 새로운 정렬 방식 추가, 다른 장바구니 계산 정책 반영 등
+- 이런 경우에는 기능을 **확장하기는 어렵고, 변경해야만 가능**한 구조가 된다.
+
+---
+
+### 🔸 응집도 낮고, 결합도 높음 (Cohesion ↓ / Coupling ↑)
+
+- 장바구니의 **조회**, **선택**, **주문 처리**가 하나의 훅에 모두 모여 있다.
+- 서로 다른 관심사가 섞여 있어 응집도가 낮고, 해당 훅에 의존하는 컴포넌트들도 **훅 내부 구현에 강하게 결합**된다.
+
+## 사고의 연쇄 과정
+
+- 1. 훅이 리턴하는 항목을 보면 cartItems, selectedItemIds, addOrderItem, toggleAllCheckBox 등 서로 다른 기능 영역의 API가 뒤섞여 있음.
+- 2. "왜 이 모든 게 한 훅에서 나올까?" → 단일 책임이 아니라 장바구니의 모든 동작을 중앙 집중적으로 관리하고 있다는 걸 알 수 있음.
+- 3. 그러다 보면 하나의 기능을 바꾸거나 테스트하기 위해 전체 훅 구조를 이해해야 하게 됨 → 유지보수가 어려워짐.
+- 4. 따라서 이건 SRP, 캡슐화, OCP에 걸쳐 구조적으로 개선할 여지가 큼.
+
+## 핵심 문제: 단일 책임 원칙(SRP) 위반
+
+useCartItem() 훅은 본래 하나의 역할(장바구니 관리)만 해야 하지만,
+
+- 데이터 조회 (refetchCartItems, isLoading)
+- 선택 상태 (toggleAllCheckBox, selectedItemIds)
+- 주문 처리 (addOrderItem, updateOrderItem)
+  를 모두 포함하고 있다.
+
+이로 인해 훅이 커지고, 변경 이유가 많아지고, 테스트/재사용/유지보수가 어렵다.
+
+## 개선 방향 (구조 분리)
+
+- 훅을 역할별로 나누기
+
+| 훅 이름              | 책임                           |
+| -------------------- | ------------------------------ |
+| `useCartFetch()`     | 장바구니 데이터 로딩 및 재요청 |
+| `useCartSelection()` | 체크박스 선택 상태 관리        |
+| `useOrderAction()`   | 주문 데이터 관련 행동 처리     |
+
+```tsx
+const { cartItems, isLoading, errorMessage, refetchCartItems } = useCartFetch();
+const { selectedItemIds, isAllChecked, toggleAllCheckBox } = useCartSelection();
+const { orderTotalPrice, addOrderItem, removeOrderItem, updateOrderItem } = useOrderAction();
+```
+
+# 마무리
+
+React는 사용자 인터페이스를 선언적으로 구성하는 강력한 도구이다.
+그러나 UI가 복잡해지고 상태가 증가하며 비즈니스 로직이 얽히기 시작하면, 단순한 컴포넌트 분할만으로는 유지보수성과 확장성을 보장할 수 없다.
+
+리액트에서 좋은 컴포넌트 설계는 단순히 화면을 나누는 것이 아니라, 소프트웨어 아키텍처로서의 원칙을 따르는 일이다.
+객체지향 프로그래밍의 4대 원칙(캡슐화, 추상화, 합성 중심의 구조, 다형성)은 컴포넌트와 훅의 책임을 분리하고, 내부 구현을 감추며, 재사용성을 높이는 데 핵심 역할을 한다.
+
+더불어 SOLID 원칙을 적용하면, 컴포넌트 하나가 하나의 책임만 가지도록 설계(SRP), 변경 없이 기능 확장이 가능하도록 구조화(OCP), 잘 정의된 props와 인터페이스 분리를 통해 결합도를 낮추고 테스트 가능성을 높일 수 있다.
+결국, React 개발도 객체지향적 설계의 연장선에서 바라보는 것이 유지보수성과 확장성을 확보하는 가장 실용적인 방법이다.
