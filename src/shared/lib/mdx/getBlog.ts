@@ -81,3 +81,41 @@ export const getPostBySlug = cache(async (category: string, slug: string) => {
     frontmatter,
   };
 });
+
+export const getSearchedPostsByKeyword = cache(async (keyword: string): Promise<PostData[]> => {
+  try {
+    const categories = fs.readdirSync(contentDirectory);
+
+    const allPosts = categories.flatMap((category) => {
+      const categoryPath = path.join(contentDirectory, category);
+
+      if (!fs.statSync(categoryPath).isDirectory()) return [];
+
+      const files = fs.readdirSync(categoryPath).filter((file) => file.endsWith('.mdx'));
+
+      return files.map((file) => {
+        const source = fs.readFileSync(path.join(categoryPath, file), 'utf8');
+        const { data } = matter(source, { excerpt: false });
+
+        return {
+          frontmatter: data as BlogFrontMatter,
+          slug: file.replace(/\.mdx$/, ''),
+          category,
+        };
+      });
+    });
+
+    const matchedPosts = allPosts.filter((post) =>
+      post.frontmatter.title?.toLowerCase().includes(keyword.toLowerCase()),
+    );
+
+    const sortedPosts = matchedPosts.sort(
+      (a, b) => dayjs(b.frontmatter.publishDate).unix() - dayjs(a.frontmatter.publishDate).unix(),
+    );
+
+    return sortedPosts;
+  } catch (error) {
+    console.error('Error searching posts by title:', error);
+    return [];
+  }
+});
