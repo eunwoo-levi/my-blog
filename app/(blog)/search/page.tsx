@@ -5,11 +5,7 @@ import { notFound } from 'next/navigation';
 
 export const revalidate = 3600;
 
-export default async function SearchPage({
-  searchParams,
-}: {
-  searchParams?: { keyword?: string };
-}) {
+export default async function Page({ searchParams }: { searchParams?: { keyword?: string } }) {
   const keyword = searchParams?.keyword?.trim();
   if (!keyword) return notFound();
 
