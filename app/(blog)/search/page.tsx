@@ -5,14 +5,12 @@ import { notFound } from 'next/navigation';
 
 export const revalidate = 3600;
 
-interface SearchPageProps {
-  searchParams?: {
-    keyword?: string;
-  };
-}
-
-export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const keyword = searchParams?.keyword || '';
+export default async function SearchPage({
+  searchParams,
+}: {
+  searchParams?: { keyword?: string };
+}) {
+  const keyword = searchParams?.keyword?.trim();
   if (!keyword) return notFound();
 
   const searchedPosts = await getSearchedPostsByKeyword(keyword);
