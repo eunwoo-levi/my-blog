@@ -10,7 +10,6 @@ type PageProps = {
 export const revalidate = 3600;
 
 export default async function Page({ searchParams }: PageProps) {
-  // searchParams를 await로 받아야 합니다
   const resolvedSearchParams = await searchParams;
   const keyword =
     typeof resolvedSearchParams?.keyword === 'string' ? resolvedSearchParams.keyword.trim() : '';

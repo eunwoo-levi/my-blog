@@ -23,7 +23,7 @@ export default function Navbar() {
               className='h-10 w-10 rounded-full object-cover'
               alt='levi'
             />
-            <h1 className='text-xl font-bold md:text-2xl'>리바이's Tech Blog</h1>
+            <h1 className='text-xl font-bold md:text-2xl'>리바이&apos;s Tech Blog</h1>
           </Link>
         </div>
 
