@@ -26,7 +26,7 @@ export default function BlogSearchBar() {
         type='text'
         onChange={(e) => setSearchTitle(e.target.value)}
         value={searchTitle}
-        className='w-full bg-transparent px-2 py-1 text-gray-800 placeholder-gray-700 focus:outline-none'
+        className='placeholder-gray/70 w-full bg-transparent px-2 py-1 font-semibold text-black focus:outline-none dark:text-white dark:placeholder-white/70'
         placeholder='읽고 싶은 블로그 글이 있으신가요?'
         aria-label='블로그 검색'
       />
