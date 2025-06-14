@@ -1,5 +1,4 @@
-import { BlogContainer } from '@/src/features/blog';
-import BlogSearchBar from '@/src/features/blog/ui/BlogSearchBar';
+import { BlogContainer, BlogSearchBar } from '@/src/features/blog';
 import { getAllPosts } from '@/src/shared/lib/mdx/getBlog';
 
 export const revalidate = 3600;

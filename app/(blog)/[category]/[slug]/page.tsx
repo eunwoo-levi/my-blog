@@ -2,6 +2,7 @@ import { getPostBySlug } from '@/src/shared/lib/mdx/getBlog';
 import { ParamsProps } from '@/src/shared/model/type';
 import { notFound } from 'next/navigation';
 import { Giscus } from '@/src/shared/ui';
+import { TableOfContents } from '@/src/features/blog';
 
 export const revalidate = 3600;
 
@@ -26,6 +27,7 @@ export default async function BlogDetailPage({ params }: ParamsProps) {
 
   return (
     <article className='mx-auto max-w-7xl px-4 py-12'>
+      <TableOfContents />
       <header className='mb-12'>
         <h1 className='mb-10 text-4xl font-bold lg:text-6xl'>{frontmatter.title}</h1>
         <div className='mb-8 flex flex-wrap items-center gap-4 text-gray-600 dark:text-gray-400'>

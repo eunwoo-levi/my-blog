@@ -1,5 +1,4 @@
-import { BlogContainer } from '@/src/features/blog';
-import BlogSearchBar from '@/src/features/blog/ui/BlogSearchBar';
+import { BlogContainer, BlogSearchBar } from '@/src/features/blog';
 import { getSearchedPostsByKeyword } from '@/src/shared/lib/mdx/getBlog';
 import { notFound } from 'next/navigation';
 

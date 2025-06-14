@@ -10,10 +10,10 @@ import { cache } from 'react';
 import { rehypePrettyCodeOptions } from './prettyCodeOption';
 import { BlogFrontMatter, PostData } from './type';
 import { compileMDX } from 'next-mdx-remote/rsc';
+import rehypeSlug from 'rehype-slug';
 
 const contentDirectory = path.join(process.cwd(), 'content');
 
-// frontmatter만 가져오는 최적화된 함수
 export const getAllPosts = cache(async (categoryId?: number): Promise<PostData[]> => {
   try {
     const categories = fs.readdirSync(contentDirectory);
@@ -54,7 +54,6 @@ export const getAllPosts = cache(async (categoryId?: number): Promise<PostData[]
   }
 });
 
-// 개별 포스트 로딩은 필요할 때만 전체 컨텐츠 파싱
 export const getPostBySlug = cache(async (category: string, slug: string) => {
   const filePath = path.join(contentDirectory, category, `${slug}.mdx`);
 
@@ -64,12 +63,15 @@ export const getPostBySlug = cache(async (category: string, slug: string) => {
 
   const source = fs.readFileSync(filePath, 'utf8');
 
-  // MDX 컴파일 및 스타일 적용
   const { content, frontmatter } = await compileMDX<BlogFrontMatter>({
     source,
     options: {
       mdxOptions: {
-        rehypePlugins: [rehypeAutolinkHeadings, [rehypePrettyCode, rehypePrettyCodeOptions]],
+        rehypePlugins: [
+          rehypeSlug,
+          rehypeAutolinkHeadings,
+          [rehypePrettyCode, rehypePrettyCodeOptions],
+        ],
         remarkPlugins: [remarkGfm, remarkBreaks],
       },
       parseFrontmatter: true,
