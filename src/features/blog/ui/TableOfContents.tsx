@@ -49,10 +49,13 @@ export default function TableOfContents() {
       </button>
       {isOpen && (
         <div className='fixed right-[1px] top-[1/2%] z-50 hidden rounded-xl border-gray-300 bg-blue-400/70 p-4 text-sm font-bold text-white dark:border-gray-700 dark:bg-blue-950/70 md:block'>
-          <p className='mb-2 border-b pb-1 text-center font-bold'>📚 목차</p>
+          <p className='mb-2 border-b border-gray-400 pb-1 text-center font-bold'>📚 목차</p>
           <ul className='flex max-w-[190px] flex-col items-center space-y-3'>
             {headings.map((heading) => (
-              <li key={heading.key} className={`ml-${(heading.level - 1) * 4}`}>
+              <li
+                key={heading.key}
+                className={`ml-${(heading.level - 1) * 4} w-full border-b border-gray-500 pb-2 text-center`}
+              >
                 <a href={`#${heading.id}`} className='hover:underline'>
                   {heading.text}
                 </a>
