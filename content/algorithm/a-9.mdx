@@ -1,5 +1,5 @@
 ---
-title: '[Algorithm] 에라토스테네스의 체 - 소수 판별, Javascript'
+title: '[Algorithm] 에라토스테네스의 체: 소수 판별 - Javascript'
 author: 'Eunwoo'
 thumbnail: '/thumbnail/algo.webp'
 publishDate: '2025-06-17'
@@ -7,8 +7,8 @@ categoryId: 8
 ---
 
 소수(prime number)는 1과 자기 자신만을 약수로 가지는 수이다.
-프로그래머스나 백준 등 다양한 알고리즘 문제에서, **"1부터 N까지의 소수를 모두 구하라"**는 문제는 자주 등장한다.
-이때, 가장 효율적으로 소수를 구하는 고전 알고리즘이 바로 **에라토스테네스의 체(Sieve of Eratosthenes)**이다.
+프로그래머스나 백준 등 다양한 알고리즘 문제에서, "1부터 N까지의 소수를 모두 구하라"는 문제는 자주 등장한다.
+이때, 가장 효율적으로 소수를 구하는 고전 알고리즘이 바로 **에라토스테네스의 체 (Sieve of Eratosthenes)**이다.
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/5e6d3162-3aae-482f-a84d-f34f1d656ae8/image.gif)
 
@@ -99,6 +99,8 @@ function solution(n) {
 - 0과 1은 소수가 아니므로 `false`로 설정한다.
 - 2부터 √n까지 반복하면서, 현재 수가 소수인 경우 그 수의 배수를 모두 `false`로 설정한다.
 - 마지막으로 `primes` 배열에서 `true`인 값의 개수를 세어 소수의 개수를 반환한다.
+
+---
 
 # 시간 복잡도 분석
 
