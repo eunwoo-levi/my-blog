@@ -206,3 +206,70 @@
     neonGlow 2s infinite alternate,
     slideInLeft 1.4s ease-out forwards;
 }
+
+/* MDX 콘텐츠 모바일 반응형 스타일 */
+@layer components {
+  .prose {
+    @apply w-full max-w-full;
+  }
+
+  .prose img {
+    @apply !h-auto !w-full !max-w-full !object-contain;
+    box-sizing: border-box;
+  }
+
+  .prose a {
+    @apply !h-auto !w-full !max-w-full !object-contain;
+    word-break: break-all !important;
+    overflow-wrap: anywhere !important;
+    box-sizing: border-box;
+  }
+
+  .prose pre {
+    @apply !max-w-full overflow-x-auto;
+    box-sizing: border-box;
+  }
+
+  .prose table {
+    @apply block !w-full !max-w-full overflow-x-auto;
+    box-sizing: border-box;
+  }
+
+  .prose * {
+    @apply !max-w-full;
+    box-sizing: border-box;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* 모바일 특별 처리 */
+  @media (max-width: 640px) {
+    .prose {
+      @apply !w-full !min-w-0 !max-w-full;
+    }
+
+    .prose img {
+      @apply !h-auto !w-full !max-w-full;
+      max-width: 100% !important;
+      width: 100% !important;
+      height: auto !important;
+    }
+
+    .prose a {
+      word-break: break-all !important;
+      overflow-wrap: anywhere !important;
+      hyphens: auto !important;
+    }
+
+    .prose pre,
+    .prose code {
+      @apply !max-w-full overflow-x-auto text-sm;
+      font-size: 0.875rem;
+    }
+
+    .prose table {
+      @apply !w-full !max-w-full text-sm;
+      font-size: 0.875rem;
+    }
+  }
+}

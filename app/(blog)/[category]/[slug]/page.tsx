@@ -108,10 +108,12 @@ export default async function BlogDetailPage({ params }: ParamsProps) {
         type='application/ld+json'
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <article className='mx-auto max-w-7xl px-4 py-12'>
+      <article className='mx-auto min-w-0 max-w-7xl px-2 py-8 sm:px-4 sm:py-12'>
         <TableOfContents />
-        <header className='mb-12'>
-          <h1 className='mb-10 text-4xl font-bold lg:text-6xl'>{frontmatter.title}</h1>
+        <header className='mb-8 sm:mb-12'>
+          <h1 className='mb-6 break-words text-2xl font-bold sm:mb-10 sm:text-4xl lg:text-6xl'>
+            {frontmatter.title}
+          </h1>
           <div className='mb-8 flex flex-wrap items-center gap-4 text-gray-600 dark:text-gray-400'>
             <div className='flex items-center gap-2'>
               <span className='font-medium'>By</span>
@@ -132,7 +134,7 @@ export default async function BlogDetailPage({ params }: ParamsProps) {
           </div>
         </header>
 
-        <main className='prose prose-lg relative z-10 w-full max-w-full overflow-x-hidden break-words rounded-xl px-5 py-6 dark:prose-invert dark:bg-neutral-900/70 dark:text-white lg:px-14 [&_code]:break-words [&_img]:h-auto [&_img]:!w-auto [&_img]:!max-w-full [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_table]:block [&_table]:w-full [&_table]:overflow-x-auto'>
+        <main className='[&_a]:overflow-wrap-anywhere prose relative z-10 w-full min-w-0 max-w-full overflow-x-hidden break-words rounded-xl px-2 py-4 dark:prose-invert sm:prose-lg dark:bg-neutral-900/70 dark:text-white sm:px-5 sm:py-6 lg:px-14 [&>*]:max-w-full [&>*]:break-words [&_a]:break-all [&_code]:break-words [&_img]:!h-auto [&_img]:!w-full [&_img]:!max-w-full [&_pre]:overflow-x-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_table]:block [&_table]:w-full [&_table]:overflow-x-auto'>
           {content}
         </main>
 
