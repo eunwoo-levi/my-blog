@@ -1,3 +1,0 @@
-User-Agent: *
-Allow: /
-Sitemap: https://www.eunwoo-levi.blog/sitemap.xml
