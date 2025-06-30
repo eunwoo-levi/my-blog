@@ -17,20 +17,24 @@ export default function TableOfContents() {
   useEffect(() => {
     const elements = Array.from(document.querySelectorAll('h1')).slice(2);
 
-    const usedIds = new Set<string>();
     const newHeadings = elements
       .map((el, index) => {
-        let id = el.id || `heading-${index}`;
-        // 중복 방지
-        while (usedIds.has(id)) {
-          id += '-dup';
+        const text = el.textContent || '';
+        const id = text
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, '') // 특수문자 제거
+          .replace(/\s+/g, '-') // 공백 -> 하이픈
+          .trim();
+
+        // 실제 DOM에 id가 없으면 설정
+        if (!el.id) {
+          el.id = id;
         }
-        usedIds.add(id);
 
         return {
-          id,
-          key: `${id}-${index}`,
-          text: el.textContent || '',
+          id: el.id,
+          key: `${el.id}-${index}`,
+          text: text,
           level: parseInt(el.tagName.replace('H', ''), 10),
         };
       })
@@ -54,9 +58,24 @@ export default function TableOfContents() {
             {headings.map((heading) => (
               <li
                 key={heading.key}
-                className={`ml-${(heading.level - 1) * 4} w-full border-b border-gray-500 pb-2 text-center`}
+                className={`w-full border-b border-gray-500 pb-2 text-center ${
+                  heading.level > 1 ? 'pl-4' : ''
+                }`}
               >
-                <a href={`#${heading.id}`} className='hover:underline'>
+                <a
+                  href={`#${heading.id}`}
+                  className='hover:underline'
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const element = document.getElementById(heading.id);
+                    if (element) {
+                      element.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start',
+                      });
+                    }
+                  }}
+                >
                   {heading.text}
                 </a>
               </li>
