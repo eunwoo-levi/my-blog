@@ -47,12 +47,12 @@ export default function TableOfContents() {
     <>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className='fixed bottom-4 right-4 z-50 rounded-full bg-blue-500 p-2 text-white shadow-md transition-colors duration-300 ease-in-out hover:bg-blue-600'
+        className='fixed bottom-10 right-4 z-50 rounded-full bg-blue-500 p-2 text-white shadow-md transition-colors duration-300 ease-in-out hover:bg-blue-600 md:bottom-4'
       >
         <MdToc size={30} />
       </button>
       {isOpen && (
-        <div className='animate-fade-down fixed right-[1px] top-[1/2%] z-50 rounded-xl border-gray-300 bg-blue-400/70 p-4 text-sm font-bold text-white dark:border-gray-700 dark:bg-blue-950/70'>
+        <div className='animate-fade-down fixed bottom-[30%] right-[1px] z-50 rounded-xl border-gray-300 bg-blue-400/70 p-4 text-sm font-bold text-white dark:border-gray-700 dark:bg-blue-950/70 md:top-[1/2%]'>
           <p className='mb-2 border-b border-gray-400 pb-1 text-center font-bold'>📚 목차</p>
           <ul className='flex max-w-[190px] flex-col items-center space-y-3'>
             {headings.map((heading) => (
