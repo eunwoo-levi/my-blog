@@ -1,0 +1,353 @@
+---
+title: '[React] Webpack으로 React + TypeScript 개발 환경 직접 세팅하기'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-07-07'
+categoryId: 6
+---
+
+최근 프로젝트에서 Create React App(CRA)나 Vite 같은 보일러플레이트 없이, Webpack 기반으로 직접 React + TypeScript 개발 환경을 구성해야 하는 상황이 생겼다.
+주로 우리는 CRA나 Vite 같은 보일러플레이트를 사용하여 개발 환경을 빠르게 세팅하고, 그 위에 필요한 라이브러리들을 추가하여 개발을 진행한다.
+하지만, 때로는 보일러플레이트 없이 직접 Webpack을 설정하여 개발 환경을 구성해야 하는 경우가 있다.
+
+이 글에서는 다음을 다룰 것이다.
+
+- Webpack + TypeScript + React 개발 환경 구축
+- 각 패키지의 역할
+- 디렉토리 구조 및 설정 파일 설명
+- 실행 스크립트 구성
+
+# 1. 프로젝트 초기화 및 패키지 설치
+
+## 1-1. 프로젝트 초기화
+
+```bash
+npm init -y
+```
+
+기본 package.json을 생성합니다. `-y` 플래그는 기본값으로 초기화합니다.
+
+## 1-2. 필요한 패키지 설치
+
+```bash
+npm install --save-dev npm install react react-dom
+npm install -D typescript ts-loader @types/react @types/react-dom
+npm install -D webpack webpack-cli webpack-dev-server html-webpack-plugin
+npm install -D css-loader style-loader
+```
+
+| 패키지                             | 용도                                                     |
+| ---------------------------------- | -------------------------------------------------------- |
+| `react`, `react-dom`               | React와 React DOM을 앱에서 사용하기 위한 필수 라이브러리 |
+| `typescript`                       | TypeScript 컴파일러                                      |
+| `ts-loader`                        | Webpack이 `.ts`, `.tsx` 파일을 처리할 수 있게 함         |
+| `@types/react`, `@types/react-dom` | React 관련 타입 지원                                     |
+| `webpack`                          | 번들링 도구                                              |
+| `webpack-cli`                      | 터미널에서 Webpack 명령어 실행                           |
+| `webpack-dev-server`               | 개발용 서버로 HMR 지원                                   |
+| `html-webpack-plugin`              | HTML 자동 생성 및 번들 파일 주입                         |
+| `css-loader`, `style-loader`       | CSS 파일 import 및 적용 가능하게 함                      |
+
+# 2. 디렉토리 구조
+
+```
+my-webpack-app/
+├── public/
+│   └── index.html
+├── src/
+│   ├── index.tsx
+│   └── App.tsx
+├── package.json
+├── tsconfig.json
+├── webpack.config.js
+```
+
+- 'public/index.html': HTML 템플릿 파일
+
+  - 기능: Webpack의 html-webpack-plugin이 이 파일을 기반으로 번들된 JS (bundle.js)를 자동으로 `<script>` 태그로 삽입해줌
+  - 결과: 최종 결과물로 브라우저에 보이는 HTML의 기본 구조가 됨
+
+- 'src/index.tsx': React 애플리케이션의 진입점
+
+  - 기능: ReactDOM을 사용하여 App 컴포넌트를 렌더링
+  - 결과: 브라우저에서 React 애플리케이션이 시작되는 지점
+
+- 'src/App.tsx': 기본 App 컴포넌트
+
+  - 기능: React 컴포넌트로, 애플리케이션의 UI
+
+- `package.json`: 프로젝트 메타데이터 및 의존성 관리
+
+  - 기능: 프로젝트의 의존성, 스크립트, 버전 등을 정의
+
+- `tsconfig.json`: TypeScript 설정 파일
+
+  - 기능: TypeScript 컴파일러 옵션을 정의
+  - 결과: TypeScript가 어떻게 코드를 컴파일할지 설정
+
+- `webpack.config.js`: Webpack 설정 파일
+  - 기능: Webpack의 동작 방식을 정의
+  - 결과: 애플리케이션을 어떻게 번들링할지 설정
+
+# 3. TypeScript 설정
+
+아래 명령어를 실행하여 TypeScript 설정 파일을 생성해준다.
+
+```bash
+npx tsc --init
+```
+
+이후 `tsconfig.json` 파일을 다음과 같이 수정한다.
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "ESNext",
+    "jsx": "react-jsx",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}
+```
+
+- "target": "ES6"
+
+  - TypeScript 코드를 어떤 JavaScript 버전으로 변환할지 결정
+  - ES6 (ES2015)은 let, const, arrow function, Promise 등을 포함
+  - 브라우저가 ES6 이상을 지원한다면 안전한 선택
+
+- "module": "ESNext"
+
+  - 모듈 시스템을 어떤 방식으로 변환할지 설정 (import/export 등)
+  - ESNext는 최신 모듈 시스템을 유지하며, Webpack이 이를 처리할 수 있음
+  - 보통 Webpack이나 Babel과 함께 사용할 때 적절함
+
+- "jsx": "react-jsx"
+
+  - React의 JSX를 어떻게 변환할지 설정
+  - react-jsx는 React 17 이상에서 도입된 새로운 JSX 변환 방식
+    (별도로 import React from "react" 하지 않아도 됨)
+  - 구버전 React를 사용할 경우에는 "react"로 설정
+
+- "moduleResolution": "node"
+
+  - 모듈 해석 방식을 Node.js 방식으로 설정
+  - node_modules, 파일 경로 등을 Node처럼 해석 (e.g., 확장자 생략 가능)
+
+- "strict": true
+  - 모든 엄격한 타입 검사 옵션을 활성화
+- 예:
+  noImplicitAny: 암묵적 any 금지
+  strictNullChecks: null, undefined 구분
+  코드 안정성과 버그 예방에 매우 유용
+
+- "esModuleInterop": true
+
+  - CommonJS 모듈과 ES 모듈 간의 호환성 문제 해결
+  - 예를 들어 import fs from "fs"를 사용할 수 있게 함
+
+- "skipLibCheck": true
+  - node_modules에 있는 .d.ts 타입 정의 파일의 타입 검사를 건너뜀
+  - 외부 라이브러리 타입 오류로 인해 프로젝트 컴파일이 실패하지 않게 함
+  - 빠른 컴파일과 실용적인 개발을 위해 자주 사용됨
+
+# 4. Webpack 설정
+
+- webpack.config.js
+
+```js
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+
+module.exports = {
+  mode: 'development',
+  entry: './src/index.tsx',
+  output: {
+    filename: 'bundle.js',
+    path: path.resolve(__dirname, 'dist'),
+    clean: true,
+  },
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
+  },
+  module: {
+    rules: [
+      {
+        test: /\.(ts|tsx)$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
+      },
+    ],
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: './public/index.html',
+    }),
+  ],
+  devServer: {
+    static: {
+      directory: path.join(__dirname, 'public'),
+    },
+    port: 3000,
+    open: true,
+    hot: true,
+  },
+};
+```
+
+- entry: './src/index.tsx'
+
+  - **앱의 시작점(entry point)**을 지정한다.
+  - 여기서부터 모든 모듈(.tsx, .ts, .js 등)을 따라가며 하나의 번들로 묶는다.
+
+- output:
+
+| 속성       | 설명                                         |
+| ---------- | -------------------------------------------- |
+| `filename` | 최종 번들 파일 이름                          |
+| `path`     | 번들 파일이 저장될 절대 경로                 |
+| `clean`    | 매 빌드 시 이전 `dist` 폴더 내용을 자동 삭제 |
+
+- resolve:
+
+  - 파일 확장자 생략 가능하게 설정한다.
+  - ex) import App from './App'; → .tsx 먼저 찾고, 없으면 .ts, 그다음 .js 순서로 찾는다.
+
+- module.rules: ts 처리와 css 처리
+
+  - .ts, .tsx 파일은 **ts-loader**를 이용해 TypeScript를 JavaScript로 변환한다.
+  - node_modules는 제외 (이미 번들되어 있음)
+
+    - .css 파일은 **style-loader**와 **css-loader**를 이용해 CSS를 처리한다.
+      - style-loader: CSS를 DOM에 삽입 (`<style>` 태그로)
+      - css-loader: `import './style.css'` 가능하게 함
+
+- plugins: HtmlWebpackPlugin
+
+  - `public/index.html`을 템플릿으로 삼아 HTML 파일을 생성합니다.
+  - 자동으로 `<script src="bundle.js"></script>` 삽입됩니다.
+
+- devServer: 개발 서버 설정
+
+| 속성               | 설명                                                         |
+| ------------------ | ------------------------------------------------------------ |
+| `static.directory` | 정적 파일을 서비스할 폴더                                    |
+| `port`             | 개발 서버가 사용할 포트 번호                                 |
+| `open`             | 서버 실행 시 브라우저 자동 열기                              |
+| `hot`              | HMR(Hot Module Replacement) 사용으로 새로고침 없이 자동 반영 |
+
+### 전체 흐름 요약
+
+- 1. Webpack은 `src/index.tsx`에서 시작해서 모든 JS/TSX 파일을 불러옵니다.
+- 2. 불러온 코드들을 `bundle.js`로 묶고 `dist/` 폴더에 저장합니다.
+- 3. `public/index.html`을 기반으로 HTML 파일을 만들고 `bundle.js`를 삽입합니다.
+- 4. `webpack-dev-server`가 `localhost:3000`에서 이 HTML을 자동으로 서빙합니다.
+
+# 5. HTML 템플릿
+
+- public/index.html
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>My Webpack App</title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+```
+
+| 부분                     | 의미                                                                          |
+| ------------------------ | ----------------------------------------------------------------------------- |
+| `<!DOCTYPE html>`        | HTML5 문서 선언                                                               |
+| `<html lang="en">`       | 문서의 언어 설정 (영어)                                                       |
+| `<meta charset="UTF-8">` | 문자 인코딩을 UTF-8로 설정                                                    |
+| `<title>`                | 브라우저 탭에 표시될 문서 제목                                                |
+| `<div id="root">`        | React 앱이 실제로 **렌더링되는 DOM 요소** (→ `index.tsx`에서 여기에 마운트됨) |
+
+이후 Webpack에서 역할은 `HtmlWebpackPlugin`이 이 파일을 template으로 삼아 `bundle.js`를 `<body>` 끝에 `<script>`로 자동 삽입해준다.
+
+# 6. React 코드 작성
+
+- src/index.tsx
+
+```tsx
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+
+const root = createRoot(document.getElementById('root')!);
+root.render(<App />);
+```
+
+| 코드                              | 설명                                           |
+| --------------------------------- | ---------------------------------------------- |
+| `import React from 'react'`       | React의 기능들을 가져옴 (JSX 해석 시 필요)     |
+| `createRoot(...)`                 | React 18+에서 사용하는 **렌더링 엔트리포인트** |
+| `document.getElementById('root')` | HTML에서 `<div id="root">`에 접근              |
+| `root.render(<App />)`            | `App` 컴포넌트를 DOM에 렌더링                  |
+
+> !는 TypeScript에서 "이 요소는 null일 수 없음을 확신한다"는 의미
+
+- src/App.tsx
+
+```tsx
+import React from 'react';
+
+const App = () => {
+  return <h1>Hello Webpack + React + TypeScript 👋</h1>;
+};
+
+export default App;
+```
+
+# 7. 실행 스크립트 추가
+
+```json
+"scripts": {
+  "start": "webpack serve --mode development",
+  "build": "webpack --mode production"
+}
+```
+
+| 명령어          | 역할                                                                                   |
+| --------------- | -------------------------------------------------------------------------------------- |
+| `npm run start` | `webpack-dev-server`를 통해 로컬 개발 서버 실행. → HMR, 자동 새로고침 지원             |
+| `npm run build` | `webpack`으로 프로덕션 빌드 생성. → `dist/` 폴더에 `bundle.js`, `index.html` 등 생성됨 |
+
+# 8. 실행 및 확인
+
+아래의 명령어로 개발 서버를 실행한다.
+
+```bash
+npm run start
+```
+
+Webpack 개발 서버가 localhost:3000에서 자동으로 실행된다.
+
+# 마무리
+
+이번 과정을 통해 CRA나 Vite 없이도 Webpack 기반으로 React + TypeScript 개발 환경을 충분히 구축할 수 있다는 것을 알게 되었다.
+React + TypeScript 프로젝트를 Webpack으로 직접 설정하며, 프론트엔드 빌드 시스템의 구조와 흐름을 깊이 이해할 수 있었다.
+각 설정 파일의 의미를 명확히 알고 설정하면 이후 커스터마이징, 성능 최적화, 배포 환경 구성 시에도 큰 도움이 된다.
+
+## 이번 작업을 통해 배운 것
+
+- `Webpack`의 핵심 구성 요소 (entry, output, module, plugins, devServer)
+- `TypeScript`와 `React`를 Webpack에서 함께 사용하는 방법
+- 로더(`ts-loader`, `css-loader`, `style-loader`)의 역할
+- `HtmlWebpackPlugin`을 활용해 HTML 파일을 자동으로 관리하는 방식
+- `webpack-dev-server`로 개발 서버를 실행하고 `HMR`(핫 리로드)을 사용하는 개발 환경
+
+> HMR(Hot Module Replacement)코드 수정 시 전체 페이지를 새로고침하지 않고, 수정된 모듈(파일)만 교체해서 적용하는 Webpack 기능이다.

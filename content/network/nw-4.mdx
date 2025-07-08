@@ -95,11 +95,21 @@ Copy policy 이후 '정책을 업데이트하려면 ~~~.. ' 링크를 클릭하�
 
 버킷 정책(Bucket policy)에 편집을 누른 후 아까 복사한 것을 붙여넣은 후 저장한다.
 
-## 6. 이후 CloudFront에 다시 들어가서 배포가 끝날때까지 기다리면 된다.
+## 6. 오류 페이지 설정
+
+SPA의 경우 도메인 하위의 어떤 path로 접속하더라도 index.html에 매핑되어야 한다.
+
+따라서 이 동작을 수행해 주기 위해 CloudFront에서 오류 페이지 설정을 해줘야 한다.
+
+CloudFront 콘솔에서 오류 페이지 메뉴에 들어가서 사용자 정의 오류 응답 생성 버튼을 눌러서 설정해 보자.
+
+![](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdna%2FbduV2X%2FbtsObuL8YTI%2FAAAAAAAAAAAAAAAAAAAAAL5C1e73tOreSzlJNyurWecl16f5dKPm9FCydAUBR9i2%2Fimg.png%3Fcredential%3DyqXZFxpELC7KVnFOS48ylbz2pIh7yKj8%26expires%3D1753973999%26allow_ip%3D%26allow_referer%3D%26signature%3DxntgknfBcW9svt26NWc9qrTb0Xg%253D)
+
+## 7. 이후 CloudFront에 다시 들어가서 배포가 끝날때까지 기다리면 된다.
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/238e43bf-8708-45e2-a9d6-6655ca9eb816/image.png)
 
-## 7. 배포가 끝나면 배포 도메인 이름을 url로 넣어서 검색하면 잘 나오는 것을 확인 할 수 있다.
+## 8. 배포가 끝나면 배포 도메인 이름을 url로 넣어서 검색하면 잘 나오는 것을 확인 할 수 있다.
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/7d882fda-49af-49a4-be55-9ac5e61238b9/image.png)
 
