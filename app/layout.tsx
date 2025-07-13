@@ -18,12 +18,22 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://www.eunwoo-levi.blog'),
   title: '리바이 개발 블로그',
   description: '리바이 프론트엔드 개발 블로그',
+  keywords: ['프론트엔드', '개발', 'React', 'Next.js', 'TypeScript', 'JavaScript', '블로그'],
+  authors: [{ name: '리바이', url: 'https://www.eunwoo-levi.blog' }],
+  creator: '리바이',
+  publisher: '리바이 개발 블로그',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   openGraph: {
     type: 'website',
     title: '리바이 개발 블로그',
     description: '리바이 프론트엔드 개발 블로그',
     url: 'https://www.eunwoo-levi.blog',
     siteName: '리바이 개발 블로그',
+    locale: 'ko_KR',
     images: [
       {
         url: 'https://www.eunwoo-levi.blog/levi.webp',
@@ -37,10 +47,22 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: '리바이 개발 블로그',
     description: '리바이 프론트엔드 개발 블로그',
+    creator: '@eunwoo_levi',
     images: ['https://www.eunwoo-levi.blog/levi.webp'],
   },
   alternates: {
     canonical: 'https://www.eunwoo-levi.blog',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 };
 
