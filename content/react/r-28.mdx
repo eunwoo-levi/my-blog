@@ -1,0 +1,204 @@
+---
+title: '[React] 최신 Prettier + ESLint 설정 가이드'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-07-03'
+categoryId: 6
+---
+
+# React 19 프로젝트에서 Prettier + ESLint 설정하기
+
+React 19는 JSX 자동 런타임과 향상된 타입 호환성을 제공하기 때문에, ESLint와 Prettier도 이에 맞춰 설정해야 한다. 
+이 글에서는 `pnpm`과 `webpack`을 사용하는 React + TypeScript 환경을 기준으로, 최신 포맷터와 린터 설정 방법을 소개한다.
+
+# 1. 패키지 설치
+
+먼저 필요한 패키지를 설치한다. `eslint`, `prettier`, 그리고 관련 플러그인들을 설치한다.
+
+```bash
+pnpm add -D eslint prettier eslint-config-prettier @eslint-react/eslint-plugin @typescript-eslint/parser @typescript-eslint/eslint-plugin
+```
+
+# 2. package.json 스크립트
+
+`package.json`에 ESLint와 Prettier를 실행할 수 있는 스크립트를 추가한다.
+
+```json
+{
+  "scripts": {
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "pnpm run lint && pnpm run format:check"
+  }
+}
+```
+
+# 3. prettier 설정
+
+프로젝트 루트에 `.prettierrc` 파일을 생성하고 다음과 같이 설정한다.
+
+## .prettierrc 설정
+
+```json
+{
+  // 문장 끝에 세미콜론
+  "semi": true,
+
+  // 가능한 모든 곳에 후행 쉼표를 붙인다 (배열, 객체, 함수 인자 등)
+  // "es5"는 ES5에서 허용되는 곳에만 붙임. "all"은 더 많은 곳에 붙임 → Git diff 줄이기 유리
+  "trailingComma": "all",
+
+  // 문자열에 작은따옴표 사용
+  "singleQuote": true,
+
+  // 한 줄에 허용할 최대 문자 수
+  "printWidth": 100,
+
+  // 들여쓰기 너비 (2칸이 가장 일반적)
+  "tabWidth": 2,
+
+  // 들여쓰기 시 탭 대신 스페이스(공백)를 사용한다
+  "useTabs": false,
+
+  // 객체 리터럴에서 중괄호 사이에 공백을 유지한다 (예: { foo: bar } vs {foo:bar})
+  "bracketSpacing": true,
+
+  // 화살표 함수의 매개변수가 하나일 경우 괄호를 생략한다 (예: x => x)
+  // 여러 개이거나 타입 주석이 있을 경우 괄호는 자동으로 붙음
+  "arrowParens": "avoid",
+
+  // 줄바꿈 문자를 LF (유닉스 스타일)로 강제한다 → Git diff 줄이고 협업에 안정적
+  "endOfLine": "lf",
+
+  // JSX 안에서는 큰따옴표를 사용한다 (예: <div className="x">)
+  // false면 JSX 내부에서도 singleQuote 설정이 적용됨
+  "jsxSingleQuote": false
+}
+```
+
+## .prettierignore 설정
+
+`.prettierignore` 파일을 생성하여 Prettier가 무시할 파일이나 디렉토리를 지정한다.
+
+```node_modules
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+
+# Webpack generated files
+*.bundle.js
+*.chunk.js
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Generated files
+coverage/
+```
+
+
+# 4. ESLint 설정
+
+프로젝트 루트에 `.eslintrc.json` 파일을 생성하고 다음과 같이 설정한다.
+
+```js
+// TypeScript ESLint 설정 (룰셋 포함)
+import typescriptEslint from 'typescript-eslint';
+
+// React 19 대응 ESLint 플러그인
+import reactPlugin from '@eslint-react/eslint-plugin';
+
+// Prettier와 ESLint 룰 충돌 제거용 설정
+import prettierConfig from 'eslint-config-prettier';
+
+// ESLint 설정 배열을 export
+export default [
+  // 무시할 파일 및 디렉토리 설정
+  {
+    ignores: [
+      'node_modules/',
+      'dist/',
+      'build/',
+      '*.bundle.js',
+      '*.chunk.js',
+      '*.log',
+      '.env*',
+      '.vscode/',
+      '.idea/',
+      '.DS_Store',
+      'Thumbs.db',
+      'pnpm-lock.yaml',
+    ],
+  },
+
+  // TypeScript 추천 규칙 적용 (typescript-eslint 제공)
+  ...typescriptEslint.configs.recommended,
+
+  // JS/TS/JSX/TSX 파일에 대한 React 관련 설정
+  {
+    files: ['**/*.{js,jsx,ts,tsx}'], // 해당 확장자 파일에만 적용
+    plugins: {
+      '@eslint-react': reactPlugin, // React용 ESLint 플러그인 등록
+    },
+    languageOptions: {
+      parserOptions: {
+        ecmaVersion: 2022,        // 최신 ECMAScript 기능 사용
+        sourceType: 'module',     // import/export 문법 허용
+        ecmaFeatures: {
+          jsx: true,              // JSX 문법 사용 허용
+        },
+      },
+    },
+    rules: {
+      // 사용되지 않은 변수는 경고
+      '@typescript-eslint/no-unused-vars': 'warn',
+
+      // any 타입 사용은 경고
+      '@typescript-eslint/no-explicit-any': 'warn',
+
+      // React 17+ 이상에서는 JSX 사용 시 React import가 필요 없으므로 off
+      'react/react-in-jsx-scope': 'off',
+    },
+  },
+
+  // Prettier 설정과 충돌하는 ESLint 룰 제거 (필수)
+  prettierConfig,
+];
+```
+
+
+# Biome에서 ESLint + Prettier로 전환한 이유
+
+처음에는 Biome을 도입했다. 하나의 도구로 Lint + Format + TypeScript 지원 + 빠른 속도를 모두 해결할 수 있다는 점에서 매우 매력적이었기 때문이다. 설정도 간결했고, 커맨드 한 줄로 모든 코드 스타일 문제를 해결할 수 있어 초기 프로젝트 세팅에 적합했다.
+
+하지만 프로젝트가 React 19와 TypeScript 중심으로 확장되면서 Biome만으로는 다음과 같은 한계가 있었다:
+
+- React/TypeScript 관련 규칙이 제한적이고, import/order, react-hooks, jsx-a11y와 같은 실무용 룰셋을 적용하기 어려움
+
+- VSCode, GitHub Actions, 팀 협업 도구들과의 통합성은 여전히 ESLint + Prettier 조합이 더 안정적
+
+- 룰 커스터마이징 유연성이 부족하고, 익숙한 생태계와의 호환도 아직 완전하지 않음
+
+결국 확장성과 유지보수 측면에서, 지금은 Biome 대신 Prettier + ESLint 조합으로 코드 스타일을 관리하고 있다.
+향후 Biome이 생태계 확장과 플러그인 지원이 충분히 갖춰진다면, 다시 도입을 고려할 수 있을 것이다.
