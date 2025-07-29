@@ -1,0 +1,475 @@
+---
+title: '[Network] AWS EC2에 Self-Hosted GitHub Actions Runner 구축하기'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/etc/aws-ec2.webp'
+publishDate: '2025-07-21'
+categoryId: 4
+---
+
+이 글의 목표는 GitHub Actions에서 AWS EC2를 self-hosted runner로 등록하여, S3 + CloudFront에 자동 배포(CD)를 수행할 수 있도록 구성하는 것이다.
+
+# Self-hosted runner를 하게 된 배경
+
+회사 내부 보안 정책으로 인해 AWS IAM Access Key와 Secret Key를 직접 제공받지 못하는 상황에서, S3 + CloudFront를 활용한 정적 웹 배포 파이프라인을 구축해야 했다.
+이에 따라, GitHub Actions에서 제공하는 기본 ubuntu-latest 호스트를 사용하는 대신, 직접 관리 가능한 EC2 기반 Self-hosted Runner를 선택하게 되었다.
+
+# Self-hosted Runner란?
+
+`Self-hosted runner`는 GitHub Actions의 작업(Job)을 GitHub의 자체 서버가 아닌, 사용자가 직접 관리하는 서버에서 실행하는 시스템이다.
+GitHub Actions에서 `runs-on: self-hosted`를 지정하면, GitHub은 등록된 self-hosted runner들 중에서 사용 가능한 runner를 찾아 Job을 실행한다.
+
+## 장단점 비교
+
+### GitHub-hosted vs Self-hosted Runner
+
+| 항목              | GitHub-hosted          | Self-hosted                    |
+| ----------------- | ---------------------- | ------------------------------ |
+| **관리 부담**     | 없음 (GitHub에서 관리) | 높음 (직접 관리 필요)          |
+| **비용**          | 무료 한계 후 종량제    | EC2 비용 (상시 또는 On-demand) |
+| **커스터마이징**  | 제한적                 | 완전한 제어 가능               |
+| **보안**          | GitHub 관리            | 직접 관리 필요                 |
+| **성능**          | 표준화된 사양          | 요구사항에 맞게 조정 가능      |
+| **네트워크 접근** | 인터넷만 가능          | VPC 내부 리소스 접근 가능      |
+| **지속적인 상태** | 매번 초기화            | 상태 유지 가능                 |
+
+### Self-hosted Runner 선택 시점
+
+- **권장하는 경우**:
+
+  - 내부 네트워크 리소스에 접근해야 하는 경우
+  - 특별한 하드웨어나 소프트웨어가 필요한 경우
+  - 긴 빌드 시간으로 인한 비용 절약이 필요한 경우
+  - 보안상 코드를 외부에서 실행하기 어려운 경우
+
+- **권장하지 않는 경우**:
+  - 단순한 빌드/테스트만 필요한 경우
+  - 관리 리소스가 부족한 경우
+  - 보안 관리 경험이 부족한 경우
+
+---
+
+## 사전 조건
+
+- AWS 계정 및 EC2 인스턴스 생성 권한
+- GitHub 저장소 관리자 권한
+- SSH 클라이언트 (Windows PowerShell, Terminal, VSCode Remote SSH 등)
+- AWS CLI 설치 및 구성 (로컬 머신)
+- 기본적인 Linux 명령어 이해
+
+---
+
+# 🛠 EC2 인스턴스 설정
+
+### 1. 인스턴스 생성
+
+**기본 설정**:
+
+- **AMI**: Amazon Linux 2023 (`ami-0ff0bbc5968fcbc61`, ARM64)
+- **인스턴스 타입**: `t4g.small` (2 vCPU, 2GB RAM)
+- **키 페어**: 새로 생성하거나 기존 키 사용
+- **스토리지**: 최소 10GiB EBS (빌드 캐시 고려)
+
+**네트워크 설정**:
+
+- **퍼블릭 IP 자동 할당**: 활성화(✅)
+- **보안 그룹**: 새로 생성 또는 기존 사용
+  - **SSH (22번 포트)**: 자신의 IP 또는 특정 IP 대역
+  - **HTTP (80번 포트)**: 필요시 `0.0.0.0/0`
+  - **HTTPS (443번 포트)**: 필요시 `0.0.0.0/0`
+
+> ⚠️ **보안 주의사항**: SSH 포트(22번)를 `0.0.0.0/0`으로 열어두는 것은 보안상 위험하다. 가능한 한 특정 IP로 제한해야 한다.
+
+### 2. IAM 역할 설정
+
+**IAM 역할 생성**:
+
+1. AWS IAM 콘솔에서 '역할' 생성
+2. 신뢰할 수 있는 엔터티: `EC2`
+3. 필요한 정책 연결:
+   - `AmazonS3FullAccess` (또는 특정 버킷 정책)
+   - `CloudFrontFullAccess` (또는 특정 배포 정책)
+   - 사용자 정의 정책 (최소 권한 원칙 적용)
+
+**사용자 정의 정책 예시**:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::your-bucket-name", "arn:aws:s3:::your-bucket-name/*"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["cloudfront:CreateInvalidation"],
+      "Resource": "arn:aws:cloudfront::account-id:distribution/distribution-id"
+    }
+  ]
+}
+```
+
+**IAM 역할 연결**:
+
+- 경로: EC2 콘솔 > 인스턴스 선택 > Actions > Security > Modify IAM Role
+
+### 3. 태그 설정
+
+필수 태그 (조직 정책에 따라):
+
+| Key           | Value            | 설명        |
+| ------------- | ---------------- | ----------- |
+| `Service`     | `techcourse`     | 서비스 구분 |
+| `Role`        | `techcourse-etc` | 역할 구분   |
+| `ProjectTeam` | `moment`         | 프로젝트팀  |
+| `Environment` | `production`     | 환경 구분   |
+
+---
+
+# SSH 접속
+
+```bash
+# 키 파일 권한 설정 (Linux/macOS)
+chmod 400 ./moment-runner-key.pem
+
+# SSH 접속
+ssh -i ./moment-runner-key.pem ec2-user@<퍼블릭 IPv4 주소>
+```
+
+**PowerShell (Windows) 사용시**:
+
+```powershell
+ssh -i .\moment-runner-key.pem ec2-user@<퍼블릭 IPv4 주소>
+```
+
+---
+
+# GitHub Actions Runner 설치
+
+- Github Repository -> Settings -> Actions -> Runners에서 각 프롬프트 참고
+
+## 사전 준비
+
+```bash
+# 시스템 업데이트
+sudo dnf update -y
+
+# 필요한 패키지 설치
+sudo dnf install -y git curl tar libicu
+```
+
+## Download
+
+```bash
+# Create a folder
+mkdir actions-runner && cd actions-runner
+
+# Download the latest runner package
+curl -o actions-runner-linux-arm64-2.326.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.326.0/actions-runner-linux-arm64-2.326.0.tar.gz
+
+# Optional: Validate the hash
+echo "ee7c229c979c5152e9f12be16ee9e83ff74c9d9b95c3c1aeb2e9b6d07157ec85  actions-runner-linux-arm64-2.326.0.tar.gz" | shasum -a 256 -c
+
+# Extract the installer
+tar xzf ./actions-runner-linux-arm64-2.326.0.tar.gz
+```
+
+## Configure
+
+**GitHub 토큰 발급**:
+
+1. GitHub 저장소 > Settings > Actions > Runners
+2. "New self-hosted runner" 클릭
+3. 토큰 복사
+
+```bash
+# Create the runner and start the configuration experience
+./config.sh --url https://github.com/woowacourse-teams/2025-moment --token <발급된_토큰>
+```
+
+**설정 프롬프트**:
+
+- **Runner 그룹**: `[Enter]` (기본값: Default)
+- **Runner 이름**: `[Enter]` (기본값: 호스트명) 또는 의미있는 이름 입력
+- **추가 레이블**: `aws,ec2,arm64` (선택사항)
+- **워크 디렉토리**: `[Enter]` (기본값: \_work)
+
+**성공 메시지**:
+
+```bash
+√ Runner successfully added
+√ Runner connection is good
+```
+
+## Using your self-hosted runner
+
+```yaml
+# Use this YAML in your workflow file for each job
+runs-on: self-hosted
+```
+
+---
+
+# Runner 실행
+
+## 1. 포그라운드 실행 (테스트용)
+
+- 본인은 AWS S3/Cloudfront를 CD를 통해 자동 배포할 때만 사용하므로 1번을 선택하였다.
+
+```bash
+# Last step, run it!
+./run.sh
+```
+
+이 방법은 SSH 세션이 종료되면 Runner도 함께 종료된다.
+
+## 2. 백그라운드 서비스 등록 (권장)
+
+```bash
+# 서비스로 설치
+sudo ./svc.sh install
+
+# 서비스 시작
+sudo ./svc.sh start
+
+# 서비스 상태 확인
+sudo ./svc.sh status
+```
+
+**서비스 관리 명령어**:
+
+```bash
+# 서비스 중지
+sudo ./svc.sh stop
+
+# 서비스 제거
+sudo ./svc.sh uninstall
+```
+
+---
+
+# EC2 부팅 시 자동으로 runner 실행되게 설정
+
+- 지금 위치인 ~/actions-runner (즉, /home/ec2-user/actions-runner)에서 바로 자동 실행 설정
+- systemd 등록을 통해 EC2 부팅 시 자동 실행되게 할 수 있다.
+
+## 1. runner.service 유닛 파일 생성:
+
+```bash
+sudo nano /etc/systemd/system/runner.service
+```
+
+## 2. 아래 내용 입력 (actions-runner 경로에 맞게 수정)
+
+```bash
+[Unit]
+Description=GitHub Actions Runner
+After=network.target
+
+[Service]
+ExecStart=/home/ec2-user/actions-runner/run.sh
+WorkingDirectory=/home/ec2-user/actions-runner
+User=ec2-user
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+## 3. 서비스 등록 및 실행:
+
+```bash
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl enable runner
+sudo systemctl start runner
+```
+
+## 4. 확인
+
+```bash
+sudo systemctl status runner
+```
+
+이제 EC2 인스턴스가 켜질 때 자동으로 runner가 실행되어 push 시 바로 배포된다.
+
+---
+
+## 🔒 보안 고려사항
+
+### 1. 네트워크 보안
+
+- **보안 그룹 최소화**: 필요한 포트만 열기
+- **SSH 키 관리**: 정기적인 키 로테이션
+- **VPC 설정**: 가능한 한 Private Subnet 사용
+
+### 2. Runner 보안
+
+- **정기적인 업데이트**: OS 및 Runner 버전 업데이트
+- **로그 모니터링**: 비정상적인 활동 감지
+- **액세스 제한**: 특정 레포지토리/조직으로 제한
+
+### 3. 시크릿 관리
+
+```yaml
+# GitHub Secrets 설정 예시
+secrets:
+  S3_BUCKET_NAME: your-bucket-name
+  CLOUDFRONT_DISTRIBUTION_ID: your-cloudfront-id
+  EC2_RUNNER_INSTANCE_ID: i-0123456789abcdef0
+```
+
+---
+
+# GitHub Actions CD 예시
+
+## 배포 워크플로우
+
+```yaml
+name: Deploy to S3 + CloudFront (Ephemeral EC2 Runner)
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  start-runner:
+    name: Start EC2 Instance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start EC2 instance
+        run: |
+          aws ec2 start-instances --instance-ids ${{ secrets.EC2_RUNNER_INSTANCE_ID }}
+          echo "Waiting for EC2 runner to start..."
+          aws ec2 wait instance-status-ok --instance-ids ${{ secrets.EC2_RUNNER_INSTANCE_ID }}
+
+  deploy:
+    name: Deploy to S3 + CloudFront
+    runs-on: self-hosted
+    needs: start-runner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Upload to S3
+        run: aws s3 sync ./build s3://${{ secrets.S3_BUCKET_NAME }} --delete
+
+      - name: Invalidate CloudFront cache
+        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+
+  stop-runner:
+    name: Stop EC2 Instance
+    runs-on: ubuntu-latest
+    if: always()
+    needs: deploy
+    steps:
+      - name: Stop EC2 instance
+        run: |
+          aws ec2 stop-instances --instance-ids ${{ secrets.EC2_RUNNER_INSTANCE_ID }}
+```
+
+---
+
+## 🔧 트러블슈팅
+
+### 의존성 오류
+
+**증상**: `libicu` 관련 오류
+
+**해결방법**:
+
+```bash
+# Amazon Linux 2023
+sudo dnf install -y libicu
+
+# Ubuntu/Debian
+sudo apt-get update && sudo apt-get install -y libicu-dev
+```
+
+## aws instance 접근 오류
+
+aws instance 접근해서 start와 end하기 위한 로직을 짜려고 했으나 권한 부족 (IAM Role or GitHub Actions Credentials) 문제를 마주하였다.
+EC2 인스턴스를 시작/종료하려면 ec2:StartInstances, ec2:StopInstances, ec2:DescribeInstances, ec2:Wait 등의 권한이 필요합니다. IAM Role에 이 권한이 없으면 동작하지 않는다.
+
+# 최종 CD 워크플로우
+
+```bash
+name: Deploy Client to AWS S3 + CloudFront
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Client
+    runs-on: self-hosted
+    defaults:
+      run:
+        working-directory: ./client
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: ./client/pnpm-lock.yaml
+
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create .env file
+        run: |
+          echo "REACT_APP_BASE_URL=${{ secrets.REACT_APP_BASE_URL }}" > .env
+
+      - name: Build application
+        run: pnpm run build
+        env:
+          NODE_ENV: production
+
+      - name: Upload to S3
+        run: |
+          echo "Uploading static files to S3..."
+
+          # 1. HTML 외 모든 파일 먼저 업로드
+          aws s3 sync ./dist s3://${{ secrets.S3_BUCKET_NAME }}/moment \
+            --delete \
+            --cache-control "public,max-age=31536000,immutable" \
+            --exclude "*.html" \
+            --exclude "service-worker.js" \
+            --region ap-northeast-2
+
+          # 2. .html 파일은 개별적으로 --content-type text/html 지정
+          find ./dist -name "*.html" | while read file; do
+            aws s3 cp "$file" s3://${{ secrets.S3_BUCKET_NAME }}/moment/"${file#./dist/}" \
+              --cache-control "public,max-age=0,must-revalidate" \
+              --content-type "text/html" \
+              --region ap-northeast-2
+          done
+
+          # 3. service-worker.js도 개별 업로드
+          if [ -f ./dist/service-worker.js ]; then
+            aws s3 cp ./dist/service-worker.js s3://${{ secrets.S3_BUCKET_NAME }}/moment/service-worker.js \
+              --cache-control "public,max-age=0,must-revalidate" \
+              --content-type "application/javascript" \
+              --region ap-northeast-2
+          fi
+
+      - name: Invalidate CloudFront cache
+        run: |
+          echo "Invalidating CloudFront cache..."
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*" \
+            --region us-east-1
+```
