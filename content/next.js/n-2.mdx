@@ -6,6 +6,12 @@ publishDate: '2025-08-02'
 categoryId: 5
 ---
 
+Sentry는 웹 애플리케이션의 에러 모니터링과 성능 추적을 위한 플랫폼이다.
+최근 Next.js로 개발한 프로젝트를 리팩토링하고 있는데 에러 모니터링과 성능 추적을 위해 Sentry를 도입하게 되었다.
+
+이번 포스팅에서는 Sentry를 도입하게 된 이유와 도입 과정, 그리고 트러블 슈팅 과정을 공유하고자 한다.
+Sentry에 대한 자세한 내용은 [Sentry 공식 문서](https://docs.sentry.io/platforms/javascript/guides/nextjs)와 여러 해외 글들을 참고하였다.
+
 # 왜 Sentry를 도입하게 되었는가?
 
 ## 1. 프로덕션 환경의 에러 추적 필요성
