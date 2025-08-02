@@ -297,6 +297,30 @@ SENTRY_DSN = your - sentry - dsn - here;
 SENTRY_AUTH_TOKEN = your - sentry - auth - token - here;
 ```
 
+# 트러플슈팅
+
+```
+ ⚠ ./node_modules/.pnpm/@opentelemetry+instrumentat_d3ec4b47637246e6f49655125a61e52f/node_modules/@opentelemetry/instrumentation/build/esm/platform/node
+Package require-in-the-middle can't be external
+The request require-in-the-middle matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the project directory.
+Packages that should be external need to be installed in the project directory, so they can be resolved from the output files.
+Try to install it into the project directory by running npm install require-in-the-middle from the project directory.
+```
+
+위와 같은 에러가 발생하여서 어떤 문제가 있는지 확인해보았다.
+
+에러를 읽어보면 `@opentelemetry/instrumentation`이라는 패키지가 내부적으로 require-in-the-middle이라는 모듈을 사용하려고 했으나, 이 모듈이 프로젝트에 설치되어 있지 않아 로딩에 실패했다는 의미다.
+Next.js 프로젝트에 Sentry를 적용하고 성능 모니터링 옵션(tracesSampleRate, Session Replay 등)을 활성화를 했었는데 이때 발생한 에러로 추정된다.
+
+Sentry의 성능 모니터링 기능을 활성화하면, 내부적으로 OpenTelemetry 기반의 트레이싱 기능을 사용하는데, 이때 @opentelemetry/instrumentation이 함께 동작한다. 이 패키지는 특정 Node.js 모듈의 동작을 가로채기 위해 require-in-the-middle이라는 핵심 유틸리티를 사용한다.
+
+하지만 pnpm은 트리 기반 의존성 관리를 사용하므로, `@opentelemetry/instrumentation`이 내부적으로 필요로 하는 `require-in-the-middle`이 루트 경로에서 존재하지 않으면 해석이 불가능할 수 있다.
+
+특히 Next.js가 빌드 시 특정 서버 전용 패키지를 external로 분리할 때, 해당 패키지가 프로젝트 루트에 없으면 빌드 오류 또는 경고를 발생시킨다.
+
+그래서 에러 메세지대로 프로젝트 루트에서 `pnpm add require-in-the-middle` 를 설치하여 해당 문제를 해결했다.
+
 # 마무리
 
 Sentry를 통해 수집된 데이터를 바탕으로 더 정확한 의사결정을 할 수 있게 되었다. 어떤 기능에서 문제가 자주 발생하는지, 어떤 성능 이슈가 있는지 등을 객관적으로 파악할 수 있다.
