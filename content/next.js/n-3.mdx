@@ -1,0 +1,116 @@
+---
+title: '[Next.js] Next.js에서 Hybrid Monorepo 전환기'
+author: 'eunwoo'
+thumbnail: '/thumbnail/nextjs.webp'
+publishDate: '2025-08-04'
+categoryId: 5
+---
+
+이번 글에서는 Vite 기반 Admin 페이지 도입을 위해 기존 Next.js 기반 프로젝트를 Hybrid Monorepo 구조로 전환한 내용을 공유하고자 한다.
+
+# 프로젝트 배경
+
+기존에는 `Next.js` 기반의 프론트엔드 프로젝트(`client`)만 존재했지만,
+
+- 별도의 관리자 페이지(admin) 도입이 필요했고,
+- 해당 페이지는 더 빠른 빌드, 간결한 설정을 위해 Vite 기반 + TypeScript + TailwindCSS를 사용하기로 결정했다.
+
+이에 따라 `Next.js`(SSR/SSG 지원) 와 `Vite`(SPA 중심) 를 공존시키기 위해 `Hybrid Monorepo` 구조로 전환하였다.
+
+# 폴더 구조
+
+```
+/my-project
+├── client/           # Next.js 기반 사용자 웹앱
+│   ├── package.json
+│   ├── .next/
+│   └── ...
+├── admin/            # Vite 기반 관리자 페이지
+│   ├── package.json
+│   ├── dist/
+│   └── ...
+├── pnpm-workspace.yaml
+├── package.json      # 루트 워크스페이스용 (공통 스크립트, 의존성 등)
+├── .gitignore        # 루트용 .gitignore (admin, client 포함)
+└── ...
+```
+
+# pnpm + workspace 구성
+
+Hybrid Monorepo를 도입하기 위해 Package Manager로 `pnpm` 을 사용하였고, `workspace` 를 통해 공통 의존성을 관리하였다.
+
+## 왜 pnpm?
+
+- 디스크 공간 절약: 패키지를 global store에 저장해 중복 설치 방지
+- 빠른 설치 속도: 병렬 다운로드 및 캐싱
+- 엄격한 의존성 격리: node_modules가 중첩되지 않고 논리적 구조 보장
+- 모노레포에 최적화: pnpm-workspace.yaml만으로 workspace 구성이 가능
+
+## 루트 pnpm-workspace.yaml
+
+```yaml
+packages:
+  - 'client'
+  - 'admin'
+```
+
+## 루트 package.json
+
+```json
+{
+  "name": "my-project",
+  "private": true,
+  "scripts": {
+    "dev:client": "pnpm --filter client dev",
+    "dev:admin": "pnpm --filter admin dev",
+    "build:client": "pnpm --filter client build",
+    "build:admin": "pnpm --filter admin build"
+  }
+}
+```
+
+각 디렉토리 내에서는 해당 프로젝트 전용 패키지와 설정만 관리한다.
+
+예를 들어, `admin` 폴더 내에서 tailwind는 공통 의존성이 아니기 때문에 각 프로젝트 내에서 설치하였다.
+
+```bash
+cd admin
+pnpm install -D tailwindcss postcss autoprefixer @tailwindcss/postcss
+```
+
+# 배포 전략
+
+## /client
+
+Next.js 기반 프로젝트는 SSR, ISR 지원이 필요한 사용자 페이지이므로 Vercel에서 배포하였다.
+Vercel에서는 root directory를 client로 설정하고, client/package.json 기준으로 빌드하였다.
+
+## /admin
+
+Vite 기반 프로젝트는 정적 SPA로 빌드하여 빠른 배포가 가능하도록 AWS S3 + CloudFront를 통해 배포하였다.
+
+루트 .gitignore에 모든 워크스페이스 디렉토리의 출력물, 환경파일 등을 통합 관리하였다.
+
+# Monorepo 전환 장점 요약
+
+- 1. 패키지 관리 통합
+
+  - 의존성 버전 일관성 유지, 중복 제거
+
+- 2. CI/CD 최적화
+
+  - 디렉토리별 분기 실행 가능 (filter)
+
+- 3. 구조적 명료성
+
+  - 사용자/관리자 앱 분리로 유지보수 편의
+
+- 4. 협업 효율
+  - 팀원 간 코드 분담 및 독립 개발 가능
+
+# 마무리
+
+하나의 리포지토리에서 Next.js와 Vite를 공존시키기 위해 pnpm + workspace 기반의 하이브리드 모노레포 구조를 도입하였다.
+이는 장기적으로 사용자 서비스와 관리자 도구의 유지보수, 배포, 테스트까지 모두 유지보수성과 확장성을 고려한 선택이었다.
+이후 공통 컴포넌트 관리를 위해 공통 UI 컴포넌트 패키지 추출하여 개발할 예정이다.
+이번 경험을 통해서 pnpm의 장점과 하이브리드 모노레포 구조를 활용하는 방법을 알게된 뜻 깊은 시간이었다.
