@@ -108,9 +108,76 @@ Vite 기반 프로젝트는 정적 SPA로 빌드하여 빠른 배포가 가능�
 - 4. 협업 효율
   - 팀원 간 코드 분담 및 독립 개발 가능
 
+# 공용 모듈 분리
+
+## shared 디렉토리 생성
+
+`/admin`과 `/client` 폴더 내에서 공통으로 사용되는 모듈을 분리하여 관리하였다.
+
+```
+/vital-trip
+├── client/
+├── admin/
+├── shared/   공용 패키지 디렉토리
+│   ├── package.json
+│   └── src/
+│       └── components/
+│           └── Button.tsx
+```
+
+`shared` 폴더 내에서 공통으로 사용되는 모듈을 분리하여 관리하였다.
+
+## 공통 모듈 설정
+
+`shared/package.json`에 해당 패키지 정보를 작성하였다.
+
+```json
+{
+  "name": "shared",
+  "version": "0.0.1",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts"
+    }
+  }
+}
+```
+
+그리고 루트에 위치한 `pnpm-workspace.yaml`에 공통 패키지 디렉토리를 추가하였다.
+
+```yaml
+packages:
+  - 'client'
+  - 'admin'
+  - 'shared'
+```
+
+`/shared`에서 React등 필요한 패키지를 shared에도 명시하기 위해 의존성 설치를 진행하였다.
+
+```bash
+cd shared
+pnpm install react react-dom ... 등등
+```
+
+그리고 peerDependencies로 선언하여 해당 패키지를 사용하는 프로젝트에서 직접 설치하도록 하였다.
+
+```json
+// shared/package.json
+"peerDependencies": {
+  "react": "^18.2.0",
+  "react-dom": "^18.2.0"
+}
+```
+
 # 마무리
 
 하나의 리포지토리에서 Next.js와 Vite를 공존시키기 위해 pnpm + workspace 기반의 하이브리드 모노레포 구조를 도입하였다.
 이는 장기적으로 사용자 서비스와 관리자 도구의 유지보수, 배포, 테스트까지 모두 유지보수성과 확장성을 고려한 선택이었다.
 이후 공통 컴포넌트 관리를 위해 공통 UI 컴포넌트 패키지 추출하여 개발할 예정이다.
 이번 경험을 통해서 pnpm의 장점과 하이브리드 모노레포 구조를 활용하는 방법을 알게된 뜻 깊은 시간이었다.
+
+```
+
+```
