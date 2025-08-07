@@ -1,0 +1,182 @@
+---
+title: '[Network] AWS CodeBuild, CodePipeline, Lambda를 활용한 정적 웹사이트 CI/CD 구축기'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/etc/aws.webp'
+publishDate: '2025-08-08'
+categoryId: 4
+---
+
+이번 포스팅에서는 AWS CodeBuild + CodePipeline + Lambda를 활용하여 정적 웹사이트를 배포하는 방법을 알아보려고 한다.
+최근 우아한테크코스에서 진행하는 팀 프로젝트에서 보안때문에 AWS Access Key를 제공하지 않아서 GitHub Action CI/CD를 구축하는 것이 제한이 되었다.
+따라서 AWS **S3**와 **Cloudfront**를 자동으로 배포하는 방법을 알아보려고 하였고, 그 결과 **EC2**에 **self-hosted runner**로 구축하여 CD를 구축하는 방법을 택하였다.
+하지만 EC2로 구축을 하게 되면 서버가 24시간 동안 켜져있어야 하기 때문에 비용이 많이 들고, 또한 서버 관리가 어렵다는 단점이 있었다.
+그래서 해당 문제들을 해결할 수 있는 해결책을 찾아보다가 AWS CodeBuild + CodePipeline + Lambda를 활용하여 정적 웹사이트를 배포하는 방법이 있다는 것을 알게 되었고 해당 방법으로 구축을 성공하였다.
+
+# CodeBuild 구축
+
+**AWS CodeBuild**는 간단히 정리하면 빌드 자동화 및 S3 업로드 담당하는 서비스이다.
+CodeBuild는 지정한 명령어(buildspec.yml)에 따라 코드를 빌드하고, S3에 업로드하는 역할을 한다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/9fa2211f-c3fc-4684-8b4f-dfe2468cc5d5/image.png)
+
+Source Provider는 소스 코드를 저장하는 곳을 의미한다. 본인은 GitHub를 사용하고 있기 때문에 GitHub를 선택하였다.
+Repository에 개인 레포지토리 URL를 넣으면 된다. (git clone 주소가 아님!)
+
+**Source Version**은 소스 코드의 버전을 의미한다. 어떤 브랜치에서 소스 코드를 가져올지 결정하는 부분이다.
+본인은 main 브랜치에서 소스 코드를 가져오고 있기 때문에 main 브랜치를 선택하였다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/77ed1eae-d991-4975-b811-ec6c1627858a/image.png)
+
+Image 환경은 Ubuntu가 일반적인 것 같아서 해당 환경으로 선택을 하였다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/6af7d1e8-1a43-48ac-81e7-2626949b29ee/image.png)
+
+**Buildspec**은 빌드 명령어를 작성하는 부분이다. 본인은 **Buildspec.yml** client 디렉토리 안 root위치에 두었다.
+빌드 코드는 아래와 같이 하였다.
+
+```yml
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - cd client
+      - npm install -g pnpm
+      - pnpm install
+  build:
+    commands:
+      - pnpm run build
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: 'client/dist'
+
+cache:
+  paths:
+    - node_modules/**/*
+```
+
+빌드 파일을 대략적으로 설명하면,
+
+본인의 프로젝트는 백엔드와 프론트엔드 코드가 모노레포 형태로 구성되어 있기 때문에 `cd client`를 통해서 해당 디렉토리로 이동한 후 `npm install -g pnpm`를 통해서 pnpm을 설치한 후 `pnpm install`을 통해서 패키지를 설치하였다. 그 후 `pnpm run build`를 통해서 프론트엔드 코드를 빌드하였다.
+
+**artifacts**는 빌드 결과물을 저장하는 부분이다. 본인은 프론트엔드 코드를 빌드하였기 때문에 `client/dist` 디렉토리 안에 있는 파일을 모두 업로드하였다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/16c0f93c-050e-4114-aab9-0fb23949a3a6/image.png)
+
+Artifacts는 말한대로 빌드 결과물을 저장하는 부분이다. 프론트엔드의 코드는 **S3**를 통해 업로드하기 때문에 Type으로 **Amazon S3**를 선택하였다. Bucket Name은 우아한테크코스에서 지정한 Bucket을 선택하였다.
+
+---
+
+# CodePipeline 구축
+
+**AWS CodePipeline**은 간략히 빌드 파이프라인을 구축하는 서비스이다.
+CodePipeline은 소스 변경(GitHub Push 등)을 감지하여 자동으로 Build → Deploy 과정을 트리거하는 AWS 서비스입니다.
+
+정리를 해보면 아래와 같은 흐름으로 진행된다.
+
+- GitHub와 직접 연동하여 main 브랜치 push를 감지
+- Build 단계(CodeBuild)와 Deploy 단계(Lambda 호출)를 순차적으로 실행
+- 시각화된 UI로 단계별 상태 확인이 가능
+
+## Build 단계
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/bdeb645f-89a2-454a-a158-fe64e4720840/image.png)
+
+**Action Provider**로 **AWS CodeBuild**를 선택하였다. **Input Artifact**는 빌드 단계에서 생성된 아티팩트를 의미한다. 본인은 프론트엔드 코드를 빌드하였기 때문에 **SourceArtifact**를 선택하였다. SourceArtifact는 CodeBuild에서 생성된 아티팩트를 의미한다.
+Project Name은 빌드할 프로젝트를 선택하면 된다. 이후 환경 변수도 넣어주자.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/9e3426ce-cce0-4b32-a696-05ae71ea58cb/image.png)
+
+**Build Type**은 **Single build**를 선택하였다. 왜냐하면 본인은 빌드 단계에서 한 번만 빌드를 하기 때문이다.
+**Variable namespace**은 BuildVariables 탭에서 설정한 환경 변수를 사용하기 위해서 설정하였다.
+**Output artifact**는 빌드 결과물을 저장하는 부분인데 **BuildArtifact**를 선택하였다.
+
+## Deploy 단계
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/6f077c3b-62e6-4313-8e44-deb594c00690/image.png)
+
+**Deploy** 단계에서는 Deploy와 InvalidateCloudFront 네이밍으로 총 2개의 Action을 추가하였다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/878a3763-d815-4159-8317-ac43ec024010/image.png)
+
+배포할 S3 Bucket을 선택해주고 그 Bucket안에 어느 경로에 배포할지 Deployment Path를 설정해주면 된다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/3fd045b6-a234-4bab-b64b-5a48c20aba17/image.png)
+
+**InvalidateCloudFront**는 CloudFront의 캐시를 무효화하는 역할을 한다. 무효화가 필요한 이유는 배포 후 바로 배포된 코드가 반영되지 않는 문제를 해결하기 위해서이다.
+본인은 **lambda**를 통해서 **cloudfront**의 캐시를 invalidate하는 방법을 사용하였다.
+이후 lambda의 함수를 선택해주면 된다.
+
+# AWS lambda 구축
+
+**AWS lambda**는 간단하게 CloudFront 캐시 invalidate 트리거를 하는 역할을 한다.
+정적 웹사이트의 경우, S3에 새 파일을 업로드해도 CloudFront가 이전 파일을 캐싱하고 있어 변경 사항이 반영되지 않는 문제가 있다.
+이를 해결하기 위해 CodePipeline 마지막 단계에서 Lambda 함수를 호출하여 CloudFront의 **캐시 무효화(invalidation)**를 수행한다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/dd8651a2-8bb9-4589-a457-4091d0a35c88/image.png)
+
+본인은 lambda 함수의 runtime은 Node.js 22.x로 설정하였고 handler는 **index.handler**로 설정하였다.
+코드는 아래와 같이 작성하였다.
+
+```js
+import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
+import {
+  CodePipelineClient,
+  PutJobSuccessResultCommand,
+  PutJobFailureResultCommand,
+} from '@aws-sdk/client-codepipeline';
+
+const cf = new CloudFrontClient({ region: 'us-east-1' });
+const cp = new CodePipelineClient({ region: 'ap-northeast-2' });
+
+export const handler = async (event) => {
+  const jobId = event['CodePipeline.job'].id;
+  console.log(`CloudFront 캐시 무효화 시작 - Job ID: ${jobId}`);
+
+  try {
+    const result = await cf.send(
+      new CreateInvalidationCommand({
+        DistributionId: '~~~~~~~~~~~~', // 배포한 CloudFront의 Distribution ID를 넣어주자.
+        InvalidationBatch: {
+          Paths: { Quantity: 1, Items: ['/*'] },
+          CallerReference: `invalidation-${Date.now()}`,
+        },
+      }),
+    );
+
+    console.log(`무효화 성공 - ID: ${result.Invalidation.Id}`);
+
+    await cp.send(new PutJobSuccessResultCommand({ jobId }));
+    console.log('CodePipeline 작업 완료');
+  } catch (err) {
+    console.error('오류:', err);
+
+    await cp.send(
+      new PutJobFailureResultCommand({
+        jobId,
+        failureDetails: {
+          message: err.message,
+          type: 'JobFailed',
+        },
+      }),
+    );
+  }
+};
+```
+
+# 전체 로직 정리
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/f66bcc56-a371-44c5-bb8b-61f68d80d6b8/image.png)
+
+처음에 main 브랜치에 코드를 commit 하게 되면 CodePipeline이 자동으로 빌드 단계를 시작한다.
+빌드 단계에서는 CodeBuild를 통해서 프론트엔드 코드를 빌드하고, S3에 업로드한다.
+그 후 Deploy 단계에서는 Lambda를 통해서 CloudFront의 캐시를 무효화한다.
+
+# 마무리
+
+정적 웹사이트를 AWS에서 운영하면서 자동 배포를 고민하고 있다면, 이번 방식은 매우 유용한 대안이 될 수 있다.
+EC2를 사용한 방식보다 관리와 비용 측면에서 큰 이점이 있다.
+
+만약 회사에서 Access Key를 제공하지 않는다면 한 번 S3 + CloudFront + CodePipeline + Lambda 조합으로 서버리스 CI/CD를 도전해보길 추천한다.
