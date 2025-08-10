@@ -1,0 +1,418 @@
+---
+title: '[React] 서버가 보내는 실시간 데이터, SSE(Server-Sent Events)로 우아하게 받아보기'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-08-09'
+categoryId: 6
+---
+
+프로젝트를 진행하다 보면 서버의 데이터 변경을 실시간으로 화면에 반영해야 하는 요구사항을 마주한다. 주식 시세, 스포츠 경기 스코어, 새로운 알림 등이 대표적이다.
+최근 하고 있는 프로젝트에서도 실시간으로 데이터를 받아와서 사용자에게 알림으로 보여줘야 하는 기능이 필요하였다.
+
+현재 하고 있는 프로젝트에서 상대방에게 Comment를 받으면 내가 보냈던 메시지 (Moment)의 테두리에 불빛이 실시간으로 변하는 기능이 있다.
+![](https://velog.velcdn.com/images/eunwoo1341/post/af7048db-4ebe-4e70-af82-8a54258cb097/image.png)
+(UI는 현재 수정 중이라 고려해주세요ㅎㅎ)
+
+과거에는 이런 기능을 위해 클라이언트가 주기적으로 서버에 "뭐 새로운 거 없어?"라고 묻는 `폴링(Polling)` 방식을 사용했다. 하지만 이 방식은 실제 변경이 없어도 불필요한 요청을 계속 보내기 때문에 비효율적이다.
+
+그 대안으로 `웹소켓(WebSocket)`과 `SSE(Server-Sent Events)`가 있다. 웹소켓은 양방향 통신이 가능해 실시간 채팅처럼 클라이언트와 서버가 긴밀하게 데이터를 주고받아야 할 때 강력하다.
+실시간 통신을 위해서 `Short polling`과 `Long polling`도 있는데, 이 둘은 모두 클라이언트가 주기적으로 서버에 요청을 보내는 방식이다.
+`short polling`의 경우 사용자에게 높은 실시간성을 제공하기 위해 0.1초마다 서버에 요청을 보내다보니 서버에도 부담이 크고, 변경 사항이 없는데도 DOM을 계속 갈아끼우는 문제가 있다.
+`long polling`의 경우 실시간 메시지 전달이 중요하지만 서버의 상태가 빈번하게 변하지 않는 경우에 적합하다. 서버로부터 응답을 받고 나면 다시 연결 요청을 하기 때문에, 상태가 빈번하게 바뀐다면 연결 요청도 늘어나게 된다.
+
+하지만 우리가 필요한 기능은 실시간 통신이며 오직 서버에서 클라이언트로의 단방향 데이터 push임을 고려해서 `SSE`를 결론적으로 선택하였다.
+SSE는 웹소켓보다 가볍고, HTTP 표준을 그대로 사용하며, 구현이 훨씬 간단하다는 장점이 있다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/feeb55a1-4b03-4950-ab9b-f9c42a62d71c/image.png)
+
+# SSE란 무엇인가?
+
+**SSE(Server-Sent Events)**는 이름 그대로 서버가 보내는 이벤트를 의미한다. HTTP 연결을 한 번 맺으면 끊지 않고, 서버에 새로운 이벤트가 발생할 때마다 해당 연결을 통해 클라이언트로 데이터를 계속해서 밀어주는(push) 기술이다.
+
+클라이언트는 `EventSource`라는 브라우저 내장 API를 통해 서버를 구독하고, 서버는 `text/event-stream`이라는 특수한 형식으로 데이터를 스트리밍한다. 가장 큰 장점은 연결이 끊겨도 브라우저가 자동으로 재연결을 시도해 준다는 점이다.
+
+응답마다 다시 요청을 해야하는 Long polling 방식보다 효율적이다(물론 상황에 따라 다르다). SSE는 서버에서 클라이언트로 text message를 보내는 브라우저 기반 웹 애플리케이션 기술이다. SSE는 HTTP의 persistent connections을 기반으로하는 표준 기술이다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/de6cb5cf-6e73-49a6-b420-5d2f75664708/image.png)
+
+처음에는 Client에서 Server의 event를 subscribe하기 위한 요청을 보내야한다.
+
+```
+HTTP/1.1 200
+Content-Type: text/event-stream;charset=UTF-8
+Transfer-Encoding: chunked
+```
+
+이벤트의 미디어 타입은 `text/event-stream`이 표준으로 정해져있다. 이벤트는 캐싱하지 않으며 지속적 연결을 사용해야한다.
+
+이후 Server에서는 Subscribe 요청을 받고 이에 대한 응답을 준다.
+응답의 미디어 타입은 `text/event-stream` 이다. 이때 `Transfer-Encoding` 헤더의 값을 `chuncked`로 설정한다. 서버는 동적으로 생성된 컨텐츠를 스트리밍하기 때문에 본문의 크기를 미리 알 수 없기 때문이다.
+
+```
+GET /connect HTTP/1.1
+Accept: text/event-stream
+Cache-Control: no-cache
+Connection: keep-alive
+```
+
+# React에서 SSE 구현하기
+
+이제 React 환경에서 SSE를 어떻게 사용하는지 코드를 통해 알아보자. `useEffect` 훅을 사용해 컴포넌트가 마운트될 때 SSE 연결을 시작하고, 언마운트될 때 연결을 정리하는 것이 핵심이다.
+
+먼저, 실시간으로 서버에서 오는 알림을 받아 화면에 리스트로 보여주는 `NotificationComponent`를 만들어보자.
+
+```js
+import React, { useState, useEffect } from 'react';
+
+const NotificationComponent = () => {
+  const [notifications, setNotifications] = useState([]);
+  const [listening, setListening] = useState(false);
+
+  useEffect(() => {
+    // 1. EventSource 인스턴스 생성 및 연결
+    //    이미 연결되어 있다면 중복 생성을 방지한다.
+    if (!listening) {
+      const eventSource = new EventSource('https://api.example.com/stream/notifications');
+
+      // 2. 연결 성공 시 호출되는 콜백
+      eventSource.onopen = () => {
+        console.log('SSE connection opened.');
+      };
+
+      // 3. 서버에서 기본 'message' 이벤트가 왔을 때 데이터 수신
+      eventSource.onmessage = (event) => {
+        // 서버에서 오는 데이터는 event.data에 담겨 있다.
+        // JSON 형태일 경우 파싱해서 사용한다.
+        const newNotification = JSON.parse(event.data);
+
+        // 기존 알림 목록에 새로운 알림을 추가한다.
+        // 함수형 업데이트를 사용해 최신 상태를 안전하게 참조한다.
+        setNotifications((prevNotifications) => [newNotification, ...prevNotifications]);
+      };
+
+      // 4. 서버에서 커스텀 이벤트('error-event')가 왔을 때
+      eventSource.addEventListener('error-event', (event) => {
+        console.error('A custom error event occurred:', event.data);
+      });
+
+      // 5. 에러 발생 시 호출되는 콜백
+      eventSource.onerror = (error) => {
+        console.error('EventSource failed:', error);
+        // 에러 발생 시 EventSource는 자동으로 재연결을 시도한다.
+        // 특정 조건에서 연결을 명시적으로 닫고 싶다면 아래 코드를 사용한다.
+        // eventSource.close();
+      };
+
+      setListening(true);
+
+      // 6. 컴포넌트 언마운트 시 연결 종료 (Cleanup)
+      return () => {
+        eventSource.close();
+        console.log('SSE connection closed.');
+      };
+    }
+  }, [listening]); // listening 상태가 바뀔 때만 effect를 재실행
+
+  return (
+    <div>
+      <h2>실시간 알림</h2>
+      <ul>
+        {notifications.map((noti, index) => (
+          <li key={index}>
+            <strong>{noti.user}</strong>: {noti.message}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+export default NotificationComponent;
+```
+
+## 코드 분석
+
+- 1. `EventSource` 생성: `new EventSource('YOUR_SSE_ENDPOINT')` 코드로 서버의 SSE 엔드포인트에 접속한다. `useEffect`의 의존성 배열을 활용해 이 로직이 한 번만 실행되도록 `listening` 상태로 제어했다.
+
+이는 브라우저가 즉시 `https://api.example.com/stream/notifications` 주소로 `HTTP GET` 요청을 보내는 것이다.
+이 요청은 일반적인 `fetch` 요청과 거의 같지만, 브라우저가 자동으로 아주 중요한 요청 헤더(header) 하나를 추가한다.
+
+`Accept: text/event-stream` 헤더를 추가한다.
+이 헤더는 "저는 일반적인 데이터가 아니라, SSE 스트리밍 데이터를 받고 싶습니다"라고 서버에게 알려주는 신호이다.
+
+- `onopen`: SSE 연결이 성공적으로 열렸을 때 호출된다.
+
+말한 것과 같이 서버는 응답 헤더에 Content-Type: text/event-stream을 포함하여 응답한다.
+이는 "네, 요청을 이해했고 지금부터 이벤트 스트림을 보내겠습니다"라는 확답이다.
+
+이후 연결 유지가 가장 중요한 부분이다. 일반적인 HTTP 응답처럼 데이터를 보낸 후 연결을 끊는(`close`) 것이 아니라, **연결을 계속 열어 둔 상태로 유지한다.** 이제 클라이언트와 서버 사이에 데이터가 오고 갈 수 있는 전용 터널이 생긴 셈이다.
+
+이 시점에서 `eventSource.onopen` 이벤트가 프론트엔드에서 발생한다.
+이제 서버는 자신이 원할 때마다, 열려있는 연결을 통해 클라이언트로 데이터를 '밀어넣을(push)' 수 있다. 예를 들어, 데이터베이스에 새로운 알림이 추가되면 서버는 다음과 같은 형식의 텍스트 데이터를 보낸다.
+
+서버가 보내는 데이터 예시:
+
+```
+event: notification
+data: {"user": "Gemini", "message": "SSE 동작 원리 설명 완료!"}
+id: msg-101
+```
+
+이 데이터는 열려있는 HTTP 연결을 통해 클라이언트로 실시간 스트리밍된다. 서버는 필요할 때마다 이 작업을 반복할 수 있다.
+
+- `onmessage`: 서버가 event 필드를 지정하지 않고 보낸 기본 메시지를 수신한다. 수신된 데이터는 event.data에 문자열 형태로 들어있으므로, JSON이라면 JSON.parse()를 통해 객체로 변환해야 한다.
+
+HTTP Client의 기본적인 개념이긴 하지만, `JSON.parse()`를 해주는 이유는 서버로부터 받은 텍스트(문자열) 데이터를 실제 자바스크립트 객체(Object)로 변환하여 사용하기 위해서이다.
+네트워크를 통해 전송되는 모든 데이터는 기본적으로 문자열(String) 형태이다. SSE의 `event.data`로 받은 데이터 역시 마찬가지이다.
+
+- `addEventListener`: 서버가 `event: customEventName`과 같이 이벤트를 지정해서 보낸 경우, 해당 이벤트 이름으로 리스너를 등록해 데이터를 받을 수 있다.
+
+프론트엔드의 `eventSource` 객체는 이 데이터 스트림을 계속 듣고 있다가, 데이터 조각이 도착하면 등록된 이벤트 리스너를 실행시킨다. 이때 데이터 조각은 위에서 본 것과 같이 `event: notification`과 같은 형식으로 온다.
+
+이때 클라이언트는 이벤트 리스너를 등록해두었기 때문에, 이벤트 리스너가 실행되고, 이벤트 리스너는 데이터를 파싱하여 화면에 표시한다.
+
+- `onerror`: 연결 중 에러가 발생하면 호출된다. SSE는 기본적으로 자동 재연결을 지원하므로, 여기서 특별한 처리를 하지 않아도 잠시 후 연결이 복구된다.
+
+- `Cleanup` 함수: `useEffect`의 반환(return) 함수는 컴포넌트가 사라질 때 실행된다. 여기서 `eventSource.close()`를 호출하여 불필요한 연결을 반드시 정리해 주어야 메모리 누수를 방지할 수 있다.
+
+# 실제 프로젝트에서 SSE 사용하기
+
+## subscribeNotifications Hook 구현
+
+```tsx
+import { BASE_URL } from '@/app/lib/api';
+
+export const subscribeNotifications = (): EventSource => {
+  return new EventSource(`${BASE_URL}/notifications/subscribe`, { withCredentials: true });
+};
+```
+
+`subscribeNotifications`는 서버의 SSE 엔드포인트에 EventSource 인스턴스를 생성해서 반환하여 이후 아래 코드에 있는 `useSSENotifications ` Hook에서 사용한다.
+
+- 역할: SSE 연결을 생성해서 EventSource 인스턴스를 반환. 호출한 쪽에서 이벤트 리스너를 붙이고 관리(닫기 등)함.
+- withCredentials: true: 브라우저가 요청에 쿠키(및 인증 정보)를 포함하게 함. (서버는 Access-Control-Allow-Credentials: true 필요)
+- 주의점:
+  - URL에 토큰을 쿼리로 넣는 방식은 로그/캐시에 남을 수 있으므로 가능하면 HttpOnly 쿠키 사용하는 게 안전.
+  - BASE_URL이 CORS 대상이라면 서버에서 적절한 CORS 헤더를 설정해야 함 (Access-Control-Allow-Origin, Access-Control-Allow-Credentials 등).
+
+## useSSENotifications 훅 구현
+
+```tsx
+// Type
+import { NotificationType, TargetType } from './notifications';
+
+export interface SSENotification {
+  notificationType: NotificationType;
+  targetType: TargetType;
+  targetId: number;
+  message: string;
+  isRead: boolean;
+}
+```
+
+```tsx
+import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { subscribeNotifications } from '../api/subscribeNotifications';
+import { NotificationItem } from '../types/notifications';
+import { SSENotification } from '../types/sseNotification';
+import { useToast } from '@/shared/hooks/useToast';
+import { useProfileQuery } from '@/features/auth/hooks/useProfileQuery';
+import { NotificationResponse } from '../types/notifications';
+
+export const useSSENotifications = () => {
+  const queryClient = useQueryClient();
+  const { showError, showSuccess } = useToast();
+  const { data: profile, isLoading, isSuccess } = useProfileQuery();
+
+  const isLoggedIn = isSuccess && profile && !isLoading;
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      console.log('🚫 SSE 미실행 - 로그인 필요', {
+        isSuccess,
+        hasProfile: !!profile,
+        isLoading,
+      });
+      return;
+    }
+
+    const eventSource = subscribeNotifications();
+
+    eventSource.onopen = (event) => {
+      console.log('✅ [SSE] 연결 성공', event);
+    };
+
+    eventSource.addEventListener('heartbeat', (event) => {
+      console.log('💓 [SSE] heartbeat 수신:', event.data);
+    });
+
+    eventSource.addEventListener('connect', (event) => {
+      console.log('🔗 [SSE] connect 이벤트 수신:', event.data);
+    });
+
+    eventSource.addEventListener('notification', (event) => {
+      console.log('🔔 [SSE] notification 수신:', event.data);
+
+      try {
+        const sseData: SSENotification = JSON.parse(event.data);
+
+        const newNotification: NotificationItem = {
+          notificationType: sseData.notificationType,
+          targetType: sseData.targetType,
+          targetId: sseData.targetId,
+          message: sseData.message,
+          isRead: false,
+        };
+
+        const currentData = queryClient.getQueryData<NotificationResponse>(['notifications']);
+        const currentNotifications = currentData?.data || [];
+
+        const updatedNotifications = [newNotification, ...currentNotifications];
+
+        const updatedData: NotificationResponse = {
+          status: 200,
+          data: updatedNotifications,
+        };
+
+        queryClient.setQueryData(['notifications'], updatedData);
+
+        if (sseData.notificationType === 'NEW_COMMENT_ON_MOMENT') {
+          showSuccess('나의 모멘트에 코멘트가 달렸습니다!');
+        } else if (sseData.notificationType === 'NEW_REPLY_ON_COMMENT') {
+          showSuccess('나의 코멘트에 이모지가 달렸습니다!');
+        }
+
+        if (sseData.targetType === 'MOMENT') {
+          queryClient.invalidateQueries({ queryKey: ['moments'] });
+        } else if (sseData.targetType === 'COMMENT') {
+          queryClient.invalidateQueries({ queryKey: ['comments'] });
+        }
+      } catch (error) {
+        console.error(error);
+        showError('실시간 알림 데이터 처리 중 오류가 발생했습니다.');
+      }
+    });
+
+    eventSource.onerror = (error) => {
+      console.error('❌ [SSE] 연결 에러:', error);
+    };
+
+    return () => {
+      console.log('🔌 [SSE] 연결 해제...');
+      eventSource.close();
+    };
+  }, [isLoggedIn, queryClient, showError, showSuccess]);
+
+  return { isConnected: isLoggedIn };
+};
+```
+
+`useSSENotifications` Hook 설명에 앞서 기타 코드를 설명해보면,
+
+- queryClient: React Query 캐시를 직접 읽고 갱신하기 위해 사용.
+- useToast: 알림 UI 호출(토스트).
+- useProfileQuery: 로그인/프로필 여부 확인. isLoggedIn이 true일 때만 SSE 연결을 생성
+
+으로 쓰여진다.
+
+`useSSENotifications` 훅은 로그인 상태일 때 그 EventSource에 연결해 여러 커스텀 이벤트(heartbeat / connect / notification 등)를 수신하여 React Query 캐시 갱신, 토스트 표시, 관련 쿼리 무효화 등을 처리한 뒤 언마운트 시 연결을 닫는다.
+
+```tsx
+useEffect(() => {
+  if (!isLoggedIn) {
+    console.log('🚫 SSE 미실행 - 로그인 필요', {...});
+    return;
+  }
+
+  const eventSource = subscribeNotifications();
+  // ...
+  return () => {
+    console.log('🔌 [SSE] 연결 해제...');
+    eventSource.close();
+  };
+}, [isLoggedIn, queryClient, showError, showSuccess]);
+
+```
+
+- 의도: 로그인 상태일 때만 연결. isLoggedIn이 변하면 effect 재실행.
+- cleanup: effect가 재실행되거나 컴포넌트 언마운트 시 이전 EventSource는 close() 호출되어 닫힘. (올바르게 자원 해제)
+- 주의점:
+  - showError, showSuccess, queryClient가 dependency에 포함되어 있어 해당 값들이 바뀌면 재구독 됨. 보통 queryClient는 stable, useToast 반환 함수들도 stable일 가능성이 높지만 확실치 않으면 ref로 감싸서 재구독을 막는 것이 안정적.
+  - if (!isLoggedIn) return; 구조는 이전에 연결되어 있던 eventSource의 cleanup가 실행된 후 새로운 effect가 early return 하므로 로그아웃 시 자동으로 close() 됨 — 동작은 올바름.
+
+## 이벤트 리스너들
+
+- `onopen`: 연결 성공 시 호출.
+- `addEventListener('heartbeat', ...)`: 서버에서 event: heartbeat로 보낸 커스텀 이벤트 수신 — 주기적으로 keep-alive/프록시 방지를 위해 보낼 수 있음.
+- `addEventListener('connect', ...)`: 서버에서 보냈을 때 처리 (임의 이벤트명).
+- `addEventListener('notification', ...)`: 핵심 알림 이벤트 처리 — event.data를 JSON.parse 후 React Query 캐시 갱신, 토스트 호출, 관련 쿼리 무효화.
+
+서버는 아래처럼 보낸다.
+
+```JSON
+event: notification
+data: {"notificationType":"NEW_COMMENT_ON_MOMENT","targetType":"MOMENT", ...}
+
+event: heartbeat
+data: "pong"
+```
+
+- 각 이벤트 뒤에는 빈 줄(\n\n)이 있어야 브라우저가 이벤트 경계를 인식한다.
+
+## notification 처리 내용
+
+```tsx
+const sseData: SSENotification = JSON.parse(event.data);
+
+const newNotification: NotificationItem = { ... };
+
+const currentData = queryClient.getQueryData<NotificationResponse>(['notifications']);
+const currentNotifications = currentData?.data || [];
+const updatedNotifications = [newNotification, ...currentNotifications];
+
+const updatedData: NotificationResponse = {
+  status: 200,
+  data: updatedNotifications,
+};
+
+queryClient.setQueryData(['notifications'], updatedData);
+```
+
+- 무엇을 하는가?
+  - 수신한 알림을 notifications 쿼리 캐시에 prepend(앞에 추가)하고, 상황에 따라 토스트와 다른 쿼리 무효화(moments, comments)를 실행.
+- 주의점(동시성 문제):
+  - 현재 코드는 getQueryData()로 읽은 뒤 setQueryData()로 덮어쓰기 함. 동시에 여러 SSE 이벤트가 빠르게 들어오면 레이스 컨디션이 발생 가능 (A, B 이벤트가 거의 동시에 처리되면 B가 A의 변경을 덮어쓸 수 있음).
+  - 해결: queryClient.setQueryData(queryKey, old => new) 형태의 업데이터 콜백을 사용하면 원자적 업데이트가 됨(승격된 안전한 방법).
+- 토스트 스팸: 연속 이벤트로 토스트가 빠르게 여러 번 뜰 수 있음 — UI/UX적으로 스로틀링 또는 중복 감지 필요.
+- 중복 알림 처리: 서버에서 각 알림에 고유 ID를 내려주면 클라이언트에서 중복 검사 후 삽입하는 것이 좋음.
+
+## error handling
+
+```tsx
+eventSource.onerror = (error) => {
+  console.error('❌ [SSE] 연결 에러:', error);
+};
+```
+
+- EventSource는 기본적으로 자동 재연결(reconnect)을 시도함. onerror는 그 상태를 알려주는 용도.
+- 자동 재연결 정책을 제어하려면 서버에서 `retry: <ms>`를 보내거나, 클라이언트에서 수동으로 close 후 재시도 로직을 구현해야 함.
+
+# SSE 특징
+
+사용자가 다른 페이지로 이동하거나 현재 페이지를 새로고침하면, 기존 페이지의 모든 자바스크립트 실행 환경이 사라진다. 이때 SSE 연결을 담당하던 `EventSource` 객체도 함께 파괴되면서 브라우저는 서버와의 연결을 자동으로 종료한다.
+
+SSE 연결은 특정 웹페이지의 생명주기에 묶여 있다고 생각하면 쉽다.
+싱글 페이지 애플리케이션 (SPA)의 경우, React, Vue, Angular 같은 SPA 환경에서도 마찬가지이다. 라우터를 통해 다른 컴포넌트로 이동할 때, SSE 연결을 설정한 기존 컴포넌트가 화면에서 사라지면(unmount 되면) useEffect의 정리(cleanup) 함수가 실행되면서 eventSource.close()가 호출되어 연결이 종료된다. 만약 새로운 컴포넌트에서도 SSE가 필요하다면, 해당 컴포넌트에서 새로운 EventSource 연결을 만들어야 한다.
+
+결론적으로, SSE 연결은 그것을 생성한 페이지나 컴포넌트가 살아있는 동안에만 유지된다.
+
+# 마무리
+
+SSE는 서버에서 클라이언트로의 단방향 푸시가 필요한 시나리오에서 웹소켓의 복잡성 없이 간결하고 효과적으로 실시간 기능을 구현할 수 있는 훌륭한 기술이다. HTTP 기반이라는 점, 자동 재연결을 지원한다는 점은 실무에서 큰 이점으로 작용한다.
+
+만약 당신의 다음 프로젝트에 실시간 알림이나 대시보드 기능이 필요하다면, SSE를 첫 번째 옵션으로 고려해 보는 것은 어떨까? React의 useEffect 훅과 함께라면 매우 깔끔하고 선언적인 코드로 강력한 실시간 기능을 구현할 수 있을 것이다.
+
+```
+
+```
