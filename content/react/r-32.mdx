@@ -9,6 +9,7 @@ categoryId: 6
 # useFunnel 도입 배경
 
 회원가입이나 결제처럼 여러 단계를 거치는 페이지를 구현할 때, 기존 방식에는 불편함이 많다.
+**Toss**에서 개발한 [use-funnel](https://www.slash.page/ko/libraries/react/use-funnel/README.i18n)에서 영감을 받아서 공부해보고 직접 구현해보기로 결심하였다.
 
 - **페이지 분리 방식**: `/signup/step1`, `/signup/step2`처럼 라우트를 나누는 방법이다.  
   이 경우 각 단계마다 라우트를 추가해야 하고, 상태를 전달하기 위해 전역 상태나 `location.state` 등을 사용해야 하는 번거로움이 있다.
@@ -47,7 +48,7 @@ categoryId: 6
 # useFunnel 구현해보기
 
 아래는 프로젝트 하면서 직접 구현한 `useFunnel` 코드이다.
-해당 코드는 항상 정답이 아니길 참고하였으면 좋겠다.
+해당 코드는 항상 정답이 아닌 참고용으로 코드를 참고하면 좋겠다.
 
 ```tsx
 import { useCallback, useMemo } from 'react';
