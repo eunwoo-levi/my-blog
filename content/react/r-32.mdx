@@ -1,0 +1,135 @@
+---
+title: '[React] useFunnel Hook 구현하기 - 쏟아지는 페이지 한 방에 관리하기'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-08-14'
+categoryId: 6
+---
+
+# useFunnel 도입 배경
+
+회원가입이나 결제처럼 여러 단계를 거치는 페이지를 구현할 때, 기존 방식에는 불편함이 많다.
+
+- **페이지 분리 방식**: `/signup/step1`, `/signup/step2`처럼 라우트를 나누는 방법이다.  
+  이 경우 각 단계마다 라우트를 추가해야 하고, 상태를 전달하기 위해 전역 상태나 `location.state` 등을 사용해야 하는 번거로움이 있다.
+- **단일 페이지 조건부 렌더링**: `step` 상태값에 따라 `<Step1 />`, `<Step2 />`를 조건부로 렌더링하는 방법이다.  
+  이 경우 새로고침 시 단계가 초기화되고, 브라우저 뒤로가기나 앞으로가기가 원하는 대로 동작하지 않는다.
+
+이러한 방식들은 다음과 같은 문제를 만든다.
+
+1. 브라우저 히스토리와 단계 진행이 일치하지 않아 UX가 어색하다.
+2. URL에 현재 단계 정보가 없어 새로고침하면 항상 첫 단계로 돌아간다.
+3. 단계 간 데이터 전달 방법이 일관되지 않아 유지보수가 어렵다.
+
+이 문제를 해결하기 위해, URL과 단계 상태를 동기화하는 `useFunnel` 패턴을 도입하게 되었다.
+
+---
+
+# useFunnel이란?
+
+`useFunnel`은 다단계 흐름을 URL 쿼리 파라미터와 동기화해 새로고침, 뒤로가기, 공유 등 다양한 상황에서도 안정적으로 동작하게 하는 훅이다.
+
+핵심 아이디어는 다음과 같다.
+
+- URL 쿼리(`?step=...`)에 현재 단계를 기록한다.
+- `setStep()` 호출 시 URL 쿼리를 변경해 단계 전환을 한다.
+- `<Step name="...">` 컴포넌트를 사용해 현재 단계와 일치하는 UI만 렌더링한다.
+- 이전 단계와 다음 단계 정보를 제공해 단계 이동을 간단하게 한다.
+
+이 방식의 장점은 다음과 같다.
+
+- 브라우저 히스토리와 단계 이동이 일치해 UX가 자연스럽다.
+- URL에 단계 정보가 포함돼 새로고침이나 링크 공유 시에도 동일한 상태를 복원할 수 있다.
+- 기존 쿼리 파라미터를 보존하므로 마케팅 태그나 검색 파라미터도 유지된다.
+
+---
+
+# useFunnel 구현해보기
+
+아래는 프로젝트 하면서 직접 구현한 `useFunnel` 코드이다.
+해당 코드는 항상 정답이 아니길 참고하였으면 좋겠다.
+
+```tsx
+import { useCallback, useMemo } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
+
+export function useFunnel<T extends readonly string[]>(steps: T) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  const stepQuery = searchParams.get('step');
+  const step = steps.includes(stepQuery || '') ? (stepQuery as T[number]) : steps[0];
+
+  const setStep = useCallback(
+    (nextStep: T[number]) => {
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set('step', nextStep);
+      navigate(`${location.pathname}?${newSearchParams.toString()}`, { replace: true });
+    },
+    [navigate, location.pathname, searchParams],
+  );
+
+  const Funnel = useCallback(({ children }: { children: React.ReactNode }) => <>{children}</>, []);
+
+  const Step = useCallback(
+    ({ name, children }: { name: T[number]; children: React.ReactNode }) => {
+      return name === step ? <>{children}</> : null;
+    },
+    [step],
+  );
+
+  const currentStepIndex = useMemo(() => steps.indexOf(step), [step, steps]);
+
+  const beforeStep = useMemo(
+    () => (currentStepIndex > 0 ? (steps[currentStepIndex - 1] as T[number]) : null),
+    [currentStepIndex, steps],
+  );
+
+  const nextStep = useMemo(
+    () => (currentStepIndex < steps.length - 1 ? (steps[currentStepIndex + 1] as T[number]) : null),
+    [currentStepIndex, steps],
+  );
+
+  return useMemo(
+    () => ({
+      Funnel,
+      Step,
+      useStep: () => ({ step, setStep }),
+      beforeStep,
+      nextStep,
+    }),
+    [Step, step, setStep, beforeStep, nextStep],
+  );
+}
+```
+
+## 코드의 특징
+
+### 타입 안전성
+
+- `T extends readonly string[]`를 사용해 단계 목록을 리터럴 튜플로 받고, `T[number]`로 가능한 단계명을 타입으로 제한한다.
+
+### URL 기반 상태 관리
+
+- `useSearchParams`로 URL 쿼리를 읽어 현재 단계를 결정하고, `navigate`를 통해 단계 전환 시 URL을 변경한다.
+
+### 기존 쿼리 보존
+
+- `new URLSearchParams(searchParams)`로 복사 후 set하여, 기존 쿼리 파라미터를 보존한다.
+
+### 이전/다음 단계 계산
+
+현재 단계 인덱스를 기반으로 이전 단계와 다음 단계를 쉽게 가져올 수 있다.
+
+### 컴포넌트 API 제공
+
+- `<Funnel>`과 `<Step>` 컴포넌트를 제공해 JSX에서 읽기 쉽고 명확하게 단계별 UI를 구성할 수 있다.
+
+---
+
+# 마무리
+
+`useFunnel`은 다단계 페이지의 상태를 URL과 동기화해 유지보수성과 사용자 경험을 동시에 높일 수 있는 패턴이다.
+단계 이동이 브라우저 히스토리와 맞물려 동작하므로 뒤로가기나 앞으로가기가 자연스럽고, 새로고침이나 링크 공유 시에도 동일한 상태로 진입할 수 있다.
+이번에 구현한 간단 버전은 기본적인 단계 전환과 URL 동기화를 처리하지만, 더 복잡한 시나리오에서는 단계별 상태 관리나 전환 검증 로직을 추가해 확장할 수 있다.
