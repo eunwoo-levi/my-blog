@@ -105,25 +105,55 @@ export function useFunnel<T extends readonly string[]>(steps: T) {
 }
 ```
 
+## useFunnel 사용법
+
+```tsx
+const steps = ['verify', 'info', 'complete'] as const;
+
+function SignupPage() {
+  const { Funnel, Step, useStep, beforeStep, nextStep } = useFunnel(steps);
+  const { step, setStep } = useStep();
+
+  return (
+    <Funnel>
+      <Step name='verify'>
+        <VerifyCodeForm onNext={() => setStep('info')} />
+      </Step>
+
+      <Step name='info'>
+        <InfoForm
+          onPrev={() => beforeStep && setStep(beforeStep)}
+          onNext={() => nextStep && setStep(nextStep)}
+        />
+      </Step>
+
+      <Step name='complete'>
+        <SignupComplete />
+      </Step>
+    </Funnel>
+  );
+}
+```
+
 ## 코드의 특징
 
-### 타입 안전성
+### 1. 타입 안전성
 
 - `T extends readonly string[]`를 사용해 단계 목록을 리터럴 튜플로 받고, `T[number]`로 가능한 단계명을 타입으로 제한한다.
 
-### URL 기반 상태 관리
+### 2. URL 기반 상태 관리
 
 - `useSearchParams`로 URL 쿼리를 읽어 현재 단계를 결정하고, `navigate`를 통해 단계 전환 시 URL을 변경한다.
 
-### 기존 쿼리 보존
+### 3. 기존 쿼리 보존
 
 - `new URLSearchParams(searchParams)`로 복사 후 set하여, 기존 쿼리 파라미터를 보존한다.
 
-### 이전/다음 단계 계산
+### 4. 이전/다음 단계 계산
 
 현재 단계 인덱스를 기반으로 이전 단계와 다음 단계를 쉽게 가져올 수 있다.
 
-### 컴포넌트 API 제공
+### 5. 컴포넌트 API 제공
 
 - `<Funnel>`과 `<Step>` 컴포넌트를 제공해 JSX에서 읽기 쉽고 명확하게 단계별 UI를 구성할 수 있다.
 
