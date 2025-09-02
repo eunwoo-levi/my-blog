@@ -1,0 +1,430 @@
+---
+title: '[React] TanStack Query와 Intersection Observer로 무한스크롤 구현하기'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-08-20'
+categoryId: 6
+---
+
+최근 프로젝트에서 많은 데이터를 한 페이지에서 효율적으로 보여주기 위해 **무한스크롤(Infinite Scroll)**을 구현했다. 이 과정에서 **TanStack Query**의 `useInfiniteQuery`와 **Intersection Observer API**를 활용하여 성능과 사용자 경험(UX)을 최적화했다.
+
+이번 글에서는 무한스크롤의 동작 원리와 구현 세부사항을 자세히 분석해보려고 한다.
+
+# useInfiniteQuery와 Intersection Observer로 구현한 무한스크롤 완전 분석
+
+실제 구현된 `MyMomentsList` 컴포넌트를 통해 무한스크롤의 핵심 동작 원리와 구현 세부사항을 자세히 분석해보겠다.
+`Moments`는 하나의 데이터 타입으로, `MyMomentsItem` 배열을 포함하는 구조이다. 이 컴포넌트는 사용자의 모멘트를 무한스크롤로 불러오는 기능을 제공한다.
+
+# useInfiniteQuery란?
+
+React 애플리케이션에서 **무한스크롤 기반의 데이터 패칭**을 구현할 때 자주 사용되는 도구가 바로 [`useInfiniteQuery`](https://tanstack.com/query/v4/docs/framework/react/reference/useInfiniteQuery)이다.
+이는 **TanStack Query**의 고급 훅 중 하나로, **스크롤이 바닥에 도달할 때마다 다음 데이터를 자동으로 요청하는 기능**을 손쉽게 구현할 수 있도록 도와줍니다.
+
+`useInfiniteQuery`는 여러 "Page"에 해당하는 데이터를 **연속적으로 불러오는 기능**을 제공한다.  
+이를 통해 사용자 경험을 해치지 않으면서 대용량 데이터를 효율적으로 표시할 수 있다.
+
+즉, `useInfiniteQuery`는 **Pagination 기반의 데이터를 끊김 없이 보여주는 무한스크롤 UI**를 위한 React Hook이다.
+
+기본 시그니처는 아래와 같다.
+
+```ts
+return useInfiniteQuery({
+  queryKey: [...],
+  queryFn: ({ pageParam }) => ..., // 비동기 함수
+  getNextPageParam: (lastPage, allPages) => ..., // 다음 페이지 파라미터 반환
+  getPreviousPageParam?: ...
+  initialPageParam?: undefined | null, // 초기 페이지 파라미터
+});
+
+| 옵션                     | 설명                                   |
+| ---------------------- | ------------------------------------ |
+| `queryKey`             | 쿼리 식별 키 (캐싱 등에 사용됨)                  |
+| `queryFn`              | 데이터를 fetch하는 함수 (`pageParam` 인자를 활용) |
+| `getNextPageParam`     | 다음 요청의 `pageParam`을 어떻게 만들지 정의하는 함수  |
+| `getPreviousPageParam` | (선택) 이전 페이지를 로딩할 때 사용                |
+| `initialPageParam`     | 초기 `pageParam` 값 (기본값: `undefined`)  |
+
+```
+
+# Cursor 기반 무한스크롤 예제 분석
+
+백엔드 API가 다음 커서를 `nextCursor`로 반환하는 구조라고 가정해 보자.
+데이터의 예시는 `Moments`, `MomentItem`로 하겠다.
+
+아래는 API 응답 (예시: Moments라는 data를 포함)의 타입 정의이다.
+
+```ts
+export interface MomentsResponse {
+  status: number;
+  data: {
+    items: MyMomentsItem[];
+    nextCursor: string | null;
+    hasNextPage: boolean;
+    pageSize: number;
+  };
+}
+```
+
+#### momentsResponse의 실제 데이터 구조
+
+```typescript
+// momentsResponse.data의 실제 구조
+{
+  pageParams: [null, "cursor_1", "cursor_2"] // 각 페이지 요청 시 사용된 매개변수
+  pages: [
+    {
+      status: 200,
+      data: {
+        items: [/* MyMomentsItem 배열 */],
+        nextCursor: "cursor_1",
+        hasNextPage: true,
+        pageSize: 10
+      }
+    },
+    {
+      status: 200,
+      data: {
+        items: [/* 두 번째 페이지 아이템들 */],
+        nextCursor: "cursor_2",
+        hasNextPage: true,
+        pageSize: 10
+      }
+    }
+    // ... 추가 페이지들
+  ],
+}
+```
+
+이제 `cursor`기반의 무한스크롤을 구현하기 위해 `useInfiniteQuery`를 사용하여 데이터를 가져오는 훅을 작성해보자.
+
+```tsx
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { getMoments } from '../api/getMoments';
+
+export const useMomentsQuery = () => {
+  return useInfiniteQuery({
+    queryKey: ['moments'],
+    queryFn: ({ pageParam }: { pageParam: string | null }) => getMoments({ pageParam }),
+    getNextPageParam: (lastPage) =>
+      lastPage.data.hasNextPage ? lastPage.data.nextCursor : undefined,
+    initialPageParam: null,
+  });
+};
+```
+
+`getMoments` 함수는 API 호출을 담당하며, `pageParam`을 통해 다음 페이지의 커서를 전달받는다.
+
+```tsx
+import { api } from '@/app/lib/api';
+import type { MomentsResponse } from '../types/moments';
+
+interface GetMoments {
+  pageParam?: string | null;
+}
+
+export const getMoments = async ({ pageParam = null }: GetMoments): Promise<MomentsResponse> => {
+  const params = new URLSearchParams();
+  if (pageParam) {
+    params.append('nextCursor', pageParam);
+  }
+  params.append('pageSize', '10');
+
+  const response = await api.get(`/moments/me?${params.toString()}`);
+  return response.data;
+};
+```
+
+`pageSize`는 페이지당 받는 아이템 수를 의미하며, 매번 API 요청 시 page마다 10개의 아이템을 가져온다.
+pageParam은 다음 페이지를 요청할 때 필요한 커서를 나타내는데 , 처음에는 `useInfiniteQuery`에서 `initialPageParam: null`을 설정하였기 때문에 초기 값으로는 `null`로 시작하고 이후에는 API 응답에서 받은 `nextCursor` 값이 `hasNextPage` 가 `true`일 때까지 다음 페이지를 계속 요청한다.
+
+이제 `useMomentsQuery` 훅을 사용하여 컴포넌트에서 데이터를 가져올 수 있다.
+
+```tsx
+import { useIntersectionObserver } from '@/shared/hooks';
+import { CommonSkeletonCard, NotFound } from '@/shared/ui';
+import { Clock } from 'lucide-react';
+import { useMomentsQuery } from '../hook/useMomentsQuery';
+import type { MyMomentsItem } from '../types/moments';
+import { MyMomentsCard } from './MyMomentsCard';
+import * as S from './MyMomentsList.styles';
+
+export const MyMomentsList = () => {
+  const {
+    data: momentsResponse,
+    isLoading,
+    isError,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useMomentsQuery();
+
+  if (isError) {
+    console.error('Error fetching moments:', error);
+    return <div>오류가 발생했습니다. 잠시 후 다시 시도해주세요.</div>;
+  }
+
+  const myMoments = momentsResponse?.pages.flatMap((page) => page.data.items) ?? [];
+  const hasMoments = myMoments?.length && myMoments.length > 0;
+
+  const observerRef = useIntersectionObserver({
+    onIntersect: () => {
+      if (hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    enabled: hasNextPage && !isFetchingNextPage,
+  });
+
+  if (isLoading) {
+    return (
+      <S.MomentsContainer>
+        {Array.from({ length: 3 }).map((_, index) => (
+          <CommonSkeletonCard key={`moments-skeleton-card-${index}`} variant='moment' />
+        ))}
+      </S.MomentsContainer>
+    );
+  }
+
+  return (
+    <S.MomentsContainer>
+      {hasMoments ? (
+        <>
+          {myMoments?.map((myMoment: MyMomentsItem, index: number) => (
+            <MyMomentsCard key={`${myMoment.createdAt}-${index}`} myMoment={myMoment} />
+          ))}
+
+          <div ref={observerRef} style={{ height: '1px' }} />
+
+          {isFetchingNextPage && (
+            <>
+              {Array.from({ length: 3 }).map((_, index) => (
+                <CommonSkeletonCard key={`mymoments-loading-skeleton-${index}`} variant='moment' />
+              ))}
+            </>
+          )}
+        </>
+      ) : (
+        <NotFound
+          title='아직 모멘트가 없어요'
+          subtitle='오늘의 모멘트를 작성하고 따뜻한 공감을 받아보세요'
+          icon={Clock}
+          size='large'
+        />
+      )}
+    </S.MomentsContainer>
+  );
+};
+```
+
+위의 코드를 차근차근 분석해보자.
+
+`useMomentsQuery`는 `useInfiniteQuery`를 사용하여 다음과 같은 데이터 구조를 반환한다:
+
+- **data (momentsResponse)**: `InfiniteData<MomentsResponse>` 타입
+- **isLoading**: 초기 데이터 로딩 상태
+- **isError**: 에러 발생 여부
+- **error**: 에러 객체
+- **fetchNextPage**: 다음 페이지 요청 함수
+- **hasNextPage**: 다음 페이지 존재 여부
+- **isFetchingNextPage**: 다음 페이지 로딩 상태
+
+위의 response 값들은 모두 `useInfiniteQuery`에서 기본적으로 제공하는 값들이다.
+
+<br />
+<br />
+<br />
+
+해당 코드에서 `flatMap`을 사용한 부분이 있다.
+`flatMap`은 배열의 각 요소를 변환하고, 그 결과를 하나의 배열로 평탄화(flatten)하는 메서드이다.
+
+```tsx
+const myMoments = momentsResponse?.pages.flatMap((page) => page.data.items) ?? [];
+```
+
+이 부분은 `momentsResponse`의 `pages` 배열에서 각 페이지의 `data.items`를 추출하여 하나의 평탄화된 배열로 만든다. 만약 `momentsResponse`가 `undefined`인 경우 빈 배열을 반환한다.
+
+`flatten` 과정을 상세 분석해보면,
+
+`useInfiniteQuery`는 페이지별로 데이터를 저장하므로, 다음과 같은 변환 과정이 필요하다.
+
+**변환 전 (pages 구조):**
+
+```typescript
+[
+  { data: { items: [item1, item2, item3] } }, // 첫 번째 페이지
+  { data: { items: [item4, item5, item6] } }, // 두 번째 페이지
+  { data: { items: [item7, item8, item9] } }, // 세 번째 페이지
+];
+```
+
+만약 `flatMap`을 사용하지 않는다면, 위와 같은 구조는 다음과 같이 중첩된 배열로 남게 된다.
+
+**변환 후 (flatMap 적용):**
+
+```typescript
+[item1, item2, item3, item4, item5, item6, item7, item8, item9];
+```
+
+---
+
+# Intersection Observer를 활용한 무한스크롤
+
+```tsx
+const observerRef = useIntersectionObserver({
+  onIntersect: () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  },
+  enabled: hasNextPage && !isFetchingNextPage,
+});
+```
+
+위 코드를 보면 `useIntersectionObserver` 훅을 사용하여 무한스크롤 기능을 구현하고 있다. 이 훅은 특정 요소가 뷰포트에 들어올 때 다음 페이지를 자동으로 요청하는 역할을 한다.
+
+해당 코드가 어떻게 구현되어있는지 보자.
+
+```tsx
+import { useCallback, useEffect, useRef } from 'react';
+
+interface UseIntersectionObserverProps {
+  onIntersect: () => void;
+  threshold?: number;
+  enabled?: boolean;
+}
+
+export const useIntersectionObserver = ({
+  onIntersect, // 요소가 뷰포트에 들어왔을 때 실행할 콜백
+  threshold = 0.1, // 뷰포트에 얼마나 보여야 트리거할지 (기본 0.1 :요소의 10% 이상이 보일 때 감지)
+  enabled = true, // 옵저버를 작동시킬지 여부 (기본 true)
+}: UseIntersectionObserverProps) => {
+  const observerRef = useRef<HTMLDivElement>(null);
+
+  const handleIntersect = useCallback(
+    (entries: globalThis.IntersectionObserverEntry[]) => {
+      const [entry] = entries;
+      if (entry.isIntersecting && enabled) {
+        onIntersect();
+      }
+    },
+    [onIntersect, enabled],
+  );
+
+  useEffect(() => {
+    if (!observerRef.current) return;
+
+    const observer = new globalThis.IntersectionObserver(handleIntersect, {
+      threshold,
+    });
+
+    observer.observe(observerRef.current);
+
+    return () => observer.disconnect();
+  }, [handleIntersect, threshold]);
+
+  return observerRef;
+};
+```
+
+위의 코드는 `useIntersectionObserver` 훅을 사용하여 **Intersection Observer**를 설정하는 코드이다.
+`globalThis`는 어디서든 접근 가능한 전역 객체를 의미한다.
+
+- 브라우저 환경에서는 `window` 객체
+- Node.js 환경에서는 `global` 객체
+- 모든 환경에서 공통적으로 사용 가능한 전역 식별자
+
+`globalThis.IntersectionObserverEntry`는 `IntersectionObserverEntry` 타입을 전역 객체에서 꺼내 쓴다는 의미이다.
+대부분의 경우는 `IntersectionObserverEntry`만 써도 되지만, TypeScript에서 전역 타입을 명확히 지정하고 싶을 때 `globalThis`를 붙일 수 있다.
+
+`IntersectionObserver`는 DOM 요소가 뷰포트(Viewport)와 교차하는지를 비동기적으로 감지하는 브라우저 API이다.
+스크롤 이벤트를 직접 사용하지 않고도 효율적으로 무한스크롤, Lazy Load, 애니메이션 트리거 등을 구현할 수 있다.
+
+처음에 `ref`를 선언하여 감지하고 싶은 DOM 요소에 연결하면, 옵저버가 해당 요소를 추적한다.
+
+```tsx
+const handleIntersect = useCallback(
+  (entries: globalThis.IntersectionObserverEntry[]) => {
+    const [entry] = entries;
+    if (entry.isIntersecting && enabled) {
+      onIntersect();
+    }
+  },
+  [onIntersect, enabled],
+);
+```
+
+이후 교차 시 실행할 콜백 함수를 선언한다.
+
+`entry.isIntersecting === true`은 관찰 대상 요소가 뷰포트와 교차할 때, 즉 요소가 뷰포트에 들어왔을 때 실행된다.
+`enabled`도 true여야 `onIntersect` 콜백 함수가 실행된다.
+
+`enabled` 옵션은 Observer의 활성화 여부를 제어한다. 다음 페이지가 없거나 현재 로딩 중인 경우 Observer를 비활성화하여 성능을 최적화한다.
+`useCallback `를 사용하여 의존성 변경 없을 시 재생성되는 것을 방지한다.
+
+#### onIntersect 콜백 함수 분석
+
+이 콜백은 관찰 대상 요소가 뷰포트와 교차할 때 실행된다. 두 가지 조건을 확인한다:
+
+1. **hasNextPage**: 서버에서 다음 페이지가 있다고 응답했는지 확인
+2. **!isFetchingNextPage**: 현재 다음 페이지를 요청 중이 아닌지 확인
+
+이 조건들을 통해 **중복 요청을 방지**하고 **불필요한 API 호출을 막는다**.
+
+이후 옵저버 등록 및 해제 코드를 로직이 이어지는데, 아래와 같이 코드가 작성되어있다.
+
+- `observerRef.current`가 존재하면
+- `IntersectionObserver`를 생성해서 `handleIntersect` 콜백 등록
+- `observer.observe()`로 해당 요소 감지 시작
+- 컴포넌트 unmount 또는 의존성 변경 시 `observer.disconnect()`로 해제하여 메모리 누수를 방지한다.
+
+마지막으로 반환 값으로는 뷰포트에 감지시킬 DOM 요소에 붙일 ref를 반환한다.
+
+# 전체 데이터 플로우 분석
+
+- 1. 컴포넌트 마운트
+
+  - `MyMomentsList`가 마운트되면 `useMomentsQuery()`가 실행된다.
+  - 내부적으로 `useInfiniteQuery`가 작동하여 첫 페이지를 fetch 한다 (pageParam = null).
+
+- 2. 첫 페이지 로딩
+
+  - `getMoments()` API 함수가 호출되어, `/moments/me?nextCursor=null&pageSize=10` 요청이 발생한다.
+  - 응답에서 items, nextCursor, hasNextPage 등의 정보가 포함되어 반환된다.
+
+- 3. 데이터 렌더링
+
+  - 응답 데이터를 기반으로 myMoments 배열을 구성 (여러 페이지 → 하나의 평탄화된 배열)
+  - 각 MyMomentsItem을 MyMomentsCard 컴포넌트로 렌더링한다.
+
+- 4. `Intersection Observer` 작동
+
+  - 화면 하단에 위치한 `<div ref={observerRef} />`가 렌더링되고
+  - 해당 ref는 `useIntersectionObserver` 훅에 의해 `IntersectionObserver`로 감지되고 있다.
+
+- 5. 옵저버 트리거 → 다음 페이지 요청
+
+  - 사용자가 스크롤을 내리면서 observerRef가 뷰포트에 들어오면 onIntersect가 실행된다.
+  - 조건: `hasNextPage && !isFetchingNextPage`가 true일 때만 `fetchNextPage()`가 호출된다.
+  - 이때 `pageParam`은 이전 응답에서 받은 `nextCursor` 값이다.
+
+- 6. 다음 페이지 데이터 로딩
+
+  - `fetchNextPage()`는 `getMoments({ pageParam })`를 호출하여 다음 데이터를 요청한다.
+  - 응답받은 items는 `momentsResponse.pages` 배열에 누적된다.
+  - `flatMap()`을 통해 전체 데이터가 평탄화되어 다시 렌더링된다.
+
+- 7. 반복
+
+  - 스크롤 → 옵저버 감지 → `fetchNextPage` → 렌더링 순으로 반복
+  - `hasNextPage`가 false가 되면 옵저버는 더 이상 `onIntersect`를 실행하지 않음
+  - 즉, 마지막 페이지까지 도달하면 무한스크롤 종료
+
+# 마무리
+
+이처럼 `useIntersectionObserver` 훅은 뷰포트와 요소의 교차 상태를 감지하여, 무한스크롤이나 특정 시점에 자동 동작을 유도할 수 있는 강력한 유틸리티이다.
+내부적으로는 브라우저의 `IntersectionObserver` API를 활용하여 성능 저하 없이 관찰 기능을 제공하고 있으며, ref를 반환하는 방식으로 원하는 요소에 쉽게 적용할 수 있다.
+또한 `enabled` 플래그를 통해 옵저버 작동을 유동적으로 제어할 수 있지만, 상황에 따라 사용 유무는 설계자의 판단에 따라 단순화할 수 있다.
+마지막으로 `IntersectionObserverEntry`나 `IntersectionObserver` 같은 Web API 객체들은 브라우저 환경에서 요소의 가시성을 감지하는 데 필수적인 인터페이스이며, 이를 통해 효과적인 사용자 경험을 구축할 수 있다.
+
+이 훅은 재사용성과 유지보수 측면에서도 유용하며, 앞으로 다양한 스크롤 기반 UX를 구현할 때 기본 도구로 적극 활용될 수 있다.
