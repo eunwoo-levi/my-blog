@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/private/', '/admin/', '/interview/'],
+        disallow: ['/private/', '/admin/'],
       },
     ],
     sitemap: 'https://www.eunwoo-levi.blog/sitemap.xml',

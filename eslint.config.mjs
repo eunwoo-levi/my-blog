@@ -60,7 +60,6 @@ export default [
       // Content files (MDX)
       'content/**',
       'portfolio/**',
-      'interview/**',
 
       // Config files that might not need strict linting
       'next.config.*',
