@@ -1,5 +1,5 @@
 ---
-title: '[React] FrontEnd의 성능 최적화 딥다이브`
+title: '[React] FrontEnd의 성능 최적화 딥다이브'
 author: 'Eunwoo'
 thumbnail: '/thumbnail/reactjs.webp'
 publishDate: '2025-09-02'
@@ -802,6 +802,7 @@ const loadMore = useCallback(async (): Promise<void> => {
 `Layout Shift`란 페이지의 레이아웃이 갑자기 변경되어 사용자가 의도치 않게 다른 위치를 클릭하게 되는 현상을 의미한다.
 
 - 1. CustomCursor
+
 ```css
 .cursor {
   will-change: transform;
@@ -841,21 +842,22 @@ cursorRef.current.style.transform = `translate(${x}px, ${y}px)`;
 }
 ```
 
-| 속성 | Before | After | 효과 |
-|------|--------|--------|------|
+| 속성      | Before        | After       | 효과               |
+| --------- | ------------- | ----------- | ------------------ |
 | 위치 변경 | `top`, `left` | `transform` | Layout 단계 건너뜀 |
-| 패널 토글 | `right` 변경 | `translateX
+| 패널 토글 | `right` 변경  | `translateX |
 
-### CPU vs GPU 처리 차이 
+### CPU vs GPU 처리 차이
 
 #### CPU 처리 (Before)
+
 ```css
 .gifItem:hover {
   top: -0.75rem; /* CPU가 Layout → Paint → Composite 모든 단계 처리 */
 }
 ```
 
-처리 과정은 아래와 같다. 
+처리 과정은 아래와 같다.
 
 - Layout: 요소 위치 재계산
 - Paint: 픽셀 다시 그리기
@@ -890,8 +892,6 @@ Performance Timeline:
                ↓
            부드러움
 ```
-
-
 
 #### 개선된 점
 
