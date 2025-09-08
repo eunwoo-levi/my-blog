@@ -1,0 +1,1026 @@
+---
+title: '[React] FrontEnd의 성능 최적화 딥다이브`
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-09-02'
+categoryId: 6
+---
+
+### "성능이 곧 사용자 경험이다"
+
+이번 글의 목표는 '기술을 사용해서, 사용자 경험을 향상시키는 법을 학습하고 적용하는 것'이다.
+즉, 성능 최적화의 목표 역시 그 중심에는 '사용자 경험'이 있어야 한다.
+
+단순히 엔지니어로서 욕심을 내서 필요없는 성능 튜닝에 매달려있거나, 기술적으로 있어보여서 가 아니라
+정확하게 어떤 경험을 향상시키기 위해 이 최적화가 필요한 것인지를 사전에 정의하고, 그걸 위한 작업을 해낼 수 있어야 한다.
+
+같은 맥락에서,
+측정해본 결과 이미 충분히 좋은 경험을 주고 있다면, 굳이 ‘성능 개선’이 필요하지 않을 수 있다는 말이기도 한다.
+필요하지 않다면, 굳이 하지 않고 그 외에 더 중요한 작업에 리소스를 투자할 줄 아는 것 역시 중요한 역량이다.
+
+그렇다면 실제 서비스 개발팀에서 성능 문제를 고려하게 되는 상황들은 어떤 것이 있을까?
+팀마다, 서비스마다 다르겠지만 예를 들면 아래와 같은 상황들에서
+우리에게 '성능'과 관련된 태스크가 주어질 수 있다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/863198ab-2553-4f44-b945-299894f732ef/image.png)
+
+추후 실무 상황에서 위와 같은 일이 생겼을 때 '아예 처음 듣는데? 뭘 해야 하는 거지?!'가 아니라 '흠…뭔가 이런 것들을 좀 확인해봐야 하려나? 정도의 상태가 되는 걸 목표로 한다.
+
+# 성능 개선 프로세스
+
+그래서 어느 날 팀에서 이런 이야기가 나온다면, 어떤 과정을 거쳐서 성능 문제라는 것을 해결해 나가야 할까?
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/e285ba08-c6c9-4fed-b2b5-20b7e93f5fcf/image.png)
+
+성능 문제를 측정하고: '이게 진짜 느린건가? 얼마나 느린건가? 어디가 느린거지?'
+측정한 문제의 원인을 분석하고: '어떤 부분 때문에 문제가 생기고 있는 거지?'
+'문제에 맞는' 해결책을 찾아 개선하고
+결과적으로 잘 해결이 되었는지를 다시 측정해서 확인한다.
+그리고 필요하면 이 사이클을 반복해서 돌며 문제를 찾고, 분석하고, 개선한다.
+
+그래서, 웹 프론트엔드에서 '성능 문제'라는 건 뭘 개선해야 하는 걸까?
+크게 2가지로 구분한다.
+
+#### (1) 로딩 성능
+
+#### (2) 렌더링 성능
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/14b8cebe-2a67-44b2-a93f-9641dae783b9/image.png)
+
+즉, 프론트엔드에서 성능을 개선한다는 건 이 두 가지 영역에서의 문제가 있는지 찾아보고, 그걸 해결하는 과정이 된다.
+
+`프론트엔드 성능 개선 = 로딩 성능 + 렌더링 성능  문제를 찾아 해결`
+
+그럼 해당 문제점은 주로 어떤 것들이 있을까?
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/df28218c-d54d-4022-a67b-188a43b9c3d0/image.png)
+
+여기서 로딩 성능 개선과 렌더링 성능은 아래와 같이 구분할 수 있다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/94bd99c0-6acc-4a3d-a71e-2b6d27a95466/image.png)
+
+이 외에도 아래와 같은 기준들이 있다.
+
+- 타임라인 기준 로딩/렌더링
+- 지표 기준
+  ex. LCP, CLS, TTI, Lighthouse score ...
+- 최적화 대상 리소스 종류 기준
+  ex. 이미지, 폰트, 애니메이션, CSS, ...
+- +a
+
+---
+
+프로젝트를 통해서 프론트엔드 성능 최적화를 해보자.
+
+### Lighthouse
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/6f8116cd-6c82-41bc-abbe-76d7e85cc36c/image.png)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/bb0a7095-c450-4bdb-8cd2-21fa6fa03c16/image.png)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/cc7aba96-607b-4b99-8a22-385a2c08aeb2/image.png)
+
+현재 최적화를 하지 않은 이 프로젝트에는 곳곳에 성능을 저하시키는 요소들로 가득하다.
+여기저기 구멍난 곳들을 고쳐서, 기본적인 수준으로 쓰는 데에 불편함이 없는 버전 1.0.0을 만들어주는 것이 이번 목표이다.
+
+하나씩 차근차근 개선해보자.
+
+# 1. 요청 크기 줄이기
+
+- 소스코드 크기 줄이기
+- 이미지 크기 줄이기
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/8edb642d-a365-4cb4-b63d-497e78d9249b/image.png)
+
+첫 번째 섹션은 요청 크기가 너무 커서 문제가 생기는 상황들이다.
+
+개발자도구 네트워크 탭을 기준으로 생각해보자면, 타임라인에 들어있는 각 요청을 처리하기 위한 시간의 가로 길이를 줄이기 위한 방법들을 찾아봐야 하는 상황들이라 할 수 있다. 페이지를 로드할 때 이 타임라인(워터폴 차트 라고도 한다)을 살펴보면서 어떤 리소스 로드가 유독 오래 걸리는지를 확인해볼 수 있다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/257ee283-13dd-4060-9bcc-77260b7dec53/image.png)
+
+마우스를 올려보면, 이 시각이 각각 어떤 작업인지도 확인해볼 수 있는데, Request sent, TTFB(Time to First Byte), Content Download 시간으로 구성되어 있는 것을 확인할 수 있다.
+이 중 프론트엔드 쪽 작업으로 로딩 속도를 개선할 때에는 가장 마지막에 있는 `Content Download` 시간을 줄이기 위한 것을 목표로 한다.
+(다른 요소들은 어떤 걸 의미하는지, 그것도 줄이려면 어떻게 해야하는지도 추가적으로 학습해보면 더 좋다)
+
+어떤 타입의 요청이 큰가?에 대해서 알기위해
+웹에서 다운로드 받는 콘텐츠들의 종류에 따라 나누어 살펴보자.
+
+### 웹 페이지에서 요청하는 리소스 타입
+
+가장 자주 보게 될 3가지 타입에 대해 살펴보자.
+
+- 텍스트 컨텐츠 > 소스코드
+- 이미지
+- 폰트
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/a67682d2-a3bc-48b7-a5aa-d68a8ef5a018/image.png)
+
+## 1 텍스트 컨텐츠 (소스코드)
+
+### minify & uglify
+
+webpack4부터는 production 모드에서 기본으로 minify & uglify가 적용된다. 5부터는 파서도 내장되어 있다.
+때문에 이후에 개발을 하실 때 이걸 보통 프로젝트에서 강제로 설정하지 않아도, 대부분 번들러에서 기본으로 지원해줄 것이요.
+
+다만 너무 기본 지원이 잘 되어 있다보니 아예 모르고 있는 경우가 있어서, 이번 프로젝트에서는 강제로 안하는 설정을 추가해서 학습해 보겠다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/a9ff489a-8c4d-4fd3-a199-77796f93d1b0/image.png)
+
+### gzip, brotli
+
+다운로드 받을 콘텐츠에 압축도 잘 적용되었는지 확인해봐야한다.
+콘텐츠 압축 형식으로 gzip, brotli가 있다.
+CloudFront에서 내려받은 파일의 헤더를 보시면 content-encoding 헤더를 볼 수 있다. 이 콘텐츠에 적용된 압축 형식을 확인할 수 있다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/f663b2e3-9313-4fdc-978e-81462c225cdc/image.png)
+
+gzip은 압축 프로그램이며 현재 기준 모든 모던 브라우저에는 기본으로 내장되어 있어서, 서버에서 이 압축을 사용해서 압축한 파일을 내려주었을 때 브라우저가 인식해서 압축을 해제할 수 있다.
+이런 압축 형식을 설정할 때에는 서버와 클라이언트 양쪽에서 다 잘 적용되어있는지/지원되는지 확인해보셔야 하니 참고해주자.
+
+이론은 들었으니 실제 프로젝트 `webpack.config.ts` 파일에서 코드를 최적화해보면서 개선을 해보자.
+
+```ts
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const Dotenv = require('dotenv-webpack');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+
+module.exports = {
+  entry: './src/index.tsx',
+  resolve: { extensions: ['.ts', '.tsx', '.js', '.jsx'] },
+  output: {
+    filename: 'bundle.js',
+    path: path.join(__dirname, '/dist'),
+    clean: true,
+  },
+  devServer: {
+    hot: true,
+    open: true,
+    historyApiFallback: true,
+  },
+  devtool: 'source-map',
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: './index.html',
+    }),
+    new CopyWebpackPlugin({
+      patterns: [{ from: './public', to: './public' }],
+    }),
+    new Dotenv(),
+  ],
+  module: {
+    rules: [
+      {
+        test: /\.(js|jsx|ts|tsx)$/i,
+        exclude: /node_modules/,
+        use: {
+          loader: 'ts-loader',
+        },
+      },
+      {
+        test: /\.css$/i,
+        use: ['style-loader', 'css-loader'],
+      },
+      {
+        test: /\.(eot|svg|ttf|woff|woff2|png|jpg|gif)$/i,
+        loader: 'file-loader',
+        options: {
+          name: 'static/[name].[ext]',
+        },
+      },
+    ],
+  },
+  optimization: {
+    minimize: false,
+  },
+};
+```
+
+기본적으로 이 코드의 문제점들을 정리하면 아래와 같다.
+
+1. 압축/최적화 비활성화
+
+   - optimization.minimize: false로 minify/uglify 비활성화.
+   - 결과: JS 파싱·실행 시간 증가, 번들 크기 불필요하게 큼 → TBT 상승 요인.
+
+2. 캐시 부적합한 파일명
+
+   - bundle.js 고정 파일명: 내용이 바뀌어도 파일명이 같아 브라우저 캐시가 꼬임(stale).
+   - 결과: 배포 후에도 오래된 코드가 남거나, 반대로 매 배포마다 전체 캐시 무효화.
+
+3. 코드 스플리팅 부재
+
+   - 모든 코드를 한 파일에: 초기 로드 때 큰 long task가 발생.
+   - 결과: 메인 스레드 블로킹(TBT 상승), 첫 페인트 지연.
+
+4. 런타임/벤더와 앱 코드 섞임
+
+   - 사소한 변경에도 번들 해시가 통째로 변해 롱캐시 효과 저하.
+
+5. 소스맵 전략 미분리
+   - prod에서도 source-map 그대로: 번들 용량 증가, 소스 노출 리스크.
+   - 6. 로더 구식 패턴
+   - Webpack5에서 권장하는 asset modules 대신 file-loader 고수: 불필요한 외부 의존.
+
+이 문제점들을 아래와 같이 해결해보았다.
+
+```ts
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const Dotenv = require('dotenv-webpack');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
+const CompressionPlugin = require('compression-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+
+module.exports = (env, argv) => {
+  const isProduction = argv.mode === 'production';
+
+  return {
+    entry: './src/index.tsx',
+    resolve: {
+      extensions: ['.ts', '.tsx', '.js', '.jsx'],
+      mainFields: ['module', 'browser', 'main'],
+    },
+    output: {
+      filename: isProduction ? '[name].[contenthash].js' : '[name].bundle.js',
+      chunkFilename: isProduction ? '[name].[contenthash].js' : '[name].chunk.js',
+      path: path.join(__dirname, 'dist'),
+      clean: true,
+    },
+    devServer: {
+      hot: true,
+      open: true,
+      historyApiFallback: true,
+      compress: true,
+      port: 3000,
+    },
+    devtool: isProduction ? 'hidden-source-map' : 'source-map',
+    plugins: [
+      new HtmlWebpackPlugin({
+        template: './index.html',
+        scriptLoading: 'defer',
+        minify: isProduction
+          ? {
+              removeComments: true,
+              collapseWhitespace: true,
+              removeRedundantAttributes: true,
+              minifyJS: true,
+              minifyCSS: true,
+            }
+          : false,
+      }),
+      new CopyWebpackPlugin({ patterns: [{ from: './public', to: './public' }] }),
+      new Dotenv(),
+      new MiniCssExtractPlugin({
+        filename: isProduction ? '[name].[contenthash].css' : '[name].css',
+      }),
+      ...(isProduction
+        ? [
+            new CompressionPlugin({
+              algorithm: 'gzip',
+              test: /\.(js|css|html|svg)$/,
+              threshold: 8192,
+              minRatio: 0.8,
+            }),
+          ]
+        : []),
+    ],
+    module: {
+      rules: [
+        {
+          test: /\.(js|jsx|ts|tsx)$/i,
+          exclude: /node_modules/,
+          use: { loader: 'ts-loader' },
+        },
+        {
+          test: /\.css$/i,
+          use: [isProduction ? MiniCssExtractPlugin.loader : 'style-loader', 'css-loader'],
+        },
+        {
+          test: /\.(png|jpe?g|gif|webp|svg)$/i,
+          type: 'asset',
+          generator: {
+            filename: isProduction ? 'static/[name].[contenthash:8][ext]' : 'static/[name][ext]',
+          },
+          parser: {
+            dataUrlCondition: { maxSize: 8 * 1024 },
+          },
+        },
+        {
+          test: /\.(eot|ttf|woff|woff2|mp4)$/i,
+          type: 'asset/resource',
+          generator: {
+            filename: isProduction ? 'static/[name].[contenthash:8][ext]' : 'static/[name][ext]',
+          },
+        },
+      ],
+    },
+    optimization: {
+      minimize: isProduction,
+      minimizer: [
+        new TerserPlugin({
+          parallel: true,
+          extractComments: false,
+          terserOptions: {
+            compress: {
+              drop_console: isProduction,
+              drop_debugger: true,
+              pure_funcs: ['console.log'],
+            },
+            mangle: true,
+            format: { comments: false },
+          },
+        }),
+        new CssMinimizerPlugin(),
+      ],
+      usedExports: true,
+      splitChunks: {
+        chunks: 'all',
+        cacheGroups: {
+          react: {
+            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+            name: 'react',
+            priority: 10,
+            chunks: 'all',
+          },
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            priority: -10,
+            chunks: 'all',
+          },
+        },
+      },
+      runtimeChunk: 'single',
+    },
+  };
+};
+```
+
+1. CSS 분리 및 최적화
+
+- **MiniCssExtractPlugin 도입** → 프로덕션에서는 CSS를 별도 파일로 분리
+- **CssMinimizerPlugin 적용** → CSS 코드까지 압축 최적화
+
+2. gzip 번들 압축
+
+- **CompressionPlugin 추가 (prod only)**
+- JS / CSS / HTML / SVG 파일을 `gzip` 압축해 전송 효율 개선
+- 운영 환경에서는 **CloudFront / Nginx에서 br+gzip 조합 권장**
+
+3. 벤더 코드 세분화
+
+- **React 전용 청크(`react.js`)**와 **일반 `vendor.js`** 분리
+- React 의존성이 크기 때문에 **캐시 효율성 및 업데이트 최소화** 가능
+
+4. 자산 관리 강화
+
+- **`asset/resource`, `asset` 활용**
+- 이미지(WebP 포함), 글꼴, mp4 등 확장자별로 캐시 전략과 파일명 해싱 적용
+- `dataUrlCondition`으로 작은 파일은 **base64 인라인 처리**
+
+5. 코드 난독화 + 콘솔 제거
+
+- **TerserPlugin 설정 강화**
+- 프로덕션 빌드에서 `console.log`, `debugger` 제거  
+  → 번들 크기 축소 + 보안 강화
+
+6. 롱 캐시 전략
+
+- `filename: [name].[contenthash].js`
+- `chunkFilename: [name].[contenthash].js`
+- 내용 변경시에만 파일명 갱신 → **브라우저 캐시 안정화**
+
+7. 런타임 분리
+
+- `runtimeChunk: 'single'`
+- 앱 소스 변경 시에도 **벤더 캐시가 깨지지 않도록 런타임만 별도 파일로 분리**
+
+## 이미지 최적화하기
+
+평균적으로 웹 페이지 용량에서 이미지가 차지하는 비율은 60% 이상이다.
+이는 이미지에 대한 최적화만 잘 적용해도 아주 큰 성능 개선 효과를 볼 수 있다는 말이다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/1b1caeec-b8fe-4127-bb26-082d1defd1ac/image.png)
+
+### 이미지 포맷 - 세상엔 생각보다 다양한 이미지 포맷이 있다
+
+- PNG
+  - 무손실 포맷
+  - JPEG에 비해 5~10배까지도 커질 수 있음
+  - PNG-8, PNG-24 에 따라 용량 차이
+- JPEG
+  - 손실 압축 방식
+  - 상대적으로 작은 크기
+  - Progressive JPEG 와 같은 형식도 있음
+- WebP
+  - 손실 / 무손실 압축 모두 지원
+  - 손실 압축에서 JPEG보다 25~34%. 무손실 압축에서 PNG보다 26% 작은 크기
+  - 브라우저 지원 범위 확인 필요
+- GIF
+  - 무손실 포맷
+  - 대부분 매우 큰 용량
+  - 애니메이션, 투명도 지원
+- heic/heif
+  - 애플 기기에서 촬영하는 경우 저장되는 포맷
+  - 웹에서는 바로 표기가 안됨
+
+모든 이미지 포맷에 대한 세세한 정보를 모두 미리 알고 있어야 하는 것은 아니다!
+다만 다양한 포맷이 있으니, 용도에 따라 맞는 포맷을 활용하면 좋다.
+예를 들면 아래와 같은 방식으로 고려해볼 수 있다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/7a89dbac-9604-4aa7-924c-b9491f0d699d/image.png)
+
+### 1. Image Resize, WebP 변환, GIF → MP4 전환
+
+- [squoosh](https://squoosh.app) 도구를 활용해 원본 이미지를 **웹에 적합한 해상도로 리사이즈**하고, **Reduce Palette(팔레트 축소)** 기능으로 불필요한 색상 정보를 줄여 용량을 절감했다.
+- 최종적으로 **WebP 포맷**으로 변환하여 브라우저 호환성과 로딩 속도를 개선했다.
+- 추가로, **gif 애니메이션 리소스는 mp4 영상으로 변환**하여 파일 크기를 대폭 줄이고 디코딩 성능을 향상시켰다.  
+  → mp4는 GPU 가속 재생이 가능하고, 대부분의 브라우저에서 효율적으로 동작한다.
+
+---
+
+### 2. Webpack config에 이미지 최적화 규칙 추가
+
+이전에는 단순히 `asset/resource`로만 이미지를 처리했다.  
+최신 설정에서는 **asset 모듈 + 캐싱 최적화 + DataURL 인라인 처리**를 결합했다.
+
+```js
+{
+  test: /\.(png|jpe?g|gif|webp|svg)$/i,
+  type: 'asset',
+  generator: {
+    filename: isProduction ? 'static/[name].[contenthash:8][ext]' : 'static/[name][ext]'
+  },
+  parser: {
+    dataUrlCondition: { maxSize: 8 * 1024 } // 8KB 이하 파일은 DataURL로 인라인 처리
+  }
+},
+{
+  test: /\.(eot|ttf|woff|woff2|mp4)$/i, // mp4 지원 추가
+  type: 'asset/resource',
+  generator: {
+    filename: isProduction ? 'static/[name].[contenthash:8][ext]' : 'static/[name][ext]'
+  }
+}
+```
+
+- webp 확장자를 지원해 최신 포맷까지 커버.
+- 작은 리소스(8KB 이하)는 **DataURL(base64)**로 변환하여 HTTP 요청 수 절감.
+- mp4를 정식 지원하여 gif → mp4 전환 리소스를 안정적으로 관리.
+- `[contenthash:8]`를 적용해 파일 내용이 변경될 때만 새 파일명 생성 → 캐시 효율성 강화.
+
+### 이미지 Element 최적화
+
+```js
+<img
+  className={styles.heroImage}
+  src={heroImage}
+  alt='Memegle Hero image'
+  width={1500}
+  height={1001}
+  loading='eager'
+  fetchPriority='high'
+  decoding='async'
+/>
+```
+
+### 1. **`alt` (대체 텍스트)**
+
+- **Before**: `"hero image"`
+- **After**: `"Memegle Hero image"`
+- **설명**: `alt` 텍스트는 이미지를 볼 수 없을 때 (네트워크 오류, 스크린 리더 사용 등) 이미지를 설명해 주는 역할을 한다. 이전보다 서비스 이름(`Memegle`)을 포함하여 더 구체적이고 명확한 설명을 제공한다. 이는 **웹 접근성**과 **SEO(검색 엔진 최적화)** 양쪽 모두에 매우 중요하다.
+
+---
+
+### 2. **`width`와 `height` (이미지 크기 명시)** 🖼️
+
+- **Before**: 없음
+- **After**: `width={1500} height={1001}`
+- **설명**: 이미지의 너비와 높이를 명시하는 것은 **CLS (Cumulative Layout Shift, 누적 레이아웃 이동)**를 방지하는 데 핵심적인 역할을 한다.
+  - **CLS란?**: 페이지가 로딩되면서 이미지가 뒤늦게 나타나 다른 콘텐츠들을 아래로 밀어내는 현상이다. 사용자가 버튼을 누르려는데 갑자기 이미지가 뜨면서 버튼이 밀려나 다른 것을 누르게 되는 나쁜 경험을 유발한다.
+  - **해결**: `width`와 `height`를 지정하면, 브라우저는 이미지를 다운로드하기 전에도 **미리 그 크기만큼의 공간을 확보**해 둡니다. 따라서 이미지가 로딩되어도 다른 요소들이 밀려나지 않아 레이아웃이 안정적으로 유지된다.
+
+---
+
+### 3. **`loading="eager"` (로딩 시점 지정)**
+
+- **Before**: 브라우저 기본값 (보통 `eager`지만 명시적이지 않음)
+- **After**: `loading="eager"`
+- **설명**: `loading` 속성은 이미지 로딩 시점을 제어한다.
+  - `lazy`: 이미지가 화면에 보이기 직전에 로딩을 시작한다. (스크롤을 내려야 보이는 이미지에 적합)
+  - `eager`: 즉시 로딩을 시작한다.
+- **선택 이유**: `heroImage`는 일반적으로 페이지에 접속하자마자 보이는 **가장 중요한 이미지(Above the Fold)**이다. 따라서 `lazy`로 지연 로딩할 필요 없이, 즉시 로딩을 시작하라는 `eager`를 명시적으로 사용하는 것이 올바른 선택이다. 이는 **LCP (Largest Contentful Paint, 최대 콘텐츠풀 페인트)** 성능 지표를 개선하는 데 직접적인 도움이 된다.
+
+---
+
+### 4. **`fetchPriority="high"` (다운로드 우선순위 지정)** 🚀
+
+- **Before**: 없음 (브라우저가 자동으로 우선순위 판단)
+- **After**: `fetchPriority="high"`
+- **설명**: 이 속성은 브라우저에게 "다른 리소스들보다 이 이미지를 **더 높은 우선순위로 먼저 다운로드해 줘**"라고 직접적으로 알려주는 강력한 힌트이다.
+- **효과**: 브라우저는 수많은 이미지, 스크립트, 스타일시트 등을 다운로드해야 한다. `fetchPriority="high"`를 설정하면 이 히어로 이미지가 다운로드 큐의 앞쪽에 배치되어 **사용자에게 더 빨리 보이게 된다.** 이 역시 **LCP 개선**에 매우 효과적인 방법이다.
+
+---
+
+### 5. **`decoding="async"` (이미지 디코딩 방식 지정)**
+
+- **Before**: 없음 (기본값 `auto`)
+- **After**: `decoding="async"`
+- **설명**: 이미지 표시는 두 단계로 이루어집니다: 1) 파일 다운로드(네트워크), 2) 이미지 파일의 압축을 풀어 화면에 픽셀로 표시(디코딩). 이 디코딩 과정이 때로는 메인 스레드를 막아 페이지 전체가 잠시 멈칫하는 현상을 유발할 수 있습니다.
+- **효과**: `decoding="async"`는 이 디코딩 과정을 **비동기적으로(백그라운드에서) 처리**하도록 브라우저에 요청한다. 이를 통해 이미지 디코딩이 다른 렌더링 작업을 방해하지 않게 되어 더 부드러운 사용자 경험을 제공할 수 있습니다.
+
+추가적으로 `hero` Image는 페이지에서 중요한 이미지이므로 `index.html`에서 `preload`로 미리 로드하도록 설정하였다.
+
+```html
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="./public/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="preload" as="image" href="<%= require('./src/assets/images/hero.webp') %>" />
+  <title>memegle - gif search engine for you</title>
+</head>
+```
+
+# 2. 필요한 것만 요청하기
+
+## 페이지별 리소스 분리
+
+웹사이트의 첫인상은 초기 로딩 속도에 달려있다. 사용자가 처음 접속했을 때, 사이트의 모든 페이지에 필요한 코드와 데이터를 한 번에 다 불러온다면 어떻게 될까요? bulky한 앱이 되어 로딩이 매우 느려질 것이다.
+이를 해결하는 기술이 바로 코드 스플리팅(Code Splitting), 즉 페이지별로 리소스를 분리하는 것이다.
+
+이전의 코드 문제점은 모든 걸 한 번에 불러오는 것이다.
+전통적인 SPA(Single Page Application) 방식에서는 사용자가 어떤 페이지를 보든 상관없이 모든 페이지의 코드가 담긴 하나의 거대한 JavaScript 파일을 다운로드한다.
+
+예를 들어, 사용자가 /search 페이지에 접속했는데도 첫 페이지인 Home.js에만 필요한 무거운 이미지(hero.webp), 비디오(trending.mp4) 같은 리소스까지 함께 불러오게 됩니다. 이는 불필요한 낭비이다.
+
+이에 대한 해결책은 `React.lazy`와 `Suspense`를 이용하여 분리하는 것이다.
+React에서는 React.lazy와 Suspense를 사용해 컴포넌트(페이지)를 동적으로 불러올 수 있다.
+
+#### Before (기존 방식)
+
+```js
+import Home from './pages/Home';
+import Search from './pages/Search';
+
+function App() {
+  return (
+    <Routes>
+      <Route path='/' element={<Home />} />
+      <Route path='/search' element={<Search />} />
+    </Routes>
+  );
+}
+```
+
+이전 코드에서는 라우터 설정 시 페이지 컴포넌트를 맨 위에서 모두 import 한다.
+
+#### After (코드 스플리팅 적용)
+
+`React.lazy`를 사용하면, 해당 페이지에 접속하는 순간에 필요한 JavaScript 파일을 다운로드한다. `Suspense`는 로딩 중에 보여줄 UI(예: 스피너)를 설정한다.
+
+```js
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
+
+import Home from './pages/Home/Home';
+const Search = lazy(() => import('./pages/Search/Search'));
+
+import NavBar from './components/NavBar/NavBar';
+import Footer from './components/Footer/Footer';
+
+import './App.css';
+
+const App = () => {
+  return (
+    <Router>
+      <NavBar />
+      <Suspense fallback={<div>Loading...</div>}>
+        <Routes>
+          <Route path='/' element={<Home />} />
+          <Route path='/search' element={<Search />} />
+        </Routes>
+      </Suspense>
+      <Footer />
+    </Router>
+  );
+};
+
+export default App;
+```
+
+### 1. Home 페이지를 즉시 로드하는 이유
+
+- 첫 페이지이므로 초기 로딩 속도가 중요
+- 상대적으로 가벼운 컴포넌트
+- 사용자가 가장 먼저 보는 페이지라 로딩 지연이 UX에 악영향
+
+### 2. Search 페이지만 lazy loading하는 이유
+
+- 상대적으로 무거운 기능들 (검색, API 호출, 복잡한 상태 관리)
+- 모든 사용자가 검색 기능을 사용하지 않을 수 있음
+- 번들 분할로 초기 로딩 속도 개선
+
+## 아이콘 패키지 Tree Shaking
+
+```js
+optimization: {
+    ...
+    usedExports: true,
+    sideEffects: false,
+    ...
+}
+```
+
+# 3. 같은 건 매번 새로 요청하지 않기
+
+## CloudFront 캐시 설정 / S3 메타데이터 설정 (설정값, 해당 값을 설정한 이유 포함)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/4c4b605f-f97e-40f1-bb75-d23e82619061/image.png)
+
+`Cloudfront - Policies` 에 들어가서 `Create cache policy`를 클릭하여 기본 값으로 캐시 정책을 생성하였다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/a1abd4b1-2903-47e8-b14e-a39c17ec505a/image.png)
+
+CloudFront는 캐시된 객체(파일, 응답 등)를 얼마나 오래 보관할지를 **TTL 값**으로 결정한다.
+
+TTL은 **초 단위**로 설정한다.
+
+### 1. **Minimum TTL**
+
+- **최소 TTL**은 캐시에 저장된 객체가 **반드시 유지되어야 하는 최소 시간**이다.
+- 이 시간이 지나기 전에는 CloudFront가 원본(origin) 서버에 다시 요청하지 않고, 캐시된 데이터를 계속 제공한다.
+- 예: `1` 로 설정 → 최소 1초 동안은 캐시된 결과를 무조건 사용.
+
+사용 이유: 너무 자주 캐시를 무효화하면 원본 서버 부하가 커지기 때문에, "최소 보장 캐싱 시간"을 두는 것.
+
+---
+
+### 2. **Maximum TTL**
+
+- **최대 TTL**은 캐시에 저장된 객체가 **최대로 유지될 수 있는 시간**이다.
+- 원본 서버가 캐시 제어 헤더(`Cache-Control`, `Expires`)를 길게 설정했더라도, 이 값 이상은 CloudFront가 보관하지 않는다.
+- 예: `31536000` (1년) → 캐시를 아무리 길게 유지하려 해도 1년을 넘길 수 없음.
+
+사용 이유: 너무 오래된 콘텐츠가 남아 있지 않도록 상한선을 정하는 것.
+
+---
+
+### 3. **Default TTL**
+
+- **기본 TTL**은 캐시 제어 헤더가 없을 때 CloudFront가 적용하는 기본 캐싱 시간이다.
+- 원본에서 `Cache-Control`이나 `Expires`가 지정되지 않았다면 이 값만큼 캐시한다.
+- 예: `86400` (24시간) → 헤더가 없으면 24시간 동안 캐시 유지.
+
+사용 이유: 원본 서버에서 명시하지 않아도 기본 캐싱 정책을 갖추도록 하기 위함.
+
+## GIPHY의 trending API를 Search 페이지에 들어올 때마다 새로 요청하지 않아야 한다.
+
+trending 데이터를 캐싱하여 불필요한 API 호출을 줄이고, 사용자 경험을 향상시킬 수 있다.
+
+```ts
+// Trending 데이터 캐시
+interface TrendingCache {
+  data: GifImageModel[] | null;
+  timestamp: number;
+  expireTime: number; // 30분 = 30 * 60 * 1000ms
+}
+
+const trendingCache: TrendingCache = {
+  data: null,
+  timestamp: 0,
+  expireTime: 30 * 60 * 1000, // 30분
+};
+
+const isCacheValid = (cache: TrendingCache): boolean => {
+  return cache.data !== null && Date.now() - cache.timestamp < cache.expireTime;
+};
+```
+
+위와 같이 메모리 캐시를 구현하여, 캐시가 유효한 동안에는 API 호출을 생략하고 캐시된 데이터를 반환한다.
+
+```ts
+export const gifAPIService = {
+  /**
+   * treding gif 목록을 가져옵니다.
+   * @returns {Promise<GifImageModel[]>}
+   * @ref https://developers.giphy.com/docs/api/endpoint#!/gifs/trending
+   */
+  getTrending: async (): Promise<GifImageModel[]> => {
+    // 캐시가 유효한 경우 캐시된 데이터 반환
+    if (isCacheValid(trendingCache)) {
+      console.log('🚀 Trending data loaded from cache');
+      return trendingCache.data!;
+    }
+
+    console.log('📡 Fetching trending data from API');
+    const url = apiClient.appendSearchParams(new URL(`${BASE_URL}/trending`), {
+      api_key: API_KEY,
+      limit: `${DEFAULT_FETCH_COUNT}`,
+      rating: 'g',
+    });
+
+    const data = await fetchGifs(url);
+
+    // 캐시 업데이트
+    trendingCache.data = data;
+    trendingCache.timestamp = Date.now();
+
+    return data;
+  },
+  /**
+   * 검색어에 맞는 gif 목록을 가져옵니다.
+   * @param {string} keyword
+   * @param {number} page
+   * @returns {Promise<GifImageModel[]>}
+   * @ref https://developers.giphy.com/docs/api/endpoint#!/gifs/search
+   */
+  searchByKeyword: async (keyword: string, page: number): Promise<GifImageModel[]> => {
+    const url = apiClient.appendSearchParams(new URL(`${BASE_URL}/search`), {
+      api_key: API_KEY,
+      q: keyword,
+      limit: `${DEFAULT_FETCH_COUNT}`,
+      offset: `${page * DEFAULT_FETCH_COUNT}`,
+      rating: 'g',
+      lang: 'en',
+    });
+
+    return fetchGifs(url);
+  },
+};
+```
+
+기존 존재하던 `getTrending` 메서드를 수정하여, 캐시가 유효한 경우에는 캐시된 데이터를 반환하고, 그렇지 않은 경우에만 API를 호출하도록 변경하였다.
+
+# 4. 최소한의 변경만 일으키기
+
+## 검색 결과 > 추가 로드시 추가된 목록만 새로 렌더되어야 한다.
+
+### 1. GifItem 컴포넌트 메모이제이션 (React.memo)
+
+```tsx
+// Before
+const GifItem = ({ imageUrl = '', title = '' }: GifItemProps) => {
+
+// After
+const GifItem = memo(({ imageUrl = '', title = '' }: GifItemProps) => {
+```
+
+이전 코드의 경우 "Load More" 버튼을 눌렀을 때 새로운 GIF 아이템들을 받아오면 기존의 GIFItem 컴포넌트들이 다시 재렌더링 되는 문제가 있었다.
+이를 해결하기 위해 `React.memo` 훅을 사용하여 새로운 아이템만 렌더링 되도록 하였다.
+
+- 기존 GIF 아이템들이 props가 변경되지 않은 경우 재렌더링되지 않음
+- 추가 로드 시 새로운 아이템만 렌더링되고, 기존 아이템들은 메모이제이션으로 건너뜀
+
+### 2. loadMore 함수 useCallback 최적화
+
+```tsx
+// Before
+const loadMore = async (): Promise<void> => {
+
+// After
+const loadMore = useCallback(async (): Promise<void> => {
+  // ... 동일한 로직
+}, [currentPageIndex, searchKeyword]);
+```
+
+- `loadMore` 함수가 불필요하게 재생성되지 않음
+- 의존성 배열 `[currentPageIndex, searchKeyword]`로 필요한 경우에만 함수 재생성
+- 하위 컴포넌트에 props로 전달될 때 참조 안정성 보장
+
+## Layout Shift 없이 애니메이션이 일어나야 한다.
+
+`Layout Shift`란 페이지의 레이아웃이 갑자기 변경되어 사용자가 의도치 않게 다른 위치를 클릭하게 되는 현상을 의미한다.
+
+- 1. CustomCursor
+```css
+.cursor {
+  will-change: transform;
+  transform: translate(0, 0);
+}
+```
+
+```js
+cursorRef.current.style.transform = `translate(${x}px, ${y}px)`;
+```
+
+- 2. 검색 결과 hover
+
+```css
+/* Before */
+.gifItem:hover {
+  top: -0.75rem; /* ❌ Layout Shift 발생 */
+}
+
+/* After */
+.gifItem:hover {
+  transform: translateY(-0.75rem); /* ✅ GPU 처리 */
+  will-change: transform;
+}
+```
+
+- 3. 도움말 패널
+
+```css
+.selectedItemContainer {
+  transform: translateX(100%); /* 초기 숨김 */
+  will-change: transform, opacity;
+}
+
+.selectedItemContainer.showSheet {
+  transform: translateX(0); /* right: 0 대신 */
+}
+```
+
+| 속성 | Before | After | 효과 |
+|------|--------|--------|------|
+| 위치 변경 | `top`, `left` | `transform` | Layout 단계 건너뜀 |
+| 패널 토글 | `right` 변경 | `translateX
+
+### CPU vs GPU 처리 차이 
+
+#### CPU 처리 (Before)
+```css
+.gifItem:hover {
+  top: -0.75rem; /* CPU가 Layout → Paint → Composite 모든 단계 처리 */
+}
+```
+
+처리 과정은 아래와 같다. 
+
+- Layout: 요소 위치 재계산
+- Paint: 픽셀 다시 그리기
+- Composite: 레이어 합성
+- 다른 요소들도 영향받아 재계산
+
+```
+Performance Timeline:
+[Layout][Paint][Composite] ← 모든 단계 실행
+     ↓       ↓        ↓
+   느림    무겁다   Frame Drop
+```
+
+#### GPU 처리 (After)
+
+```css
+.gifItem:hover {
+  transform: translateY(-0.75rem); /* GPU가 Composite 단계만 처리 */
+  will-change: transform;
+}
+```
+
+GPU의 처리 과정은 아래와 같다.
+
+- `<del>Layout</del>` (건너뜀)
+- `<del>Paint</del>` (건너뜀)
+- Composite: GPU에서 직접 처리
+
+```
+Performance Timeline:
+           [Composite] ← GPU에서 빠르게 처리
+               ↓
+           부드러움
+```
+
+
+
+#### 개선된 점
+
+- 1. 성능 향상
+  - 처리 속도: CPU 대비 GPU가 병렬 처리에 특화
+  - 프레임률: 안정적인 60fps 유지
+  - 응답성: 즉각적인 애니메이션 반응
+- 2. 메인 스레드 해방
+  - CPU 부하 감소: 메인 스레드가 다른 작업 수행 가능
+  - JavaScript 실행: 애니메이션 중에도 인터랙션 원활
+  - 멀티태스킹: 여러 애니메이션 동시 처리 가능
+- 3. 전력 효율성
+  - 배터리 수명: 모바일 기기에서 전력 소모 감소
+  - 발열 방지: CPU 사용량 감소로 기기 온도 낮춤
+  - 최적화: 하드웨어 가속 활용
+- 4. 사용자 경험
+  - 부드러운 애니메이션: 끊김 없는 60fps
+  - 반응성: 지연 없는 즉시 반응
+  - 안정성: Frame Drop 없음
+
+## Frame Drop이 일어나지 않아야 한다.
+
+`Frame Drop`이란 애니메이션이 부드럽지 않고 끊기는 현상을 의미한다.
+
+1. requestAnimationFrame을 통한 프레임 동기화
+
+`requestAnimationFrame`은 브라우저에게 **"다음 리페인트 전에 이 함수를 실행해줘"**라고 요청하는 API이다.
+
+브라우저의 렌더링 파이프라인에 대해서 알아보면 아래와 같다.
+
+1. 브라우저의 기본 동작 주기 (60Hz 모니터 기준)
+
+```
+1프레임 = 16.67ms (1000ms ÷ 60fps)
+
+[프레임 1] → [프레임 2] → [프레임 3] → ...
+   16ms       16ms       16ms
+```
+
+2. 각 프레임에서 일어나는 일
+
+```
+JavaScript 실행 → Style 계산 → Layout → Paint → Composite
+      ↑
+requestAnimationFrame 콜백이 여기서 실행됨
+```
+
+그래서 이전 코드를 살펴보면
+
+```tsx
+const handleMouseMove = (e: MouseEvent) => {
+  setMousePosition({ x: e.clientX, y: e.clientY }); // 즉시 실행
+};
+
+window.addEventListener('mousemove', handleMouseMove);
+```
+
+이 코드의 문제점은 아래와 같이 정리할 수 있다.
+
+- 마우스가 빠르게 움직이면 1프레임(16ms) 동안 여러 번 호출됨
+- 예: 1ms마다 mousemove 이벤트 발생 시 → 16번의 setState 호출
+- 브라우저는 16번 모두 처리하려고 시도 → Frame Drop 발생
+
+아래는 `requestAnimationFrame`를 이용하여 개선한 코드이다.
+
+```ts
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+export type MousePosition = Partial<MouseEvent>;
+
+const useMousePosition = () => {
+  const [mousePosition, setMousePosition] = useState<MousePosition>({
+    clientX: 0,
+    clientY: 0,
+    pageX: 0,
+    pageY: 0,
+    offsetX: 0,
+    offsetY: 0,
+  });
+
+  const animationRef = useRef<number>();
+
+  const updateMousePosition = useCallback((e: MouseEvent) => {
+    const { clientX, clientY, pageX, pageY, offsetX, offsetY } = e;
+
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+
+    animationRef.current = requestAnimationFrame(() => {
+      setMousePosition({
+        clientX,
+        clientY,
+        pageX,
+        pageY,
+        offsetX,
+        offsetY,
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('mousemove', updateMousePosition);
+
+    return () => {
+      window.removeEventListener('mousemove', updateMousePosition);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [updateMousePosition]);
+
+  return mousePosition;
+};
+
+export default useMousePosition;
+```
+
+- 브라우저의 리페인트 주기(보통 60fps)에 맞춰 상태 업데이트
+  - 1프레임당 최대 1번만 setState 실행
+- `useCallback` 메모이제이션을 통하여 이벤트 리스너 함수가 매번 재생성되지 않도록 하였다.
+
+결과적으로 아래와 같이 동작한다.
+
+```
+시간축: 0ms → 4ms → 8ms → 12ms → 16ms (1프레임)
+이벤트:  ↓     ↓     ↓      ↓      ↓
+       요청   취소   요청    취소    요청 → 16ms에 1번만 실행
+결과: 1번의 리렌더링 → 부드러운 애니메이션
+```
+
+=> 마우스가 빠르게 움직여도 1프레임당 최대 1번만 상태 업데이트
