@@ -2,7 +2,7 @@
 title: '[Network] 브라우저 저장소 차이점'
 author: 'Eunwoo'
 thumbnail: '/thumbnail/network.webp'
-publishDate: '2025-08-17'
+publishDate: '2025-09-15'
 categoryId: 4
 ---
 
@@ -121,15 +121,6 @@ request.onsuccess = (e) => {
 - **사용처**: 오프라인 PWA, 정적 리소스 캐싱
 - **주의**: 인증 필요한 API 응답은 캐시에 넣으면 안 된다(사용자 간 데이터 섞일 위험)
 
-# 마무리
-
-프론트에서 브라우저 저장소를 고를 때는 “**데이터 성격**”과 “**보안 위험**”을 동시에 따져야 한다.
-
-- 단순 UI 상태 → localStorage
-- 탭 임시값 → sessionStorage
-- 대용량 캐시 → IndexedDB/Cache Storage
-- 인증 → Access는 메모리, Refresh는 HttpOnly 쿠키
-
 # AccessToken을 메모리야 저장하는게 옳을까?에 대한 생각 정리
 
 ## 1. Access Token을 **쿠키**에 저장하는 경우
@@ -218,3 +209,12 @@ CSRF의 핵심은 **“사용자 브라우저가 모르는 사이에 인증 쿠�
 
 - **쿠키 저장**: UX 부드럽지만 CSRF 방어 필수
 - **메모리 저장**: 보안 더 깔끔하지만 새로고침 시 Refresh 과정 필요
+
+# 마무리
+
+프론트에서 브라우저 저장소를 고를 때는 “**데이터 성격**”과 “**보안 위험**”을 동시에 따져야 한다.
+
+- 단순 UI 상태 → localStorage
+- 탭 임시값 → sessionStorage
+- 대용량 캐시 → IndexedDB/Cache Storage
+- 인증 → AccessToken은 메모리 혹은 Cookie, RefreshToken은 HttpOnly Cookie
