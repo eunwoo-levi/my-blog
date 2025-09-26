@@ -1,0 +1,485 @@
+---
+title: '[React] useSyncExternalStore을 이용하여 React Toast 시스템 구현하기'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-09-26'
+categoryId: 6
+---
+
+이전에 프로젝트에서는 보통 Toast UI를 구현할 때는 Context API를 사용하여 전역으로 상태를 관리하는 방식을 사용하였다.
+하지만 해당 방식으로 구현할 경우 여러 곳에서 상태를 관리해야하므로 코드가 복잡해지고 상태관리가 어려워지는 문제가 있었다. 또한, 렌더 도중 상태가 바뀌면 아래와 같은 문제가 발생할 수 있다.
+
+React 18의 동시성 렌더링(Concurrent Rendering) 환경에서는 하나의 "외부 스토어"(Redux/Zustand/EventEmitter/WebSocket 캐시 등)를 여러 컴포넌트가 동시에 읽고 있을 때,
+
+- 렌더 도중 스토어가 바뀌면 컴포넌트마다 다른 스냅샷을 읽어 찢어짐(tearing) 이 생길 수 있고,
+- SSR/하이드레이션에서 서버와 클라이언트 스냅샷이 어긋나 경고나 잘못된 UI가 나타날 수 있다.
+
+기존의 useEffect + useState 패턴은 "렌더-구독-업데이트 타이밍"을 React가 보장해 주지 않아 이 문제를 완전히 막지 못한다.
+
+외부 상태를 "React의 렌더 사이클과 일치" 하게 읽고 구독해야 동시성에서도 일관성이 보장된다. 이걸 표준화한 훅이 `useSyncExternalStore`이다.
+
+# useSyncExternalStore란?
+
+[useSyncExternalStore](https://react.dev/reference/react/useSyncExternalStore)는 외부 스토어를 React에 안전하게 연결하기 위한 프로토콜을 제공한다.
+최근 많이 사용하는 `Zustand` 상태관리 라이브러리도 해당 훅을 사용하여 구현되었다.
+
+useSyncExternalStore는 아래와 같은 특징을 가진다.
+
+- 스냅샷 일관성: 렌더 중 스토어가 변해도, 같은 렌더 패스에서 모든 컴포넌트가 같은 값을 보게 한다(anti-tearing).
+- 구독 타이밍 관리: 언제 `subscribe`를 걸고 해제할지, 스토어 업데이트를 어떻게 스케줄할지 React가 통제한다.
+- SSR/하이드레이션 정합성: 서버와 클라이언트의 초기 스냅샷을 맞추기 위한 `getServerSnapshot` 경로를 제공한다(하이드레이션 불일치 방지).
+- 동시성·전환 호환: `startTransition`/Offscreen 등 동시성 기능과도 자연스럽게 동작한다.
+
+```tsx
+const value = useSyncExternalStore(
+  subscribe: (onStoreChange: () => void) => () => void,
+  getSnapshot: () => T,
+  getServerSnapshot?: () => T  // SSR 전용(클라이언트에서는 선택)
+);
+```
+
+- subscribe : 스토어에 변화가 생길 때 호출할 콜백을 등록. 반환값은 구독 해제 함수.
+- getSnapshot : 현재 스토어의 값을 동기적으로 반환(순수 함수 권장).
+- getServerSnapshot : SSR 시 사용할 서버 전용 스냅샷(없으면 getSnapshot과 불일치로 경고/깜빡임 가능).
+
+## useEffect + useState로는 왜 부족한가?
+
+```tsx
+// X -> 흔한 패턴(동시성에서 찢어짐 가능)
+useEffect(() => {
+  const unsub = store.subscribe(() => setState(store.get()));
+  return unsub;
+}, []);
+const value = state;
+```
+
+위 코드는 2가지의 큰 문제점이 있다.
+
+- 1. 렌더 도중 스토어가 바뀌면, 일부 컴포넌트는 이전 값, 일부는 새 값으로 렌더될 수 있음.
+- 2. 구독 타이밍/동기 스냅샷 읽기 보장이 없어 SSR/하이드레이션에서 불일치 가능.
+
+그래서 `useSyncExternalStore`는 이런 타이밍을 React가 직접 관리해 이 문제를 제거한다.
+
+따라서 정리를 해보면,
+
+`useSyncExternalStore`는 외부 스토어를 React에 동시성·SSR 안전하게 연결하기 위한 표준 훅이다. 같은 렌더 동안 모든 컴포넌트가 같은 스냅샷을 읽게 하고, 구독 타이밍/하이드레이션 일관성을 React가 보증하도록 해 준다.
+
+# Toast 구현 - 1. createStore & useStore
+
+`useSyncExternalStore`를 이용하여 Toast UI를 구현해보았다.
+
+먼저 `Store` 인터페이스를 정의하고, `createStore` 함수를 정의하여 `Store` 인스턴스를 생성하는 작은 전역 Store를 구현하였다.
+그리고 추가적으로 아래와 같이 구현하였다.
+
+- `createStore`로 (state, listeners)를 클로저에 감추고,
+- `getState` / `setState` / `subscribe` 3가지를 노출한다.
+- 컴포넌트에서는 `useStore(store)`를 호출하면, useSyncExternalStore가 안전한 구독을 담당한다.
+
+대략적으로 코드를 작성하면 아래와 같다.
+
+```tsx
+import { useSyncExternalStore } from 'react';
+
+type StoreSubscriber = () => void;
+
+export interface Store<TState> {
+  getState: () => TState;
+  setState: (value: TState | ((prev: TState) => TState)) => void;
+  subscribe: (callback: StoreSubscriber) => () => void;
+}
+
+export function createStore<TState>(initialState: TState): Store<TState> {
+    ...
+}
+
+export function useStore<TState>(store: Store<TState>): TState {
+  return useSyncExternalStore(store.subscribe, store.getState, store.getState);
+}
+
+```
+
+위 코드를 보면 `setState` 은
+
+```tsx
+// 모든 toasts 초기화
+toastStore.setState({ toasts: [] });
+```
+
+와 같이 직접 값을 인자로 받을 수 있고,
+
+```tsx
+// 기존 toasts에 새로운 toast 추가
+toastStore.setState((state) => ({ toasts: [...state.toasts, newToast] }));
+
+// 특정 toast 제거
+toastStore.setState((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
+```
+
+와 같이 함수 형태로도 인자로 받을 수 있도록 하였다.
+
+이는 React의 `useState`와 동일한 패턴을 따르기 위함이다.
+이처럼 함수 형태로 인자를 줄 경우 장점은 `Race Condition`를 방지하여 최신 상태를 항상 보장할 수 있다.
+
+## createStore 분석
+
+이후 `createStore` 함수를 통해 `Store` 인스턴스를 생성하는 작고 안전한 외부 스토어이다.
+
+```tsx
+export function createStore<TState>(initialState: TState): Store<TState> {
+  let state = initialState;
+  const listeners = new Set<StoreSubscriber>();
+
+  return {
+    getState: () => state,
+    setState: (value) => {
+      const newState =
+        typeof value === 'function' ? (value as (prev: TState) => TState)(state) : value;
+      if (newState !== state) {
+        state = newState;
+        listeners.forEach((listener) => listener());
+      }
+    },
+    subscribe: (callback) => {
+      listeners.add(callback);
+      return () => listeners.delete(callback);
+    },
+  };
+}
+```
+
+내부 구현을 보면 "상태+구독자"를 내부에 감춘 뒤, 조작용 메서드만 외부로 내보내는 팩토리 함수인 것을 볼 수 있다.
+
+```tsx
+let state = initialState;
+const listeners = new Set<StoreSubscriber>();
+```
+
+위의 두 상태들은 내부 클로저(은닉된 상태 + 구독자)로,
+
+`state`: 현재 상태를 저장. 함수 밖에서 직접 접근 불가(캡슐화).
+`listeners`: 변경 알림을 받을 구독자 콜백 집합
+이다.
+
+listeners는 Set을 사용하는 이유는 중복 구독을 방지하기 위함과 add/delete를 빠르고 간단하게 하고, 순회가 쉽기 때문이다.
+이 둘은 클로저에 보관되어 외부에서 임의로 바꿀 수 없다. 오직 `getState` / `setState` / `subscribe` 메서드를 통해서만 접근하다.
+
+`getState`를 먼저 보면,
+
+```tsx
+getState: () => state,
+```
+
+항상 동기적으로 현재 상태를 반환한다.
+useSyncExternalStore가 렌더 시점마다 이 함수를 호출해 일관된 스냅샷을 읽는다(anti-tearing의 핵심 조건).
+
+`setState`는 상태 갱신(직접 값 or 업데이터 함수)하고, 변경 시에만 구독자들에게 통지한다.
+
+```tsx
+setState: value => {
+  const newState =
+    typeof value === 'function' ? (value as (prev: TState) => TState)(state) : value;
+  if (newState !== state) {
+    state = newState;
+    listeners.forEach(listener => listener());
+  }
+},
+```
+
+value가 함수면 "업데이터 함수"로 보고 (prev) => next 형태로 현재 state를 넣어 호출하고, 값이면 그대로 새 상태로 사용한다.
+`newState !== state`일 때만 갱신/알림을 하는데, 이를 통해 불필요한 리렌더를 줄일 수 있다.
+이후 `listeners.forEach(listener => listener());`를 통해 구독자들에게 통지한다.
+
+`subscribe`는 구독 등록/해제하는 역할을 한다.
+
+등록은 `listeners.add(callback)`이고,
+해제 함수 반환은 `listeners.delete(callback)`를 통해 React가 컴포넌트 언마운트 시 이 함수를 호출해 정리(cleanup) 한다.
+
+useSyncExternalStore는 커밋 시점에 구독을 걸고, 언마운트 시 해제해서
+Strict Mode의 이중 호출/동시성에서도 메모리 누수 없이 안전하게 동작한다.
+
+## useStore 분석
+
+`useStore`는 외부 스토어(store)를 React에 안전하게 연결하고, 스토어의 현재 스냅샷(TState) 을 리턴한다.
+내부적으로 `useSyncExternalStore`를 사용해 동시성(Concurrent)·StrictMode·SSR에서 스냅샷 일관성을 보장한다.
+
+“Concurrent”는 React가 렌더링을 더 잘 스케줄링할 수 있게 만든 실행 모델을 말한다. 핵심은 인터럽트 가능(중단·재개 가능)한 렌더링과 우선순위 기반 스케줄링이다.
+이름 때문에 "병렬(멀티스레드)로 동시에 그린다"로 오해하기 쉬운데, 대부분의 경우 단일 스레드에서 동작하며 "동시에 할 수 있게 보이도록" 일정과 조각화를 잘하는 거라고 보면 된다.
+
+useSyncExternalStore의 3가지 인자를 분석해보면,
+
+1. `store.subscribe: (onStoreChange) => unsubscribe`
+
+   - React가 커밋 시점에 이 함수를 호출해 구독을 설정한다.
+   - 스토어 값이 바뀌면 내부에서 onStoreChange()를 호출 → React가 "업데이트 필요"로 표시.
+   - 반환된 unsubscribe는 언마운트/재커밋 시 정리에 사용된다. (StrictMode에서 mount/unmount가 한 번 더 일어나도 누수 없이 안전)
+
+2. `store.getState: () => TState (getSnapshot)`
+
+   - React가 렌더 순간마다 이 함수를 호출해서 현재 스냅샷을 "동기적으로" 읽는다.
+   - 같은 렌더 패스에 있는 컴포넌트들이 동일한 값을 보도록 해 "찢어짐(anti-tearing)"을 방지한다.
+
+3. `store.getState: () => TState (getServerSnapshot)`
+   - SSR을 하는 환경이라면 서버 렌더링에서 쓸 초기 스냅샷이다.
+   - 여기서는 서버/클라 초기 상태가 동일(예: 토스트 초기값 [])하므로 같은 함수를 재사용해도 안전하다.
+   - CSR 전용이라면 3번째 인자는 생략해도 된다.
+
+## React 생명 주기의 관점
+
+- 1. Render phase (렌더 단계) (순수 계산만 하는 단계. JSX를 만들고 "화면에 올릴 후보"를 준비)
+     React가 `getState()`를 호출해 스냅샷 A를 얻어 컴포넌트를 렌더한다.
+
+- 2. Commit phase (커밋 단계) (준비된 결과를 실제 DOM에 반영하는 단계)
+     React가 `subscribe(onStoreChange)`로 구독을 등록한다.
+
+- 3. 스토어 변경 발생
+     외부에서 `setState(...)` 호출 → 내부 `listeners.forEach(l => l())` → `onStoreChange()` 실행.
+
+- 4. 재렌더 스케줄링
+     React가 컴포넌트를 다시 렌더하면서 다시 `getState()` 를 호출해 스냅샷 B를 읽는다.
+     스냅샷 비교 결과가 다르면 해당 컴포넌트만 리렌더됩니다.
+
+- 5. 언마운트/재커밋
+     React가 `unsubscribe()` 호출로 구독을 해제한다.
+
+핵심은 "값 전달"은 항상 `getState()`로만, "변경 통지"는 `subscribe` 콜백으로만 이뤄진다. 이 프로토콜 덕분에 동시성·SSR에서도 시점이 엇갈리지 않는다.
+
+# Toast 구현 - 2. toast 전역 상태 관리 로직
+
+## Toast 추가
+
+```tsx
+import { createStore, useStore } from './core';
+import { ToastData, ToastRouteType, ToastsState } from '@/shared/types/toast';
+
+const toastStore = createStore<ToastsState>({ toasts: [] });
+
+const timers = new Map<string, ReturnType<typeof setTimeout>>();
+const generateId = () => `toast-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+
+export const useToasts = () => useStore(toastStore);
+
+function addToast(toast: Omit<ToastData, 'id'>) {
+  const id = generateId();
+  const newToast = { ...toast, id };
+  toastStore.setState((state) => ({ toasts: [...state.toasts, newToast] }));
+
+  const duration = toast.duration ?? 3000;
+  if (duration > 0) {
+    const prev = timers.get(id);
+    if (prev) clearTimeout(prev); // 이 줄은 현재 로직상 거의 필요 없지만 안전망
+    const handle = setTimeout(() => {
+      timers.delete(id); // 타이머 맵 정리
+      removeToast(id); // 실제 제거
+    }, duration);
+    timers.set(id, handle);
+  }
+  return id;
+}
+```
+
+이전에 구현한 `createStore` 함수를 사용하여 전역 토스트 상태를 담는 외부 스토어를 생성하는 로직을 살펴보았고 이번에는 해당 스토어를 사용하는 훅을 구현하는 로직을 살펴보려고 한다.
+
+```tsx
+const toastStore = createStore<ToastsState>({ toasts: [] });
+```
+
+전역 토스트 상태를 담는 외부 스토어(초깃값: 빈 배열)이다.
+
+```tsx
+export const useToasts = () => useStore(toastStore);
+```
+
+해당 컴포넌트는 이 훅으로 현재 스냅샷을 동시성 안전하게 읽는다.
+
+이후 타이머 관리 로직을 구현하였다.
+
+```tsx
+const timers = new Map<string, ReturnType<typeof setTimeout>>();
+```
+
+각 토스트 id마다 자동 제거용 타이머를 저장/정리하고,
+핵심은 이후 살펴볼 `hide`/`clear` 시 `clearTimeout`을 호출하므로 뒤늦은 타이머가 상태를 다시 건드리는 레이스를 방지한다.
+
+`addToast`함수에서 스프레드 연산자를 사용해서 불변 업데이트를 하여 새 배열을 만들어 넣기 때문에 구독자에게 변경 통지가 잘 간다.
+
+## Toast 제거
+
+```tsx
+function removeToast(id: string) {
+  const t = timers.get(id);
+  if (t) {
+    clearTimeout(t);
+    timers.delete(id);
+  }
+  toastStore.setState((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
+}
+```
+
+수동 제거하고, 중복 호출에도 타이머 정리 → 상태 갱신을 하기 때문에 안전하다.
+
+## 공개 API
+
+```tsx
+export const toasts = {
+  success: (message: string, duration?: number) =>
+    addToast({ message, variant: 'success', duration }),
+
+  error: (message: string, duration?: number) => addToast({ message, variant: 'error', duration }),
+
+  warning: (message: string, duration?: number) =>
+    addToast({ message, variant: 'warning', duration }),
+
+  message: (message: string, routeType?: ToastRouteType, duration?: number) =>
+    addToast({ message, variant: 'message', routeType, duration }),
+
+  hide: (id: string) => removeToast(id),
+  clear: () => {
+    timers.forEach((t) => clearTimeout(t));
+    timers.clear();
+    toastStore.setState({ toasts: [] });
+  },
+} as const;
+```
+
+단일 진입점으로 사용성이 좋고, clear도 타이머→상태 순서로 잘 정리한다.
+
+## Toast 구현 - 3. useToast 훅 구현
+
+```tsx
+import { toasts } from '@/shared/store/toast';
+import { ToastRouteType, UseToastReturn } from '@/shared/types/toast';
+
+export const useToast = (): UseToastReturn => {
+  return {
+    showSuccess: (message: string, duration?: number) => toasts.success(message, duration),
+    showError: (message: string, duration?: number) => toasts.error(message, duration),
+    showWarning: (message: string, duration?: number) => toasts.warning(message, duration),
+    showMessage: (message: string, routeType?: ToastRouteType, duration?: number) =>
+      toasts.message(message, routeType, duration),
+    removeToast: () => toasts.clear(),
+  };
+};
+```
+
+위 훅은 전역 toasts API를 컴포넌트에서 쓰기 쉬운 형태로 감싸서 내보내는 facade 훅으로 볼 수 있다
+
+`showSuccess` / `showError` / `showWarning` / `showMessage`는 토스트 생성함수들이고,
+`removeToast` → 모든 토스트 제거(clear)하는 함수이다.
+
+## Toast UI 구현
+
+```tsx
+import { toasts, useToasts } from '@/shared/store/toast';
+
+export const Toast: React.FC = () => {
+  const { toasts: activeToasts } = useToasts();
+
+  if (activeToasts.length === 0) {
+    return null;
+  }
+
+  return createPortal(
+    <S.ToastContainer>
+      {activeToasts.map((toast) => (
+        <ToastItem key={toast.id} toast={toast} onClose={toasts.hide} />
+      ))}
+    </S.ToastContainer>,
+    document.body,
+  );
+};
+```
+
+위 코드는 Toast UI를 구현한 코드이다.
+
+#### Toast
+
+- `useToasts()`로 전역 스토어의 toasts 배열을 구독.
+- 하나 이상이면 `createPortal`로 document.body 아래에 컨테이너를 붙여 렌더.
+- 각 항목은 ToastItem으로 그린다. onClose로 전역 `toasts.hide`를 바로 사용.
+
+#### ToastItem
+
+- 아이콘 매핑(success/error/warning/message)과 메시지 표시.
+- 닫기(X) 클릭 시 isExiting을 true로 만들어 종료 애니메이션을 트리거하고, 300ms 뒤에 onClose(id)로 실제 제거.
+- message 타입이고 routeType이 있으면 클릭 시 라우팅(moment → /collection/my-moment, 아니면 /collection/my-comment) 후 닫기.
+
+이후 최상위층 `Layout.tsx`에서 `Toast` 컴포넌트를 추가하여 렌더링하도록 하였다.
+
+## useToast 사용법과 전체 흐름 살펴보기
+
+```tsx
+import { useCheckIfLoggedInQuery } from '@/features/auth/api/useCheckIfLoggedInQuery';
+import { useToast } from '@/shared/hooks';
+import React from 'react';
+import { Navigate, Outlet, useLocation } from 'react-router';
+import { ROUTES } from './routes';
+import { AxiosError } from 'axios';
+
+export const ProtectedRoute: React.FC = () => {
+  const location = useLocation();
+  const { showWarning } = useToast();
+  const { data: isLoggedIn, isLoading, isError, error } = useCheckIfLoggedInQuery();
+
+  if (isLoading) {
+    return <div>로딩 중...</div>;
+  }
+
+  if (isLoggedIn === false || (isError && (error as AxiosError)?.response?.status === 401)) {
+    showWarning('Moment에 오신 걸 환영해요! 로그인하고 시작해보세요 💫', 3000);
+    return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
+  }
+
+  return <Outlet />;
+};
+```
+
+`showWarning`을 사용하여 경고 Toast를 띄우고 싶은 경우 위와 같이 사용하면 된다.
+호출하는 곳에서 `useToast` 훅에서 호출하면 그 훅안에 있는 `toasts.warning`을 호출하게 된다.
+
+```tsx
+export const useToast = (): UseToastReturn => {
+    return {
+        ...
+    showWarning: (message: string, duration?: number) => toasts.warning(message, duration),
+    ...
+    }
+}
+```
+
+그럼 `toasts` 객체가 호출하게 되는데 아래를 확인해보자.
+
+```ts
+const toastStore = createStore<ToastsState>({ toasts: [] });
+
+...
+
+function addToast(toast: Omit<ToastData, 'id'>) {
+    ...
+      toastStore.setState(state => ({ toasts: [...state.toasts, newToast] }));
+    ...
+}
+
+export const toasts = {
+    warning: (message: string, duration?: number) =>
+        addToast({ message, variant: 'warning', duration }),
+}  as const;
+...
+
+```
+
+`toasts` 객체 안에서 `warning`를 호출하면 `addToast`를 호출하게 된다.
+
+`addToast` 함수를 보면 `toastStore.setState`를 호출하게 되는데 `toastStore` 객체는 `createStore` 함수를 통해 생성된 전역 스토어이다.
+이후 `toastStore` 객체 안에 있는 `setState` 함수를 호출하게 되는데 이 함수는 `toastStore` 객체 안에 있는 `state` 객체를 변경하게 된다.
+
+### 전체 흐름 정리
+
+- ProtectedRoute에서 인증 상태를 확인한다.
+- 비로그인/401이면 `showWarning()`으로 토스트를 요청한다.
+- useToast → toasts.warning → `addToast` → `toastStore.setState` 순서로 전역 상태가 갱신된다.
+- `<Toast />`가 `useToasts()`로 스토어를 구독 중이라, 상태 변경을 감지하고 새 토스트를 렌더한다.
+- duration이 지나면 toast.ts의 타이머가 `removeToast()`를 호출해 토스트를 제거한다.
+
+# 전체 흐름 다이어그램
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/6cc84838-ad9f-4b5b-9ea3-365922b31743/image.png)
