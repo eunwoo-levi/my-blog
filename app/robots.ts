@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/private/', '/admin/'],
       },
     ],
-    sitemap: 'https://www.eunwoo-levi.blog/sitemap.xml',
-    host: 'https://www.eunwoo-levi.blog',
+    sitemap: 'https://www.eunwoo-levi.com/sitemap.xml',
+    host: 'https://www.eunwoo-levi.com',
   };
 }

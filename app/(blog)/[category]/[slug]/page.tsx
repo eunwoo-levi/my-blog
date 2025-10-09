@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: ParamsProps) {
 
   if (!frontmatter) return {};
 
-  const postUrl = `https://www.eunwoo-levi.blog/${category}/${slug}`;
+  const postUrl = `https://www.eunwoo-levi.com/${category}/${slug}`;
 
   return {
     title: frontmatter.title,
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: ParamsProps) {
       tags: [category, '개발', '프론트엔드'],
       images: [
         {
-          url: `https://www.eunwoo-levi.blog${frontmatter.thumbnail}`,
+          url: `https://www.eunwoo-levi.com${frontmatter.thumbnail}`,
           width: 1200,
           height: 630,
           alt: frontmatter.title,
@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: ParamsProps) {
       card: 'summary_large_image',
       title: frontmatter.title,
       description: `${frontmatter.title} - ${frontmatter.author}의 개발 블로그 포스트`,
-      images: [`https://www.eunwoo-levi.blog${frontmatter.thumbnail}`],
+      images: [`https://www.eunwoo-levi.com${frontmatter.thumbnail}`],
       creator: '@eunwoo_levi',
     },
     alternates: {
@@ -86,19 +86,19 @@ export default async function BlogDetailPage({ params }: ParamsProps) {
       name: '리바이 개발 블로그',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://www.eunwoo-levi.blog/levi.webp',
+        url: 'https://www.eunwoo-levi.com/levi.webp',
       },
     },
     datePublished: frontmatter.publishDate,
     dateModified: frontmatter.publishDate,
     description: `${frontmatter.title} - ${frontmatter.author}의 개발 블로그 포스트`,
-    image: `https://www.eunwoo-levi.blog${frontmatter.thumbnail}`,
-    url: `https://www.eunwoo-levi.blog/${category}/${slug}`,
+    image: `https://www.eunwoo-levi.com${frontmatter.thumbnail}`,
+    url: `https://www.eunwoo-levi.com/${category}/${slug}`,
     articleSection: category,
     keywords: [category, '개발', '프론트엔드', frontmatter.author],
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `https://www.eunwoo-levi.blog/${category}/${slug}`,
+      '@id': `https://www.eunwoo-levi.com/${category}/${slug}`,
     },
   };
 

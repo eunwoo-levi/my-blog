@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { getAllPosts } from '@/src/shared/lib/mdx/getBlog';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://www.eunwoo-levi.blog';
+  const baseUrl = 'https://www.eunwoo-levi.com';
 
   // 정적 페이지들
   const staticRoutes: MetadataRoute.Sitemap = [

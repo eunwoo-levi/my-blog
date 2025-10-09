@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: ParamsProps): Promise<Metadat
     };
   }
 
-  const categoryUrl = `https://www.eunwoo-levi.blog/${category}`;
+  const categoryUrl = `https://www.eunwoo-levi.com/${category}`;
 
   return {
     title: `${categoryData.name} - 리바이 개발 블로그`,
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: ParamsProps): Promise<Metadat
       siteName: '리바이 개발 블로그',
       images: [
         {
-          url: 'https://www.eunwoo-levi.blog/levi.webp',
+          url: 'https://www.eunwoo-levi.com/levi.webp',
           width: 1200,
           height: 630,
           alt: `${categoryData.name} 카테고리`,
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: ParamsProps): Promise<Metadat
       card: 'summary_large_image',
       title: `${categoryData.name} - 리바이 개발 블로그`,
       description: `${categoryData.name} 카테고리의 개발 블로그 포스트들을 확인해보세요.`,
-      images: ['https://www.eunwoo-levi.blog/levi.webp'],
+      images: ['https://www.eunwoo-levi.com/levi.webp'],
     },
     alternates: {
       canonical: categoryUrl,
