@@ -1,0 +1,265 @@
+---
+title: '[Next.js] Next.js에서 SSG 정적 렌더링을 통한 성능 최적화'
+author: 'eunwoo'
+thumbnail: '/thumbnail/nextjs.webp'
+publishDate: '2025-10-10'
+categoryId: 5
+---
+
+서비스에서 소개(About) 페이지는 많은 사용자들이 방문하는 페이지이기 때문에 콘텐츠 노출이 중요하다.
+하지만 이전에 구현된 소개 페이지는 CSR (Client Side Rendering)이라 빈 HTML → JS 다운로드/실행 → 데이터 요청 → 하이드레이션 경로를 거친 뒤에야 의미 있는 요소가 나타났다.
+
+CSR의 구체적인 동작 과정은 다음과 같다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/2f93331f-73e5-4dd2-aa4e-20da7d47c834/image.png)
+
+- 1. 사용자가 웹 사이트에 요청을 보낸다.
+- 2. CDN이 HTML 파일과 JS로 접근 할 수 있는 링크를 클라이언트로 보낸다.
+- 3. 클라이언트는 HTML과 JS를 다운로드 받는다.
+- 4. 브라우저가 자바스크립트를 다운로드 받는다.
+- 5. 다운로드가 완료된 JS가 실행이 되며 데이터를 위한 API가 호출이 된다.
+- 6. 서버가 API로 부터의 요청에 응답한다.
+- 7. API로부터 받아온 데이터를 placeholer 자리에 넣어주면, 페이지가 상호작용이 가능해진다.
+
+하지만 자주 방문하는 페이지를 CSR로 두면, 매번 접속할 때마다 불필요한 JS 실행/데이터 의존 때문에 사용자·서버 모두 손해이다.
+그래서 소개 페이지를 SSG (Static Site Generation)으로 변경하여 성능 최적화를 진행하기로 결심하였다.
+
+# SSG (Static Site Generation)란?
+
+[Next.js 공식 문서](https://nextjs.org/docs/pages/building-your-application/rendering/static-site-generation)를 참고하면 SSG는 다음과 같이 정의되어 있다.
+
+Static Site Generation, 줄여서 SSG는 웹 페이지의 렌더링 방식 중 하나로, 페이지의 HTML이 사용자의 요청 시점이 아닌 **빌드 시점(build time)**에 생성되는 것을 의미한다. Next.js 환경을 예로 들면, next build 명령을 실행할 때 프로덕션 환경에서 페이지 HTML이 미리 생성된다.
+
+SSG의 핵심 장점은 이렇게 한 번 생성된 HTML 파일이 이후의 모든 요청에 재사용된다는 점이다. 또한, 이 HTML은 CDN(Content Delivery Network)에 의해 캐시될 수 있다. 페이지를 요청마다 서버에서 렌더링하는 방식에 비해 SSG는 빌드되고 CDN을 통해 제공되므로 훨씬 빠르기 때문에, 가능한 한 SSG를 사용하는 것이 권장된다.
+따라서 SSG로 배포했을 경우 매번 서버에서 렌더링하는 것이 아니라 미리 생성된 HTML 파일을 제공하기 때문에 렌더링 속도가 빠르고 서버 부하가 줄어든다.
+
+보통 SSG로 구현된 정적 페이지를 배포했을때는 CDN을 직접 구성해야 한다. (예: S3 + CloudFront, Cloudflare Pages/Workers, Netlify 등)
+여기서는 캐시 정책, 오리진 접근, 압축, 무효화, 이미지 최적화 등을 직접 설계해야 한다.
+
+하지만 Vercel를 통해 배포를 할 경우 **Vercel Edge Network(CDN)**가 자동으로 붙어서 정적 파일(assets), SSG/ISR HTML, 이미지 최적화 응답까지 기본 캐싱/압축/전송을 해준다. 그래서 별도 세팅 거의 없어서 편리하다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/c3bffdb3-0cbf-455b-9b6e-47a26162d849/image.png)
+
+SSG의 장점을 정리하면 아래와 같다.
+
+- 빠른 첫 화면(초기 응답 시간): 미리 만든 HTML을 바로 보여 LCP/TTFB 개선.
+- 확장성/안정성: CDN 캐싱으로 트래픽 급증에도 서버 부하 적음.
+- 비용 절감: 동적 렌더링 줄어 서버 비용↓, 캐시 히트↑.
+- SEO/공유 미리보기 유리: 본문이 HTML에 포함돼 크롤러·OG 즉시 반영.
+
+| 항목            | CSR(Client-Side Rendering)        | SSG(Static Site Generation)         |
+| --------------- | --------------------------------- | ----------------------------------- |
+| 초기 응답(HTML) | 빈 껍데기 + JS 다운 후 렌더       | **완성된 HTML 즉시 제공**           |
+| TTFB            | CDN 캐시가 없으면 상대적으로 느림 | **CDN에서 ms 단위**로 응답 가능     |
+| LCP             | **JS 실행 후** 의미 요소가 보임   | HTML에 컨텐츠 포함 → **LCP 개선**   |
+| 서버 부하       | API 호출 수/빈도 ↑                | 정적 파일 제공 중심 → **부하 감소** |
+| 비용            | 트래픽 대비 서버 인스턴스 비용 ↑  | **CDN/정적 호스팅 비용 중심**       |
+| 데이터 최신성   | 항상 최신(런타임)                 | 빌드 시점 기준, **ISR**로 보완      |
+| 개인화/인증     | 용이                              | 제한적(서버/클라이언트 분리 필요)   |
+| SEO             | JS 의존 시 제한                   | **SSR수준 SEO** (사전 렌더)         |
+
+## 언제 SSG를 쓰고, 언제 피해야 할까?
+
+### SSG 적합한 경우
+
+- 변동이 드문 정적/마케팅/문서/소개 페이지
+- 블로그/뉴스 목록(분당·시간당 업데이트로 충분), 카탈로그/리소스 리스트
+- SEO가 중요한 랜딩, 국가/언어별 버전이 명확한 페이지
+
+### SSG 지양/대안 고려
+
+- 로그인/개인화가 핵심인 페이지 → SSR 또는 CSR로 일부 조합
+- 초실시간 데이터(주식 호가, 채팅) → CSR/SSR+SWR, 스트리밍, PPR
+- 엄격한 권한/보안 헤더 필요(쿠키/세션) → SSR(Route Handler/Server Action) 분리
+
+# SSG 구현 방법
+
+Next.js의 `App router`를 기준으로 아래 키워드들을 알고 가면 좋다.
+
+- `export const dynamic = 'force-static'`: 해당 라우트를 강제 정적화함.
+- `generateStaticParams()`: 동적 라우트의 빌드타임 경로 목록을 정의.
+
+실제 본인 서비스에서 SSG를 소개 페이지에 적용한 코드는 아래와 같다.
+
+```tsx
+export const dynamic = 'force-static';
+export const dynamicParams = false;
+
+interface PageProps {
+  params: Promise<{
+    lang: string;
+  }>;
+}
+
+export async function generateStaticParams() {
+  return supportedLanguages.map((lang) => ({
+    lang,
+  }));
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { lang } = await params;
+
+  const validLang = isValidLanguage(lang) ? lang : defaultLanguage;
+  const translations = getTranslations(validLang);
+  const isDefault = validLang === defaultLanguage;
+
+  const languageUrls = supportedLanguages.reduce<Record<string, string>>((acc, language) => {
+    acc[language] = language === defaultLanguage ? '/about' : `/about/${language}`;
+    return acc;
+  }, {});
+
+  return {
+    title: translations.meta.title,
+    description: translations.meta.description,
+    keywords: translations.meta.keywords,
+    openGraph: {
+      title: translations.meta.openGraph.title,
+      description: translations.meta.openGraph.description,
+      type: 'website',
+      url: isDefault ? '/about' : `/about/${validLang}`,
+      images: [
+        {
+          url: '/vitalTrip.webp',
+          width: 1200,
+          height: 630,
+          alt: translations.meta.openGraph.title,
+        },
+      ],
+    },
+    twitter: {
+      title: translations.meta.twitter.title,
+      description: translations.meta.twitter.description,
+    },
+    alternates: {
+      canonical: isDefault ? '/about' : `/about/${validLang}`,
+      languages: languageUrls,
+    },
+  };
+}
+
+export default async function AboutLangPage({ params }: PageProps) {
+  const { lang } = await params;
+
+  if (!isValidLanguage(lang)) {
+    notFound();
+  }
+
+  const translations = getTranslations(lang);
+
+  return (
+    <div className='min-h-screen overflow-x-hidden md:pt-16'>
+      <Navbar />
+      <HeroSection translations={translations} />
+      <FeaturesSection translations={translations} />
+
+      <VideoSection translations={translations} />
+      <Footer translations={translations} />
+    </div>
+  );
+}
+```
+
+위 코드를 보면 상단에 두 줄의 SSG 구현을 위한 설정이 있는 것을 확인할 수 있다.
+
+첫번째로 `dynamic = 'force-static'` 이 있는데 이는 해당 라우트 세그먼트를 강제 정적(Static) 으로 고정한다.
+
+"정적 페이지로 만들겠다"는 의도를 엔진에 명확히 전달하여 SSG 보장한다.
+그래서 실수로 `cookies()`, `headers()` 같은 동적 신호를 건드려도 정적화가 bail-out되지 않는다.(동적으로 바뀌지 않음).
+
+두번째로 `dynamicParams = false` 이 있는데 이는 동적 라우트 파라미터(:lang)에 대해, 사전에 선언된 경로 외는 404로 처리한다.
+그래서 빌드 시점에 딱 필요한 경로만 아티팩트로 만들고, 누락된 언어 접근은 확실히 차단한다. (SEO/UX 안정).
+
+이 두 줄의 코드로 인해서 아래의 `generateStaticParams`와 합쳐져 지정된 언어 경로만 정적으로 생성하고 나머지는 404가 된다.
+
+`generateStaticParams`는 동적 라우트의 빌드타임 경로 목록을 정의한다.
+
+예를 들어 위 실제 코드를 보면,
+
+```tsx
+export async function generateStaticParams() {
+  return supportedLanguages.map((lang) => ({ lang }));
+}
+```
+
+동적 세그먼트 `[lang]`에 대해 빌드 타임에 생성할 경로 목록을 리턴한다.
+예를 들어 `supportedLanguages = ['ko','en','ja']`라면 `/about/ko, /about/en, /about/ja` 정적 HTML이 각각 만들어진다.
+`dynamicParams = false`와 함께 쓰면, 이 목록에 없는 `/about/fr` 같은 경로는 404가 된다.
+
+추가적으로 `generateMetadata`와 같이 빌드 타임에 페이지의 메타데이터를 생성하는 코드가 있다면 빌드 타임에 생성된다.
+
+```tsx
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> { ... }
+```
+
+해당 메타데이터를 통해서 SEO를 최적화할 수 있다.
+
+`AboutLangPage`는 빌드 타임에 생성된 SSG 정적 페이지인데 유심히 살펴보면 `params`를 통해서 동적 라우트 파라미터를 받아오고 있는 것을 확인할 수 있다.
+
+주의할 점이 [dynamic routes](https://nextjs.org/docs/app/api-reference/file-conventions/dynamic-routes)에 대한 Next.js 공식문서를 참고해보면
+
+```
+Since the params prop is a promise. You must use async/await or React's use function to access the values.
+In version 14 and earlier, params was a synchronous prop. To help with backwards compatibility, you can still access it synchronously in Next.js 15, but this behavior will be deprecated in the future.
+```
+
+라고 말한다.
+
+즉 Next.js app router 15 부터는 `params`가 비동기 프로퍼티가 되었다. 그래서 `await`를 사용하거나 [use](https://react.dev/reference/react/use)를 사용하여 접근해야 한다.
+
+# 최적화 결과
+
+| SSG 적용 전                                                                                                                                                                                    | SSG 적용 후                                                                                                                                                                                    |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <img src="https://velog.velcdn.com/images/eunwoo1341/post/1c1ad181-0534-4a2f-a8fc-e2437379697b/image.png" alt="SSG 적용 전" style={{ width: "100%", height: "auto", borderRadius: "12px" }} /> | <img src="https://velog.velcdn.com/images/eunwoo1341/post/9822571e-51af-4051-94f3-9b5b42e72515/image.png" alt="SSG 적용 후" style={{ width: "100%", height: "auto", borderRadius: "12px" }} /> |
+
+개선 결과 (전→후)
+
+- LCP: 5.8초 → 2.8초 (약 52% 개선, –3.0초)
+- CLS: 0.024 → 0.010 (안정화, –0.014)
+- TTFB: 800ms → 250ms (–550ms)
+- TBT: 350ms → 120ms (–230ms)
+- INP(p75): 280ms → 160ms (–120ms)
+
+CSR 페이지에서 SSR 페이지로 마이그레이션 했을 때 위와 같이 전반적으로 개선이 되었다.
+
+왜 이렇게 개선이 됐을까?
+정리해보면 아래와 같다.
+
+#### 초기 화면 생성 시점
+
+- CSR: 빈 HTML → 대용량 JS 다운로드/실행 → 데이터 요청 → 하이드레이션 후에야 본문 노출
+- SSG: 빌드 시점에 완성된 HTML을 바로 응답 → 첫 페인트/의미 있는 요소 노출이 빠름 → LCP 단축
+
+#### 네트워크 워터폴
+
+- CSR: JS·데이터 요청이 직렬로 누적 → 초기 지연 커짐
+- SSG: 서버(빌드)에서 이미 렌더링된 결과 전달 → 리소스 병렬화 여지↑, 초기 경로 단순화 → TTFB·LCP 개선
+
+#### 레이아웃 안정성(CLS)
+
+- CSR: 클라이언트 렌더링/폰트·이미지 로딩 과정에서 레이아웃 흔들림 발생하기 쉬움
+- SSG: 사이즈 예약·마크업이 고정된 상태로 전달 → 초기부터 안정적인 레이아웃 → CLS 하락
+
+#### JS 실행 부담
+
+- CSR: 초기 화면을 그리려면 JS 실행이 필수 → 메인 스레드 점유 ↑ → TBT/INP 악화
+- SSG: HTML 우선 전달 + 필요한 인터랙션만 하이드레이션 → 메인 스레드 부담 ↓ → TBT/INP 개선
+
+#### 캐싱/배포
+
+- CSR: 매 요청 시 런타임 조합 비중 큼
+- SSG: CDN 캐시가 HTML·정적 자산을 바로 서빙 → 지리적 지연↓, 일관된 성능↑
+
+#### SEO/크롤링
+
+- CSR: 크롤러가 JS 실행을 기다려야 할 수 있음
+- SSG: 메타/본문이 즉시 노출 → 색인 안정성↑(부가효과)
+
+한 줄로 요약해보자면
+
+CSR → SSG/ISR 전환으로 초기 렌더 경로를 "빈 문서 + JS 의존"에서 "완성 HTML 즉시 전달"로 바꾸면서 LCP·TTFB·TBT를 크게 낮추고, 초기 마크업 안정화로 CLS까지 개선됐다
+
+# 마무리
+
+SSG의 핵심은 "처음부터 보이는 화면" 이다. 소개·마케팅 성격의 페이지는 개인화/초실시간 요구가 낮기 때문에, SSG(＋필요 시 ISR) 로 완성된 HTML을 CDN에서 즉시 제공하는 것이 체감 속도·안정성·SEO를 동시에 끌어올리는 최단경로였다. 이번 전환으로 LCP [5.8s→2.8s], TTFB [800ms→120ms], **JS 전송 [450KB→190KB]**처럼 눈에 보이는 개선을 만들었고, 운영 측면에서도 traffic peak를 CDN이 흡수하여 서버 부담을 크게 줄여 전반적으로 성능을 개선시킬 수 있었다.
