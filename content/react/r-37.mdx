@@ -1,0 +1,681 @@
+---
+title: '[React] SSR 딥다이브를 위해 Node.js로 Server 구현하여 CSR + SSR 구현하기'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-10-28'
+categoryId: 6
+---
+
+`SSR(Server Side Rendering)`은 서버에서 페이지를 렌더링하여 클라이언트에 전송하는 방식이다.
+SSR 은 request 마다, 새로운 HTML 을 동적으로 생성한다는게 핵심이다. 그러니까 동적 컨텐츠에도 meta tag 를 생성할 수 있고, SEO 가 가능한 것이다.
+
+SSR가 CSR와 비교했을 때 속도가 더 빠른 이유는 무엇일까?
+
+아래 사진과 함께 이해하면 근본적인 이유를 알 수 있다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/f4c3983e-5186-45f0-99b9-0b8520e9ac77/image.png)
+
+CSR 과 SSR 의 가장 큰 차이점이라고 한다면, 렌더링 전에 JS 요청 여부이다. JS 는 기본적으로 무거운 파일이다. 코드가 많고, 수십~수백 kB 를 응답 받아야 한다. 이는 네트워크 통신을 타기 때문에 시간이 소요되고, 환경이 안 좋을수록 훨씬 더 많은 시간이 소요된다. JS 를 받은 후에는 API 요청까지 해야 한다. 이 또한 네트워크 요청이므로 시간이 소요된다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/1d3e8655-fc5a-4ddf-97c5-d4acef92f5dc/image.png)
+
+SSR 은 html 과 critical(blocking) CSS 만 가지면 되므로, 상대적으로 사이즈가 작아서 시간이 적게 걸린다.
+따라서 첫 뷰를 사용자에게 보여주는데 걸리는 시간이 더 짧다.
+하지만 장점만 있는 것이 아니다.
+가장 큰 단점으로 `서버 부하 증가`가 있다. 각 요청마다 서버가 `renderToString()` 등을 호출해 React 트리를 렌더링해야 한다. CSR(정적 HTML + JS 실행)과 달리 모든 요청이 CPU 연산을 수반하므로, 트래픽이 많을수록 서버 부하가 급격히 증가한다.
+
+또한, `TTV(Time To View)`는 빠르지만 `TTI(Time To Interactive)`는 느리다. (UX 측면)
+SSR은 HTML을 빠르게 보여주지만, 아직 JS가 로드되지 않아 상호작용이 불가능한 상태로 잠시 머문다.
+Hydration이 완료되어야 버튼 클릭·입력 등이 가능해지므로, 사용자가 "보이지만 동작하지 않는 페이지"를 잠깐 경험할 수 있다.
+
+우리는 SSR를 이용하기 위해서는 보통 `Next.js` Framework를 사용하여 웹을 개발한다.
+
+npm run build 를 입력하여 Next.js를 빌드해보면, `.next` 폴더가 생기는 것을 알 수 있다. 그 안에는 `server` 와 `static` 폴더가 있다. server 는 SSR 을 위한 코드가 있고, static 은 정적인 이미지, css, js 등이 포함된다.
+중요한 포인트 중 하나는, 어디에도 페이지를 위한 html 이 없다는 것이다. SSR server(Node.js) 에서 동적으로 html 을 생성하여 응답할 뿐이다.
+
+Api Data를 얻기 위해서 API Data 를 얻기 위해서, CSR 은 브라우저-서버간 통신을 하고 SSR 은 서버간 통신을 한다. 무엇이 더 빠를까? 그리고 속도 차이가 왜 발생할까?
+SSR Server 와 API Server 를 같은 공간에 둘 수 있다. 그러므로, 거리가 짧아 요청 시간이 짧아진다. 사용자와 서버는 거리가 멀어서, 더 많은 시간이 걸린다.
+
+서버의 성능은 보통 일관적이다. 반면에 사용자 브라우저의 성능은 환경에 따라 천차만별이다. SSR 환경이라면 네트워크가 안 좋은 사용자가 진입하더라도, API Data 는 서버-서버로 이루어지므로, 사용자의 네트워크에 영향을 받지 않는다. 그래서 항상 일관된 속도를 유지할 수 있다. CSR 은 사용자 네트워크 환경에 많이 영향을 받는다. Chrome Network 에서 Fast 4G, Slow 3G 등으로 조절하며 테스트해본다면, CSR 에서는 네트워크 환경이 나빠짐에 따라 속도가 훨씬 더 나빠지는 것을 확인할 수 있다.
+SSR(Server-Side Rendering)을 이해하기 위해서는 Server-Side 에서 무슨 일이 벌어지는 지 알아야 한다. 즉, `Server` 를 이해해야 한다. SSR 은 그 만큼 어려운 기술이다. Client 와 Server 를 모두 다룰 수 있어야만 안정적인 시스템을 만들 수 있다.
+
+이 글에서는 서버와 HTTP 통신을 다루고, Node.js 로 서버를 직접 만들어 보며 이해해볼 것이다.
+
+# Server란?
+
+Server 의 어원은 Serve(제공하다) + er 이다. 즉, 서비스를 제공하는 역할이다. 요청(request)이 있기에 응답(response) 하는 것이지. 요청하는 자는 클라이언트(Client) 이다. 브라우저가 그 예시이다.
+서버에서 어떤 response 를 받아보았나?를 생각하면 생각보다 다양할 것이다. HTML, CSS, JavaScript 같은 정적 리소스도 받아보았을 것이고. API 응답, DB 응답 등 다양한 것을 response 로 받을 수 있다.
+
+요약하자면, 네트워크를 통해 요청이 오면 응답을 주는 시스템을 서버라고 한다.
+`SSR Server` 는 네트워크 요청이 들어오면, 동적으로 `HTML` 을 생성하여 응답하는 서버이다.
+
+# renderToString와 hydrateRoot
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/99cc9ed4-9681-4b75-98a1-064d522c45a5/image.png)
+
+## renderToString
+
+react-dom/server 의 `renderToString` 은 React tree 를 HTML string 으로 변환한다. 가령 App 컴포넌트를 그에 맞는 HTML 구조로 변환하는거죠. 이게 왜 필요할까?
+이게 없다고 생각해보자. App 에 짜놓은 코드, 복잡한 컴포넌트 구조를 직접 HTML 코드로 가지고 있어야 한다. React 코드를 HTML 로 변환할 생각을 하면 매우 복잡하고 거기에다가 코드를 두벌로 관리해야 한다.
+
+renderToString 은 React 컴포넌트를 그대로 HTML 로 바꿔주는 마법이다. 이게 결코 간단하지는 않다. 생각해보자. useEffect, useState, useContext, useMemo, onClick handler, props 등 다양한 JS 코드 중, 일부는 채택, 일부는 버리는 작업이 필요하다.
+
+## hydrateRoot
+
+`hydrateRoot` 는 쉽게 말하면 renderToString 의 반대이다. renderToString 이 App 을 HTML 로 변환시키는 함수라고 하면, hydrateRoot 는 HTML 에 App 코드를 얹어서, React tree 로 변환하고, 동적 동작이 가능하게(hydrate) 하는 함수이다.
+
+## Server-side 데이터를 Client-side 로 전달하기
+
+`Hybrid Rendering` 은 조금 어색한 패턴을 사용합니다. 바로 window 를 활용해서 SSR 의 data 를 CSR 로 전달해주는 것이다. Next.js, Remix 등 Hybrid Rendering 을 수행하는 Framework 가 사용하는 방식이다.
+
+당근마켓은 Remix 라는 SSR Framework 를 사용한다. remix 는 `window.\_\_remixContext` 에 Server-side 에서 Client-side 로 값을 전달한다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/0c085d43-0d39-4454-999a-7e7d9604757c/image.png)
+
+야놀자는 Next.js 를 사용하네요. Next.js 는 script 에 id 를 `\_\_NEXT_DATA` 부여하고 type 을 application/json 으로 선언하여, 클라이언트에서 바로 값을 얻어오도록 만들었다. 이 방법도 가능하다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/33071b97-a38b-4246-9266-368e1c879cb1/image.png)
+
+두 사례를 보았을 때, 결국 Server-side 에서 Client-side 로 값을 전달해주어야 한다는 것은 명확하다.
+하지만 왜 값을 전달해주어야 할까? Server-side 와 Client-side 에서 요청을 따로 하면 안될까? 라는 궁금증에 대해서는 다음과 같이 설명할 수 있다.
+
+간단히 답하면, `Hydration` 안정성 때문이다.
+Next.js를 평소에 사용하는 개발자라면, SSR 페이지에서 CSR 컴포넌트를 사용했을 때, `hydration` 오류가 발생하는 것을 경험해보았을 것이다. SSR 렌더링 시점과 CSR 렌더링 시점에 데이터가 다르기 때문에 발생하는 문제이다. 예를 들어, SSR 시점에 API 응답이 `{ name: 'Alice' }` 였는데, CSR 시점에 API 응답이 `{ name: 'Bob' }` 이라면, React 는 두 렌더링 결과가 다르다고 판단하여 hydration 오류를 발생시킨다.
+React는 SSR로 만든 DOM을 “같은 상태”로 클라에서 복원해야 합니다. 초기 상태가 다르면 hydration mismatch 경고·재렌더가 난다.
+
+hybrid Rendering 을 구현하다 보면, 아래와 같은 `Express.js` 라우터 코드를 작성하게 될 것이다.
+
+```ts
+router.get("/", async (_: Request, res: Response) => {
+    // ...
+    const renderedApp = renderToString(<App />);
+    // ...
+}
+
+router.get("/detail/:id", async (_: Request, res: Response) => {
+    // ...
+    const renderedApp = renderToString(<App />);
+    // ...
+}
+```
+
+이런 식으로 코드를 짠다고 했을 때, App 에서는 각 url 에 따라 어떤 Page Component 를 렌더링 해야 할지 알 수 없다.
+이때, `Next.js` Page Router에서 `_app.tsx` 파일에서 힌트를 얻을 수 있다.
+
+```tsx
+export default function App({ Component, pageProps }: AppProps) {
+  return <Component {...pageProps} />;
+}
+```
+
+위 코드의 흐름을 정리해보면 아래와 같다.
+
+- Express 라우터가 URL을 보고 →
+- **렌더링할 페이지 컴포넌트(Component)**를 고르고 →
+- 그 페이지에 필요한 **데이터(pageProps)**를 준비해서 →
+- `<App Component={Component} pageProps={pageProps} />`를 SSR 렌더합니다.
+
+이 패턴을 따라가면 아래와 같이 SSR 서버 코드를 작성할 수 있다.
+
+```ts
+router.get("/", async (_: Request, res: Response) => {
+  const movies = (await moviesApi.getPopular()).data.results;
+
+  const Component = MovieHomePage;
+  const pageProps = { movies };
+
+  const template = generateHTML();
+  const renderedApp = renderToString(
+    <App Component={Component} pageProps={pageProps} />
+  );
+  // ...
+}
+
+router.get("/detail/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const movies = (await moviesApi.getPopular()).data.results;
+  const movie = (await moviesApi.getDetail(Number(id))).data;
+
+  const Component = MovieDetailPage;
+  const pageProps = { movie, movies };
+
+  const template = generateHTML();
+  const renderedApp = renderToString(
+    <App Component={Component} pageProps={pageProps} />
+  );
+  // ...
+}
+```
+
+이제 개념적인 부분을 알았으니, 직접 Node.js 로 SSR 서버를 구현하여 React Hybrid 방식인 CSR + SSR 을 구현해보자.
+
+# React Hybrid (CSR + SSR) 구현하기
+
+바로 Node.js 로 서버를 만들고 CSR + SSR를 React로 구현하여 React Hybrid 방식으로 간단한 서비스를 만들어볼 것이다.
+이번 블로그 설명은 직접 구현한 [React-Hybrid 예제](https://github.com/eunwoo-levi/rendering-basecamp)를 기준으로 다뤄볼 것이다.
+
+`Node.js` 는 JavaScript 로 구동하는 서버 런타임 환경이다. JS 프로젝트이기 때문에, `NPM` 을 활용해서 프로젝트를 만들어 볼 것이다.
+NPM(Node Package Manager)의 이름에 Node 가 붙는데 초창기 NPM 은 Node.js 애플리케이션에서 쓰이는 패키지를 관리하는 도구였다. 지금은 웹 프론트엔드 환경에서도 쓰이고있다.
+
+## 1. 빌드 단계(Build Time)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    npm run build                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│   ┌─────────────────────┐     ┌──────────────────────┐      │
+│   │  build:client       │     │   build:server       │      │
+│   │  (webpack.client)   │     │   (webpack.server)   │      │
+│   └─────────┬───────────┘     └──────────┬───────────┘      │
+│             │                            │                  │
+│             ▼                            ▼                  │
+│   ┌─────────────────────┐     ┌──────────────────────┐      │
+│   │  dist/static/       │     │  dist/server/        │      │
+│   │  - bundle.js        │     │  - server.js         │      │
+│   │  - images/          │     │                      │      │
+│   │  - styles/          │     │                      │      │
+│   └─────────────────────┘     └──────────────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+현재 `package.json`에는 아래와 같이 작성되있다.
+
+```json
+  "scripts": {
+    "build:client": "webpack --config webpack.client.config.js",
+    "build:server": "webpack --config webpack.server.config.js",
+    "build": "npm run build:client && npm run build:server",
+    "start": "node dist/server/server.js",
+    "dev": "concurrently \"npm run build:client -- --watch\" \"npm run build:server -- --watch\" \"node dist/server/server.js\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+```
+
+따라서 `npm run build` 명령어를 입력하면, `webpack.client.js` 와 `webpack.server.js` 가 실행된다.
+
+두 개의 번들을 병렬/순차로 생성한다. `build:client` → `webpack.client`로 브라우저용 정적 자산 빌드이고, `build:server` → `webpack.server`로 Node(SSR) 서버용 번들 빌드이다.
+자세한 설명은 아래와 같이 정리할 수 있다.
+
+- 클라이언트 빌드(build:client)
+
+  - 타깃: web
+  - 결과물: dist/static/
+  - bundle.js(및 청크), styles/, images/
+  - 목적: 하이드레이션/상호작용을 위한 자바스크립트·CSS·이미지를 브라우저가 받도록 정적 파일로 출력
+  - 권장: 코드 스플리팅, [contenthash], CSS 추출, manifest.json 생성
+
+- 서버 빌드(build:server)
+  - 타깃: node
+  - 결과물: dist/server/server.js
+  - 목적: HTTP 요청을 받아 SSR HTML 생성(Express 등) + 정적 자산 경로를 알고 응답 템플릿 구성
+
+## 2. 서버 시작(Server Start)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    npm start                                 │
+│              (node dist/server/server.js)                    │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+            ┌───────────────────────────┐
+            │   Express 서버 실행        │
+            │   http://localhost:3000   │
+            └───────────────────────────┘
+                            │
+            ┌───────────────┴────────────────┐
+            │                                │
+            ▼                                ▼
+    ┌─────────────┐              ┌──────────────────┐
+    │ Static 제공  │             │  Route Handler   │
+    ㅡㅡㅡㅡㅡㅡㅡㅡ               ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+    │ /static/*   │              │  GET /           │
+    │ /images/*   │              │  GET /detail/:id │
+    │ /styles/*   │              │                  │
+    └─────────────┘              └──────────────────┘
+```
+
+`npm start`로 `node dist/server/server.js`를 실행하면 Express 서버가 3000번 포트에서 동작하며, `/static/*`, `/images/*`, `/styles/*` 같은 경로로 클라이언트 빌드 산출물(해시된 JS/CSS/이미지)을 캐시 헤더와 함께 정적으로 서빙하고, 동시에 GET /와 GET /detail/:id 같은 라우트에서 필요한 데이터를 서버에서 먼저 조회한 뒤 알맞은 페이지 컴포넌트를 선택해 `renderToString`으로 HTML을 생성하여 반환한다; 이때 초기 상태는 `<script id="__DATA__" type="application/json">…</script>`와 같이 HTML에 함께 주입되어 브라우저가 번들을 로드한 뒤 재요청 없이 이를 읽어 하이드레이션을 수행함으로써 초기 화면은 빠르게 표시되고, 이후 상호작용은 클라이언트 JS가 이어받는 하이브리드 흐름이 완성된다.
+
+## 3. 첫 페이지 로드 - SSR 플로우 (Server-Side Rendering)
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                  브라우저에서 접속                                 │
+│                  GET http://localhost:3000/                      │
+└────────────────────────────┬─────────────────────────────────────┘
+                             │
+                             ▼
+            ┌────────────────────────────────┐
+            │   Express 서버 (routes/index)   │
+            └────────────┬───────────────────┘
+                         │
+    ┌────────────────────┼────────────────────┐
+    │                    │                    │
+    ▼                    ▼                    ▼
+┌──────────┐      ┌──────────────┐     ┌─────────────┐
+│ TMDB API │      │ React 컴포넌트│     │  HTML 템플릿 │
+│   호출   │◄─────┤  서버 렌더링   │───►│ generateHTML │
+│getPopular│      │renderToString│     │             │
+└────┬─────┘      └──────────────┘     └─────────────┘
+     │                    │
+     └────────┬───────────┘
+              │
+              ▼
+    ┌─────────────────────┐
+    │   20개 영화 데이터   │
+    │       movies[]      │
+    └──────────┬──────────┘
+               │
+               ▼
+    ┌───────────────────────────────────┐
+    │  HTML 생성 및 데이터 주입          │
+    │  1. React 컴포넌트 → HTML 문자열   │
+    │  2. window.__INITIAL_DATA__ 주입  │
+    │  3. OG 태그 추가                  │
+    │  4. <script src="/static/bundle.js">│
+    └──────────┬───────────────────────┘
+               │
+               ▼
+    ┌──────────────────────────────┐
+    │  완성된 HTML을 브라우저로 전송 │
+    │   res.send(renderedHTML)     │
+    └──────────┬───────────────────┘
+               │
+               ▼
+    ┌──────────────────────────────────────┐
+    │          브라우저에 표시              │
+    │      즉시 콘텐츠 보임 (영화 목록)      │
+    │    SEO 최적화 (크롤러가 콘텐츠 확인)   │
+    └──────────────────────────────────────┘
+```
+
+브라우저가 `GET /`로 요청하면 Express 라우트가 TMDB API에서 인기 영화 20개를 가져오고, 그 데이터를 props로 넣어 React 컴포넌트를 `renderToString`으로 HTML 문자열로 만든다.
+이후 `generateHTML` 템플릿에 컴포넌트가 만든 SSR HTML(초기 화면)과 `window.__INITIAL_DATA__`(동일 데이터를 JSON으로 주입해 클라이언트가 재요청 없이 하이드레이션), OG 메타 태그(공유/SEO용), 그리고 클라이언트 번들 `<script src="/static/bundle.js">`를 삽입해 완성 HTML을 생성하고 `res.send()`로 응답한다.
+브라우저는 즉시 콘텐츠(영화 목록)를 보여 SEO·초기 체감속도가 좋아지고, 이후 로드된 번들이 **INITIAL_DATA**를 읽어 하이드레이션을 수행하며 상호작용을 이어받는 하이브리드 렌더링 흐름이 완성된다.
+
+`index.ts` 코드를 자세히 살펴보자.
+
+```ts
+import { Router, Request, Response } from "express";
+import { renderToString } from "react-dom/server";
+import React from "react";
+import App from "../../client/App";
+import { moviesApi } from '../../client/api/movies';
+import { MovieItem } from '../../client/types/Movie.types';
+import { MovieDetailResponse } from '../../client/types/MovieDetail.types';
+import { renderPageHTML } from '../utils/renderPageHTML';
+
+interface InitialData {
+  movies: MovieItem[];
+  detail?: MovieDetailResponse | null;
+}
+
+const router = Router();
+
+router.get("/", async (req: Request, res: Response) => {
+  try {
+    const popularResponse = await moviesApi.getPopular();
+    const movies = popularResponse.data?.results ?? [];
+
+    const renderedApp = renderToString(<App initialMovies={movies} />);
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const ogImage = movies?.[0]?.backdrop_path
+      ? `https://image.tmdb.org/t/p/w1280${movies[0].backdrop_path}`
+      : `${baseUrl}/images/logo.png`;
+
+    const initialData: InitialData = { movies };
+
+    const renderedHTML = renderPageHTML({
+      renderedApp,
+      initialData,
+      pageTitle: "영화 리뷰 - 인기 영화 모아보기",
+      ogTags: {
+        url: `${baseUrl}/`,
+        title: "영화 리뷰 - 인기 영화 모아보기",
+        description: "지금 인기 있는 영화를 확인해보세요.",
+        image: ogImage,
+        type: "website",
+      },
+    });
+
+    res.send(renderedHTML);
+  } catch (error) {
+    console.error('Error in / route:', error);
+    if (error instanceof Error) {
+      console.error('Stack:', error.stack);
+    }
+    res.status(500).send("Internal Server Error: " + (error instanceof Error ? error.message : String(error)));
+  }
+});
+
+router.get("/detail/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const [popularResponse, detailResponse] = await Promise.all([
+      moviesApi.getPopular(),
+      moviesApi.getDetail(Number(id)),
+    ]);
+
+    const movies = popularResponse.data?.results ?? [];
+    const detail = detailResponse.data ?? null;
+
+    const renderedApp = renderToString(<App initialMovies={movies} />);
+
+    const initialData: InitialData = { movies, detail };
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const imagePath = detail?.backdrop_path || detail?.poster_path || "";
+    const ogImage = imagePath
+      ? `https://image.tmdb.org/t/p/w1280${imagePath}`
+      : `${baseUrl}/images/logo.png`;
+
+    const renderedHTML = renderPageHTML({
+      renderedApp,
+      initialData,
+      pageTitle: `${detail?.title ?? "영화 상세"} - 영화 리뷰`,
+      ogTags: {
+        url: `${baseUrl}/detail/${id}`,
+        title: `${detail?.title ?? "영화 상세"} - 영화 리뷰`,
+        description: detail?.overview
+          ? detail.overview.slice(0, 140)
+          : "영화 상세 정보를 확인해보세요.",
+        image: ogImage,
+        type: "video.movie",
+      },
+    });
+
+    res.send(renderedHTML);
+  } catch (error) {
+    console.error('Error in /detail/:id route:', error);
+    if (error instanceof Error) {
+      console.error('Stack:', error.stack);
+    }
+    res.status(500).send("Internal Server Error: " + (error instanceof Error ? error.message : String(error)));
+  }
+});
+
+export default router;
+```
+
+여기서 `/detail/:id`를 예시로 살펴보자.
+
+처음에는 id를 가지고 TMDB에서 **상세(detail)**와 **인기 목록(movies)**를 Promise.all로 병렬 조회하는 데이터 패칭을 수행한다.
+그 후 `renderToString(<App initialMovies={movies} />)`로 초기화면 HTML 생성(상세 페이지도 상단/목록 등에 movies 활용)하는 SSR 렌더링을 한다.
+이후에 초기 상태가 주입되는데 `initialData = { movies, detail }`를 `renderPageHTML`에 넘겨 템플릿에 JSON으로 삽입된다.(예: `<script id="__DATA__" type="application/json">…</script>`).
+
+`renderPageHTML`코드는 아래와 같다.
+
+```ts
+import { generateHTML } from './generateHTML';
+import { buildOgTags } from './seoMeta';
+
+interface RenderPageHTMLOptions {
+  renderedApp: string;
+  initialData: object;
+  pageTitle: string;
+  ogTags: {
+    url: string;
+    title: string;
+    description: string;
+    image: string;
+    type?: string;
+  };
+}
+
+/**
+ * HTML 템플릿에 SSR 결과, 초기 데이터, SEO 메타 태그를 삽입하여 최종 HTML을 생성
+ */
+export function renderPageHTML(options: RenderPageHTMLOptions): string {
+  const { renderedApp, initialData, pageTitle, ogTags } = options;
+
+  const template = generateHTML();
+  const ogTagsHTML = buildOgTags(ogTags);
+
+  const htmlWithInitialData = template.replace(
+    '<!--{INIT_DATA_AREA}-->',
+    /*html*/ `
+      <script>
+        window.__INITIAL_DATA__ = ${serializeJSON(initialData)}
+      </script>
+    `,
+  );
+
+  const htmlWithOg = htmlWithInitialData.replace('<!--{OG_TAGS}-->', ogTagsHTML);
+
+  const htmlWithTitle = htmlWithOg.replace('<!--{TITLE}-->', pageTitle);
+
+  const finalHTML = htmlWithTitle.replace('<!--{BODY_AREA}-->', renderedApp);
+
+  return finalHTML;
+}
+
+/**
+ * XSS 공격을 방지하기 위해 JSON을 안전하게 직렬화
+ * </script> 태그가 JSON 문자열에 포함되어도 스크립트가 중단되지 않도록 처리
+ */
+function serializeJSON(data: object): string {
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/\//g, '\\u002f');
+}
+```
+
+위 코드를 보면 OG 메타 태그 생성, 초기 데이터 주입, 페이지 타이틀 삽입, SSR HTML 삽입 등 템플릿에 필요한 부분을 채워 최종 HTML을 반환하는 것을 알 수 있다.
+
+이후 최종적으로 완성된 HTML을 `res.send`를 통해서 응답하고 -> 브라우저는 즉시 상세 내용/메타를 확인한다.(SEO/공유 OK)
+
+## 4. Hydration - 클라이언트 활성화
+
+```
+┌────────────────────────────────────────────────────────────┐
+│          HTML 로드 완료 후 자동 실행                         │
+└────────────────────────┬───────────────────────────────────┘
+                         │
+                         ▼
+            ┌────────────────────────────┐
+            │  bundle.js 다운로드 및 실행  │
+            │  (클라이언트 JavaScript)    │
+            └────────────┬───────────────┘
+                         │
+                         ▼
+            ┌────────────────────────────┐
+            │    main.tsx 실행            │
+            │  - window.__INITIAL_DATA__  │
+            │    에서 데이터 가져옴        │
+            └────────────┬───────────────┘
+                         │
+                         ▼
+    ┌─────────────────────────────────────────┐
+    │   hydrateRoot() 실행                     │
+    │   - 기존 HTML을 React 컴포넌트로 연결    │
+    │   - 이벤트 리스너 추가                   │
+    │   - 인터랙티브하게 변환                  │
+    └─────────────────────┬───────────────────┘
+                          │
+                          ▼
+    ┌─────────────────────────────────────────┐
+    │  Hydration 완료!                         │
+    │  클릭, 호버 등 이벤트 작동            │
+    │  영화 아이템 클릭 시 모달 열림        │
+    │  CSR 방식으로 동작                    │
+    └─────────────────────────────────────────┘
+```
+
+브라우저가 HTML을 받은 뒤 클라이언트 번들(bundle.js)이 로드·실행되면, 엔트리(main.tsx)가 `window.__INITIAL_DATA__`(SSR에서 주입한 초기 JSON)을 읽어 초기 상태를 복원하고, hydrateRoot()로 서버가 만들어둔 기존 HTML DOM에 React 컴포넌트를 연결한다. 이때 화면은 바뀌지 않지만 각 요소에 이벤트 리스너가 붙고 내부 상태·라우팅 로직이 활성화되어, 클릭·호버·모달 열기 같은 인터랙션이 즉시 동작합니다.
+즉, **SSR로 빠른 초기 표시 → 하이드레이션으로 상호작용 활성화(CSR 전환)**까지가 자동으로 이어지는 최종 단계이다.
+
+```tsx
+// main.tsx
+import React from 'react';
+import { hydrateRoot } from 'react-dom/client';
+import App from './App';
+
+const initialData = window.__INITIAL_DATA__ ?? { movies: [] };
+
+performance.mark('beforeRender');
+hydrateRoot(document.getElementById('root')!, <App initialMovies={initialData.movies} />);
+performance.mark('afterHydrate');
+performance.measure('hydration', 'beforeRender', 'afterHydrate');
+```
+
+위 `main.tsx` 코드에서 보면, `hydrateRoot`가 `document.getElementById('root')`에 `App` 컴포넌트를 렌더링하는 것을 알 수 있다. 이때 `initialData.movies`를 props로 넘겨 초기 상태를 복원한다.
+`hydrateRoot`는 초반부에 설명한 것 처럼 기존 HTML을 그대로 유지하면서 React 컴포넌트를 연결하고, 이벤트 리스너를 추가하여 인터랙티브하게 만든다.
+
+`App.tsx` 코드도 간단히 살펴보자.
+
+```tsx
+// App.tsx
+import React, { useEffect } from 'react';
+import { OverlayProvider } from 'overlay-kit';
+import { MovieItem } from './types/Movie.types';
+import { MovieDetailResponse } from './types/MovieDetail.types';
+import MovieHomePage from './pages/MovieHomePage';
+import { useMovieDetailModal } from './hooks/useMovieDetailModal';
+
+interface AppProps {
+  initialMovies: MovieItem[];
+}
+
+function AppContent({ initialMovies }: AppProps) {
+  const { openMovieDetailModal } = useMovieDetailModal();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const initialData = (window as any).__INITIAL_DATA__;
+    const detail: MovieDetailResponse | undefined = initialData?.detail;
+
+    if (detail) {
+      openMovieDetailModal(detail);
+    }
+  }, []);
+
+  return <MovieHomePage initialMovies={initialMovies} />;
+}
+
+function App({ initialMovies }: AppProps) {
+  return (
+    <OverlayProvider>
+      <AppContent initialMovies={initialMovies} />
+    </OverlayProvider>
+  );
+}
+
+export default App;
+```
+
+`useEffect`를 활용하여, 만약 `window.__INITIAL_DATA__.detail`이 존재하면 모달을 자동으로 열도록 구현한 것을 볼 수 있다. 즉, 상세 페이지로 진입했을 때도 SSR → 하이드레이션 → 모달 오픈 흐름이 자연스럽게 이어지도록 한 것이다.
+이후 `MovieHomePage` 컴포넌트를 렌더링하여 영화 목록을 표시한다.
+
+## 5. 이후 인터랙션 - CSR 플로우 (Client-Side Rendering)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              사용자가 영화 클릭                          │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+                      ▼
+        ┌──────────────────────────┐
+        │  MovieItem 클릭 이벤트    │
+        │  onClick 핸들러 실행      │
+        └─────────────┬────────────┘
+                      │
+                      ▼
+        ┌──────────────────────────┐
+        │  overlay-kit으로         │
+        │  모달 오픈 요청           │
+        └─────────────┬────────────┘
+                      │
+                      ▼
+        ┌──────────────────────────────┐
+        │  useMovieDetail 훅 실행       │
+        │  - TMDB API 호출 (브라우저)   │
+        │  - 영화 상세 정보 가져오기     │
+        └─────────────┬────────────────┘
+                      │
+                      ▼
+        ┌──────────────────────────────┐
+        │  MovieDetailModal 렌더링     │
+        │  - 로딩 → 데이터 표시         │
+        │  - 평점, 줄거리 등            │
+        └──────────────────────────────┘
+                      │
+                      ▼
+        ┌──────────────────────────────┐
+        │  모든 작업이 클라이언트에서    │
+        │  처리됨 (서버 요청 없음)      │
+        │  빠른 인터랙션                │
+        │  SPA처럼 동작                │
+        └──────────────────────────────┘
+```
+
+요약하자면 `Hydration` 이후 사용자가 영화 아이템을 클릭하면, React 컴포넌트의 onClick 핸들러가 실행되어 `overlay-kit` 라이브러리로 모달 오픈을 요청하는 등 interction이 동작한다.
+
+## 전체 아키텍처 다이어그램
+
+```
+┌────────────────────────────────────────────────────────────┐
+│                         BROWSER                            │
+├────────────────────────────────────────────────────────────┤
+│
+│  1️⃣ 첫 방문 (http://localhost:3000/)
+│     └─► [GET Request] ──────────────────────────┐
+│
+│  4️⃣ HTML 수신 & 렌더링
+│     ├─► 즉시 화면에 영화 목록 표시
+│     └─► bundle.js 다운로드 시작
+│
+│  5️⃣ Hydration
+│     ├─► React가 기존 HTML을 인수
+│     ├─► 이벤트 리스너 연결
+│     └─► 인터랙티브하게 변신!
+│
+│  6️⃣ 이후 동작 (CSR)
+│     ├─► 영화 클릭 → 모달 (서버 X)
+│     ├─► API 호출 → 브라우저에서 직접
+│     └─► 빠른 UX
+│
+└──────────────────────────────────────────────────┼─────────┘
+│
+▼
+┌────────────────────────────────────────────────────────────┐
+│                         SERVER (Express)                   │
+├────────────────────────────────────────────────────────────┤
+│
+│  2️⃣ GET / 요청 처리
+│     ├─► moviesApi.getPopular() 호출
+│     │   └─► TMDB API ────────────►  [TMDB 서버]
+│     │                               ↓
+│     │   ◄──────────────────────── 20개 영화 데이터
+│     │
+│     ├─► renderToString(<App initialMovies={movies} />)
+│     │   └─► React 컴포넌트를 HTML 문자열로 변환
+│     │
+│     └─► generateHTML() 템플릿에 데이터 주입
+│         ├─► <!--{BODY_AREA}--> → React HTML
+│         ├─► <!--{INIT_DATA_AREA}--> → window.**INITIAL_DATA**
+│         ├─► <!--{OG_TAGS}--> → SEO 메타 태그
+│         └─► <script src="/static/bundle.js">
+│
+│  3️⃣ 완성된 HTML 응답
+│     └─► res.send(renderedHTML)
+│
+│  Static Files:
+│     ├─► /static/bundle.js (React 클라이언트 코드)
+│     ├─► /static/images/* (이미지)
+│     └─► /static/styles/* (CSS)
+│
+└────────────────────────────────────────────────────────────┘
+```
+
+# 마무리
+
+SSR을 직접 구현해 보니 "빠른 최초 표시(TTV)"와 "완전한 상호작용(TTI)" 사이의 긴장을 어떻게 설계로 풀어내야 하는지가 핵심이라는 걸 확인했다.
+서버에서 HTML을 빠르게 만들어 보내고, 클라이언트가 동일한 초기 데이터로 안정적으로 Hydration하도록 다리를 놓는 것, 이게 Hybrid 렌더링의 본질이다.
+또한 API를 server to server로 근접 호출해 네트워크 변동성을 줄이고, 정적 자산은 분할·캐시 최적화로 재다운로드를 최소화할 때 체감 성능이 가장 잘 오른다.
+이번 글이 SSR과 Hybrid 렌더링의 내부 동작 방식을 이해하는 데 도움이 되었길 바란다. 직접 구현해보면서 겪은 시행착오와 해결책들이 앞으로 SSR 프로젝트를 설계하고 최적화하는 데 밑거름이 되길 기대한다.
