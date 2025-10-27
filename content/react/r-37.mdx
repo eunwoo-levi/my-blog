@@ -110,10 +110,10 @@ export default function App({ Component, pageProps }: AppProps) {
 
 위 코드의 흐름을 정리해보면 아래와 같다.
 
-- Express 라우터가 URL을 보고 →
-- **렌더링할 페이지 컴포넌트(Component)**를 고르고 →
-- 그 페이지에 필요한 **데이터(pageProps)**를 준비해서 →
-- `<App Component={Component} pageProps={pageProps} />`를 SSR 렌더합니다.
+- Express 라우터가 URL을 보고
+- 렌더링할 페이지 컴포넌트(Component)를 고르고
+- 그 페이지에 필요한 데이터(pageProps)를 준비해서
+- `<App Component={Component} pageProps={pageProps} />`를 SSR 렌더한다.
 
 이 패턴을 따라가면 아래와 같이 SSR 서버 코드를 작성할 수 있다.
 
@@ -236,7 +236,9 @@ NPM(Node Package Manager)의 이름에 Node 가 붙는데 초창기 NPM 은 Node
     └─────────────┘              └──────────────────┘
 ```
 
-`npm start`로 `node dist/server/server.js`를 실행하면 Express 서버가 3000번 포트에서 동작하며, `/static/*`, `/images/*`, `/styles/*` 같은 경로로 클라이언트 빌드 산출물(해시된 JS/CSS/이미지)을 캐시 헤더와 함께 정적으로 서빙하고, 동시에 GET /와 GET /detail/:id 같은 라우트에서 필요한 데이터를 서버에서 먼저 조회한 뒤 알맞은 페이지 컴포넌트를 선택해 `renderToString`으로 HTML을 생성하여 반환한다; 이때 초기 상태는 `<script id="__DATA__" type="application/json">…</script>`와 같이 HTML에 함께 주입되어 브라우저가 번들을 로드한 뒤 재요청 없이 이를 읽어 하이드레이션을 수행함으로써 초기 화면은 빠르게 표시되고, 이후 상호작용은 클라이언트 JS가 이어받는 하이브리드 흐름이 완성된다.
+`npm start`로 `node dist/server/server.js`를 실행하면 Express 서버가 3000번 포트에서 동작하며, `/static/*`, `/images/*`, `/styles/*` 같은 경로로 클라이언트 빌드 산출물(해시된 JS/CSS/이미지)을 캐시 헤더와 함께 정적으로 서빙한다.
+그리고 동시에 `GET /`와 `GET /detail/:id` 같은 라우트에서 필요한 데이터를 서버에서 먼저 조회한 뒤 알맞은 페이지 컴포넌트를 선택해 `renderToString`으로 HTML을 생성하여 반환한다.
+이때 초기 상태는 `<script id="__DATA__" type="application/json">…</script>`와 같이 HTML에 함께 주입되어 브라우저가 번들을 로드한 뒤 재요청 없이 이를 읽어 하이드레이션을 수행함으로써 초기 화면은 빠르게 표시되고, 이후 상호작용은 클라이언트 JS가 이어받는 하이브리드 흐름이 완성된다.
 
 ## 3. 첫 페이지 로드 - SSR 플로우 (Server-Side Rendering)
 
