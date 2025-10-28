@@ -1,0 +1,229 @@
+---
+title: '[Next.js] CSR에서 ISR로 마이그레이션하여 LCP와 SEO 한 번에 잡기'
+author: 'eunwoo'
+thumbnail: '/thumbnail/nextjs.webp'
+publishDate: '2025-10-12'
+categoryId: 5
+---
+
+기존에는 CSR로 구현한 뉴스 페이지를 구현하였다. 하지만 느린 TTFB, 초기 빈 화면, SEO 한계가 있었고 이를 해결하기 위해 `ISR`(Incremental Static Regeneration) 으로 마이그레이션하기로 결심하였다.
+결과적으로 첫 렌더 속도와 SEO가 개선되고, 데이터 최신성은 TTL/온디맨드 무효화로 유지한다.
+
+# 배경: 왜 CSR이 문제였나?
+
+CSR(Client Side Rendering) 기반 뉴스 페이지는 다음 병목이 있었다.
+
+- 첫 화면 지연: HTML은 빈 껍데기(앱 셸). JS 번들 로드·실행 후에야 API 호출 → 콘텐츠 렌더.
+- TTFB는 빠르지만 LCP가 늦음: 서버는 금방 응답하지만, 사용자가 실제 콘텐츠를 보기까지 시간이 길다.
+- SEO/링크 미리보기 한계: 메타태그/OG가 충분히 채워지지 않으면 검색/공유 노출력이 낮다.
+- 클라이언트 네트워크 조건 의존: 저사양/저속 환경에서 JS 실행·데이터 패칭이 치명적.
+
+그래서 이 문제점들을 해결하기 위해 다음과 같은 목표를 잡았다.
+
+- 1. 초기 HTML에 뉴스 목록을 포함해 사용자에게 즉시 콘텐츠를 보여주고,
+- 2. 정적 서빙(캐시) 로 빠르게 응답하면서
+- 3. 데이터 최신성은 TTL/온디맨드로 균형 있게 챙긴다.
+
+이 요건을 App Router의 ISR로 해결하였다.
+
+# 아키텍처 변화: CSR → ISR
+
+```
+[Before: CSR]
+브라우저 ─ GET /news/3 → (빈 HTML + JS)
+  └ JS 로드/실행 → fetch /api/medical?page=3 → 렌더
+
+[After: ISR(App Router)]
+브라우저 ─ GET /news/3
+  └ (정적 페이지 + 서버 페치 결과 포함) 즉시 렌더
+  └ TTL 만료 또는 온디맨드 무효화 시 "다음 방문"에 재생성
+```
+
+핵심적으로 변하는 부분은 다음과 같다.
+
+- 데이터 패칭 위치 이동: 클라이언트 → 서버(fetch with cache/TTL/tags)
+- 라우트 단위 TTL(`export const revalidate = 3600`)
+- 빌드 시 일부 페이지만 프리렌더(`generateStaticParams`) → 나머지는 첫 방문 시 ISR 생성
+
+# ISR란 무엇인가?
+
+ISR(Incremental Static Regeneration)은 정적으로 빠르게 서빙하면서도 데이터를 일정 주기(또는 신호)에 맞춰 재생성해 최신성을 유지하는 Next.js의 하이브리드 렌더링 방식이다.
+
+핵심은 두 가지 캐시를 제어한다는 점이다.
+
+- 데이터 캐시(Data Cache): 서버 컴포넌트/서버 함수에서 fetch()로 받아온 응답을 저장
+- 라우트 캐시(Route Cache): 해당 라우트(페이지/레이아웃)를 렌더링해 만든 HTML/결과물을 저장
+
+둘 다 TTL(시간) 이나 온디맨드 신호로 다음 방문 시 재검증(revalidate)된다.
+
+```
+[사용자 방문]
+  ├─ 캐시에 최신(혹은 아직 유효한) 결과가 있으면 → 즉시 반환(매우 빠름)
+  ├─ 없거나 TTL 만료 → 기존 결과는 그대로 보여주고(stale-while-revalidate 느낌)
+  │    └─ 백엔드에서 새 데이터를 가져와 재생성(혹은 다음 요청 시 생성)
+  └─ 이후 방문자는 갱신된 결과를 받음
+```
+
+이때 **무효화(revalidate)**는 즉시 전부 렌더링을 돌리는 것이 아니라 `stale` 표시를 남기고 실제 재생성은 다음 요청 시 일어난다.
+
+## 언제 ISR을 쓰면 좋을까?
+
+- 페이지가 로그인/쿠키/권한 없이 누구에게나 같은 내용을 보여준다.
+- 초 단위 실시간이 필요하진 않고, 분·시간 단위 최신성으로 충분하다.
+- SEO/LCP가 중요해 빈 화면을 피하고 싶다.
+- 트래픽이 크고 캐시 히트 이점이 크다(CDN+정적 서빙).
+
+## 언제 피하거나 혼합할까?
+
+- 개인화/세션 의존이 강한 대시보드·장바구니 → cache: 'no-store'/SSR/CSR
+- 민감한 실시간(틱 데이터·실황 스코어) → SSR/스트리밍·CSR
+- 쿠키/헤더에 따라 결과가 바뀌는 경우(Geo, 실험, 권한) → 동적 처리 분리
+
+# ISR를 켜는 방법
+
+## 1) 라우트(세그먼트) 단위 TTL
+
+```tsx
+export const revalidate = 3600; // 1시간마다 다음 방문 시 재검증
+```
+
+이 세그먼트에서 렌더된 라우트 캐시가 3600초 후 stale이 되고, 이후 방문 시 재생성된다.
+
+## 2) fetch() 단위 TTL/캐시 제어
+
+```tsx
+const res = await fetch(API, {
+  // A. 시간 기반 ISR
+  next: { revalidate: 3600 },
+
+  // B. 캐시 금지(항상 동적) — 개인화/세션 의존 데이터
+  // cache: 'no-store',    // (= next: { revalidate: 0 }와 유사)
+});
+```
+
+데이터 캐시 수준에서 TTL을 설정하거나, 아예 캐시를 끌 수 있다.
+
+## 3) 온디맨드(수동) 무효화
+
+태그 기반: fetch에 태그를 달고 → revalidateTag('tag') 호출로 해당 태그 캐시 전부 무효화
+경로 기반: revalidatePath('/news/3')로 특정 경로만 무효화
+
+```tsx
+// fetch 시 태그 달기(데이터 캐시를 그룹핑)
+await fetch(API, {
+  next: { revalidate: 3600, tags: ['medical-news', `medical-news-page-${page}`] },
+});
+
+// 서버(서버 액션/Route Handler)에서 트리거
+import { revalidateTag, revalidatePath } from 'next/cache';
+revalidateTag('medical-news'); // 모델/쿼리 단위 일괄 갱신
+revalidatePath('/news/3'); // 특정 URL 타겟 갱신
+```
+
+# ISR 적용 사례 예시
+
+```tsx
+export async function generateMetadata({ params }: NewsPageProps): Promise<Metadata> {
+  const resolvedParams = await params;
+  const pageNum = parseInt(resolvedParams.page);
+
+  return {
+    title: `Medical News - Page ${pageNum} | Vital Trip`,
+    description: `Stay updated with the latest medical news, health research, and healthcare developments from around the world. Page ${pageNum} of medical news articles.`,
+    alternates: {
+      canonical: `/news/${pageNum}`,
+    },
+    openGraph: {
+      title: `Medical News - Page ${pageNum} | Vital Trip`,
+      description: `Stay updated with the latest medical news, health research, and healthcare developments from around the world. Page ${pageNum} of medical news articles.`,
+      url: `/news/${pageNum}`,
+      type: 'website',
+    },
+  };
+}
+
+export const revalidate = 3600;
+
+interface NewsPageProps {
+  params: Promise<{
+    page: string;
+  }>;
+}
+
+export async function generateStaticParams() {
+  return [
+    { page: '1' },
+    { page: '2' },
+    { page: '3' },
+    { page: '4' },
+    { page: '5' },
+    { page: '6' },
+    { page: '7' },
+  ];
+}
+
+export default async function NewsPage({ params }: NewsPageProps) {
+  const resolvedParams = await params;
+  const pageNum = parseInt(resolvedParams.page);
+  const pageSize = 10;
+
+  if (isNaN(pageNum) || pageNum < 1) {
+    notFound();
+  }
+
+  let initialData;
+  let error = null;
+
+  try {
+    initialData = await fetchMedicalNewsSSR({ page: pageNum, pageSize });
+
+    if (initialData.articles.length === 0 && pageNum > 1) {
+      notFound();
+    }
+  } catch (err) {
+    console.error('Failed to fetch medical news:', err);
+    error = err instanceof Error ? err.message : 'Failed to fetch medical news';
+
+    initialData = {
+      articles: [],
+      totalResults: 0,
+      page: pageNum,
+      pageSize,
+    };
+  }
+
+  return (
+    <div className='min-h-screen bg-gray-50 md:pt-16'>
+      <Navbar />
+      <div className='mx-auto max-w-7xl px-4 py-8'>
+        <NewsHeader />
+
+        {error && pageNum === 1 ? (
+          <div className='py-12 text-center'>
+            <div className='mb-4 text-lg text-red-500'>Failed to load medical news</div>
+            <p className='text-gray-400'>{error}</p>
+          </div>
+        ) : (
+          <NewsPageClient initialData={initialData} />
+        )}
+
+        <NewsFooter />
+      </div>
+    </div>
+  );
+}
+```
+
+# 마무리
+
+ISR은 정적처럼 빠르고, 동적처럼 똑똑한 렌더링 전략이다.
+공개 콘텐츠에선 SSR보다 비용/성능/SEO의 균형이 뛰어나고, TTL+온디맨드 무효화(revalidateTag/Path) 로 최신성과 운영 편의성을 함께 얻을 수 있다.
+
+| 방식    | 첫 화면 속도                 | SEO       | 데이터 최신성         | 서버부하/비용           | 개인화                  |
+| ------- | ---------------------------- | --------- | --------------------- | ----------------------- | ----------------------- |
+| **CSR** | 느릴 수 있음(빈 HTML→JS→API) | 보완 필요 | 즉시 최신(클라 fetch) | 낮음~보통               | 쉬움                    |
+| **SSR** | 빠름(서버 렌더)              | 좋음      | 즉시 최신             | **높음**(요청마다 렌더) | 쉬움                    |
+| **SSG** | 매우 빠름                    | 좋음      | 빌드 시점 고정        | 매우 낮음               | 어려움                  |
+| **ISR** | **매우 빠름**(정적 서빙)     | 좋음      | **TTL/온디맨드**      | **낮음**(캐시 히트↑)    | 어려움(보통 비개인화용) |
+
+`ISR`은 "자주 바뀌지만 사용자별로 달라지지 않는 공개 페이지"(뉴스·블로그·상품목록·문서)에 최적이다.
