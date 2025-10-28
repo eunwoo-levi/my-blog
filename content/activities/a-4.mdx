@@ -237,6 +237,19 @@ const LazyComponent = React.lazy(() => import('./LazyComponent'));
   - FCP 대부분 300ms 이하
   - LCP 대부분 1초 전후로 단축
 
+# 개인적으로 들었던 궁금증
+
+배민 장보기 서비스를 앱에서 웹으로 전환 했을 때 초기 웹 아키텍처는 Server-Side Rendering(SSR)이었지만
+해당 배민 장보기 서비스에서는 여러 API를 호출하는데 SSR 서버가 모든 API 응답을 기다린 뒤 완성된 HTML을 만들어 WebView로 반환하는데 한 API라도 느리면 전체 HTML이 늦게 도착하기 때문에 CSR로 전환했다고 이해하였다.
+
+여기서 갑자기 의문점이 생겼다.
+여러 API들을 병렬처리 하는 등 백엔드를 개선할 수 있었을텐데 굳이 왜 FE 아키텍쳐를 바꿨을까? 라는 생각을 했다.
+
+스스로 답변을 해봤을때 단순히 백엔드에서 병렬처리 등으로 잘 처리하면 좋겠지만 결국에는 SSR 구조 자체가 한 번에 모든 걸 기다려야 하는 구조라 로딩 중에는 아무것도 안 보이는 문제는 해결되지 않아서 FE 아키텍처를 바꿨을 것 같다. 라는 생각을 했습니다.
+하지만 Next.js로 마이그레이션하거나 [renderToPipeableStream](https://react.dev/reference/react-dom/server/renderToPipeableStream)등을 사용하여 SSR을 사용했을때 Streaming SSR을 사용하면 데이터 오기 전에 로딩 띄울 수는 없을까? 라는 생각을 했지만 트래픽이 커지면 비용적 측면에서 문제가 여전히 있을거라고 생각했다.
+
+그래서 우아한형제 FE팀에서 SSR에서 CSR로 아키텍처를 바꾼 근본적인 이유가 무엇인지 궁금증이 생겼다.
+
 # 마무리
 
 최적화는 일회성이 아니다.
