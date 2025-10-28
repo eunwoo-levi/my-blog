@@ -55,30 +55,29 @@ export default function TableOfContents() {
         <div className='animate-fade-down fixed bottom-28 right-[1px] z-50 max-h-[80vh] overflow-y-auto rounded-xl border-gray-300 bg-blue-400/70 p-4 text-sm font-bold text-white dark:border-gray-700 dark:bg-blue-950/70 md:bottom-24'>
           <p className='mb-2 border-b border-gray-400 pb-1 text-center font-bold'>📚 목차</p>
           <ul className='flex max-w-[190px] flex-col items-center space-y-3'>
-            {headings.map((heading) => (
-              <li
-                key={heading.key}
-                className={`w-full border-b border-gray-500 pb-2 text-center ${heading.level > 1 ? 'pl-4' : ''
-                  }`}
-              >
-                <a
-                  href={`#${heading.id}`}
-                  className='hover:underline'
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const element = document.getElementById(heading.id);
-                    if (element) {
-                      element.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start',
-                      });
-                    }
-                  }}
-                >
-                  {heading.text}
-                </a>
-              </li>
-            ))}
+            {headings.map((heading) => {
+              const itemClass = `w-full border-b border-gray-500 pb-2 text-center ${heading.level > 1 ? 'pl-4' : ''}`;
+              return (
+                <li key={heading.key} className={itemClass}>
+                  <a
+                    href={`#${heading.id}`}
+                    className='hover:underline'
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const element = document.getElementById(heading.id);
+                      if (element) {
+                        element.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start',
+                        });
+                      }
+                    }}
+                  >
+                    {heading.text}
+                  </a>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
