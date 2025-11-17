@@ -1,0 +1,750 @@
+---
+title: '[React] PWA + FCM 푸시 알림으로 웹을 앱처럼 만든 구현기'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-11-17'
+categoryId: 6
+---
+
+기존에 개발하고 있었던 React 기반 웹 서비스 [Moment](https://connectingmoment.com)는 사용자가 매일 들어와서 기록하고, 댓글 알림을 확인하는 서비스다 보니, 자연스럽게 **앱 같은 사용 경험**이 필요했다.
+또한, 추가적으로 아래와 같은 개인적인 요구사항이 있었다.
+
+- 자주 접속하는 서비스 → 홈 화면에 바로 추가해서 쓰고 싶음
+- 네트워크가 불안정한 환경에서도 최소한의 화면은 떠야 함
+- "새 댓글이 달렸다" 같은 **실시간 알림**을 시스템 알림으로 받고 싶음
+
+처음엔 "그럼 네이티브 앱을 만들어야 하나?"라는 생각이 들지만,
+
+- 이미 React 기반 웹 서비스가 잘 돌아가고 있고,
+- 두 플랫폼(iOS/Android) 앱을 별도로 만들고 유지하는 건 비용이 크고,
+- 무엇보다 **웹 접근성(링크 하나로 누구나 접속)** 을 버리고 싶지 않았다.
+
+하지만 **완전히 별도 앱을 만들기보다는 웹 접근성을 유지한 채, 웹을 최대한 앱처럼** 만들고 싶었다.
+그리고 기존에 반응형을 고려하여 웹을 개발해둔 상태였기에, PWA(Progressive Web App)와 FCM(Firebase Cloud Messaging)을 활용하여 이를 구현하기로 결심하였다.
+
+- **PWA(Progressive Web App)** 로
+  - 홈 화면 설치 / 앱처럼 전체 화면 표시
+  - 기본적인 오프라인 대응
+- **Firebase Cloud Messaging(FCM)** 으로
+  - 브라우저 푸시 알림
+  - PWA 설치 시에도 자연스럽게 동작
+
+를 구현하기로 하였다.
+
+그래서 이번 글에서는 실제로 Moment에 적용한 코드를 기준으로, PWA + FCM 구조를 정리한 내용과 어떻게 구현하였는지에 대해서 공유하고자 한다.
+
+# 한 번에 보는 전체 동작 흐름
+
+## PWA & FCM 관련 디렉토리 구조
+
+```bash
+.
+├─ public
+│  ├─ index.html                 # PWA 메타 태그, manifest 링크, 아이콘 설정
+│  ├─ manifest.json              # PWA 앱 정보(이름, 아이콘, start_url, display 등)
+│  ├─ offline.html               # 네트워크 끊겼을 때 보여줄 오프라인 전용 페이지
+│  ├─ firebase-messaging-sw.js   # Service Worker: 캐시 + 오프라인 + FCM 백그라운드 알림 처리
+│  ├─ icon-192x192.png           # PWA 아이콘 (앱 아이콘/홈 화면용)
+│  └─ icon-512x512.png           # PWA 아이콘 (고해상도, 스플래시 등)
+│
+└─ src
+   ├─ notifications
+   │  ├─ firebase.ts             # Firebase 앱/메시징 초기화, 권한 요청, 포그라운드 알림 설정
+   │  ├─ registerFCMToken.ts     # 발급된 FCM 토큰을 서버 API로 등록하는 모듈
+   │  ├─ useNotification.ts      # "알림 받기" 버튼용 훅 (권한 요청 + 토큰 발급 + 서버 등록)
+   │  └─ useInitializeFCM.ts     # PWA 실행 시 FCM 초기화 훅 (Service Worker 등록 + 토큰 요청)
+   │
+   └─ shared
+      └─ utils
+         └─ firebase.ts          # 공용 Firebase 초기화, Messaging 지원 여부 체크, 토큰/리스너 유틸
+
+```
+
+**사용자 입장에서의 흐름**은 단순하다.
+
+1. 브라우저로 Moment에 접속한다.
+2. "홈 화면에 추가"을 통해 PWA로 설치한다.
+3. 앱/웹 안에서 “알림 받기”를 허용한다.
+4. 이후 댓글, 이벤트가 발생하면 알림이 뜨고, 알림을 누르면 해당 화면이 열린다.
+
+이 단순한 경험을 위해, 내부에서는 다음과 같은 단계가 일어난다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/04b6a816-54c8-4528-91e9-978b57cd7ac9/image.png)
+
+1. **PWA 셋업**
+
+   - `manifest.json` + `<meta>` 태그로  
+     "이 웹은 앱처럼 설치할 수 있다"는 정보를 브라우저에 전달.
+   - `display: "standalone"` 등의 설정으로 설치 후 전체 화면 앱처럼 실행.
+
+2. **Service Worker 등록**
+
+   - 브라우저가 `firebase-messaging-sw.js`를 Service Worker로 등록.
+   - 이 워커가 네트워크 요청을 가로채서 **오프라인 페이지/캐시**를 처리하고,
+   - 동시에 백그라운드에서 **푸시 알림을 수신**한다.
+
+3. **알림 권한 + FCM 토큰 발급**
+
+   - React 앱에서 `Notification.requestPermission()` 으로 유저에게 알림 권한을 요청.
+   - 권한을 허용하면 Firebase SDK로 **이 브라우저를 구분하는 고유 FCM 토큰**을 발급.
+   - 이 토큰을 백엔드로 보내서 "이 사용자 = 이 디바이스/브라우저 토큰"을 연결해 둔다.
+
+4. **서버 → FCM → 브라우저로 푸시 전송**
+
+   - 댓글이 달리는 등 이벤트가 발생하면 서버가 FCM에  
+     "이 토큰으로 푸시를 보내라는" 요청을 날린다.
+   - FCM 서버는 해당 브라우저/디바이스로 푸시 메시지를 전달한다.
+   - 브라우저의 Service Worker가 이 푸시를 받아 `showNotification()` 으로 알림을 띄운다.
+
+5. **알림 클릭 → 앱으로 딥링크**
+   - 사용자가 알림을 누르면, Service Worker의 `notificationclick` 이벤트가 실행된다.
+   - 이미 열려 있는 탭이 있으면 거기로 포커스를 옮기고, 아니면 새 창을 열어  
+     알림에 포함된 `redirectUrl`로 라우팅한다.
+
+이제 이 안에서 각각의 역할을 조금 더 자세히 나눠서 보자.
+
+---
+
+# Service Worker: 백그라운드에서 뛰는 "웹 전용 미들웨어"
+
+**Service Worker**는 브라우저가 백그라운드에서 돌리는 **별도의 JS 스레드**다.  
+DOM에는 직접 손을 못 대지만, 대신 다음 같은 일을 할 수 있다.
+
+- `fetch` 이벤트를 가로채서
+  - 오프라인이면 `offline.html`을 보여줄지,
+  - 캐시에서 응답을 줄지,
+  - 네트워크로 요청을 통과시킬지 결정
+- `caches` API로 HTML/CSS/JS/이미지를 **브라우저 내부 캐시에 저장**
+- `push`, `notificationclick` 이벤트로
+  - 백그라운드 푸시 알림을 받아 처리
+  - 알림 클릭 시 어떤 페이지를 열지 제어
+
+라이프사이클은 대략 이렇게 흘러간다.
+
+1. **등록(register)**  
+   → `navigator.serviceWorker.register('/firebase-messaging-sw.js')`
+2. **설치(install)**  
+   → 최초 설치 시점에 `caches.open().addAll()` 로 초기 리소스를 캐싱
+3. **활성화(activate)**  
+   → 이전 버전을 대체하고, 필요 시 오래된 캐시를 정리
+4. **이벤트 처리(fetch, push, notificationclick, onBackgroundMessage...)**  
+   → 실제 앱 동작 중에는 이 이벤트들로 네트워크/알림을 제어
+
+필자의 서비스인 Moment의 Service Worker(`firebase-messaging-sw.js`)는 크게 두 가지를 동시에 처리한다.
+
+1. **오프라인/캐시**
+
+   - `/manifest.json`, 아이콘 파일, `offline.html` 등을 설치 시점에 캐시
+   - `fetch`에서 `navigate` 요청이 실패하면 `offline.html`로 graceful degrade
+   - 정적 리소스는 캐시 우선, API/외부 도메인은 그대로 네트워크로
+
+2. **FCM 백그라운드 알림**
+   - `messaging.onBackgroundMessage(...)` 로 푸시 메시지를 수신
+   - `self.registration.showNotification(...)` 으로 OS 알림을 표시
+   - `notificationclick` 이벤트로 알림 클릭 시 딥링크 처리
+
+즉, Service Worker는 **네트워크와 알림 사이에 끼어 있는 웹 전용 미들웨어**처럼 동작하며,  
+"앱이 꺼져 있어도" 돌아가는 역할을 맡는다.
+
+# PWA: 웹을 앱처럼 보이게 만드는 껍데기와 규칙
+
+**PWA(Progressive Web App)** 는 기술 이름이라기보다 **방식/철학에 가까운 개념**이다.
+
+> "웹이지만, 점진적으로(Progressive) 기능을 쌓아서 네이티브 앱에 가까운 UX를 제공하자"
+
+브라우저가 어떤 웹을 "PWA처럼 취급"하려면 조건이 몇 가지 있다.
+
+1. **HTTPS**
+   - Service Worker, 푸시 등 민감한 API는 HTTPS에서만 동작.
+2. **웹/앱 manifest.json**
+   - `name`, `short_name`, `icons`, `start_url`, `display`, `theme_color` 등
+   - 브라우저가 이 정보를 보고, 홈 화면 추가/설치 UI를 만들고, 스플래시 화면을 구성한다.
+3. **Service Worker**
+   - 오프라인 처리, 캐시 전략, 푸시 알림 등 "앱스러운 기능" 담당
+
+Moment의 `manifest.json`에서는:
+
+- `name`, `short_name`, `description` 으로 앱의 정체성을 정의하고,
+- `display: "standalone"` 으로 설치 후 브라우저 주소창 없이 전체 화면으로 열리게 했고,
+- `theme_color`, `background_color` 로 상태바/스플래시 색을 맞춰 브랜드 일관성을 유지했다.
+- `icons` 와 `maskable` 아이콘을 함께 등록해 다양한 기기에서 자연스럽게 보이도록 했다.
+- `gcm_sender_id` 로 FCM과의 연동도 명시했다.
+
+그리고 `index.html`에서
+
+- `<link rel="manifest" ...>`
+- `meta name="theme-color"`
+- `apple-mobile-web-app-*`, `mobile-web-app-capable`
+
+같은 메타 태그를 통해 **Android, iOS, 데스크탑** 등 다양한 환경에서 설치/아이콘/상태바 동작을 조정했다.
+
+요약하면, PWA는
+
+- **“이 웹은 설치 가능한 앱이다”라는 선언(manifest)**
+- **그 선언을 실제로 구현해주는 Service Worker**
+- **그리고 그걸 안전하게 돌리기 위한 HTTPS**
+
+이 세 가지 축 위에서 돌아간다.
+
+# FCM(Web Push): 서버에서 사용자 화면까지 알림이 도착하는 길
+
+PWA와 Service Worker가 “앱처럼 보이는 껍데기와 런타임”을 만든다면,  
+**FCM(Firebase Cloud Messaging)** 은 "서버 → 사용자"로 알림을 밀어 넣는 통로라고 보면 된다.
+
+Moment에서의 FCM 흐름은 다음 네 단계로 나눌 수 있다.
+
+### 1) 브라우저에서 FCM 토큰 발급
+
+React 앱 초기화 과정 혹은 “알림 받기” 버튼 클릭 시:
+
+1. Service Worker 등록  
+   → `navigator.serviceWorker.register('/firebase-messaging-sw.js')`
+2. 알림 권한 요청  
+   → `Notification.requestPermission()`
+3. 권한이 `granted` 이면:
+
+```ts
+const token = await getToken(messaging, {
+  vapidKey: process.env.FCM_VAPID_KEY,
+  serviceWorkerRegistration: registration,
+});
+```
+
+여기서 나온 token이 바로 이 브라우저/앱을 식별하는 주소가 된다.
+
+### 2) 토큰을 서버에 등록
+
+발급받은 토큰은 백엔드에 보낸다.
+
+```tsx
+await api.post('/push-notifications', {
+  deviceEndpoint: token,
+});
+```
+
+서버는 이 토큰을 로그인된 유저와 묶어서 저장해 둔다.
+
+예: `userId = 123 → [토큰1, 토큰2, ...]`
+
+이제 서버는 "이 유저에게 알림을 보내야 한다"는 상황에서,
+이 토큰 목록을 사용해 FCM에 요청을 날릴 수 있다.
+
+### 3) 서버 → FCM 서버로 푸시 요청
+
+(서버 쪽 코드 예시는 생략되어 있지만 흐름상)
+
+서버는 FCM에 다음 정보를 담아 HTTP 요청을 보낸다.
+
+- 대상 토큰(들)
+- notification.title, notification.body
+- 클릭 후 이동할 data.redirectUrl 같은 커스텀 데이터
+
+FCM은 이 요청을 받은 뒤, 각 토큰에 해당하는 브라우저/디바이스로 메시지를 라우팅한다.
+
+### 4) Service Worker에서 푸시 수신 + 알림 표시 & 딥링크
+
+브라우저/PWA에서 푸시는 Service Worker가 받는다.
+
+```tsx
+messaging.onBackgroundMessage((payload) => {
+  self.registration.showNotification(title, {
+    body,
+    icon,
+    data: payload.data,
+  });
+});
+```
+
+- 탭이 닫혀 있어도, PWA가 백그라운드여도, OS 알림으로 뜬다.
+
+이때, 사용자가 알림을 클릭하면
+
+```tsx
+self.addEventListener('notificationclick', (event) => {
+  const urlToOpen = event.notification.data?.redirectUrl || '/';
+  // 이미 열린 탭 포커스 or 새 창 열기
+});
+```
+
+- 이미 열려 있는 Moment 탭이 있다면 그 탭을 살려서 해당 URL로 이동
+- 없다면 새 탭을 열어 redirectUrl로 접속
+  -> 댓글 알림을 누르면 바로 해당 Moment 상세 화면으로 진입하는 UX 완성
+
+## 정리: 세 가지 조각이 맞물릴 때 생기는 "앱 같은 웹 경험"
+
+#### PWA
+
+-> "이 웹은 앱처럼 설치할 수 있고, 전체 화면으로 실행될 수 있어요" 라는 껍데기와 선언
+
+#### Service Worker
+
+-> 그 선언을 실제로 구현해주는 백그라운드 러너
+-> 오프라인/캐시/푸시/딥링크를 담당
+
+#### FCM(Web Push)
+
+-> 서버에서 특정 사용자(브라우저/디바이스)에게
+"지금 이런 일이 생겼다"는 알림을 보내는 알림 전달 통로
+
+Moment에서는 이 세 가지를 조합해서, 웹 접근성을 유지하면서도, 홈 화면에 깔고, 오프라인에서도 최소한의 메시지를 보여주고, 댓글이 달리면 OS 푸시 알림으로 바로 알려주는 "웹인데 거의 앱처럼 느껴지는" 경험을 만들어냈다.
+
+---
+
+<p align='center'>
+  <img
+    src='https://velog.velcdn.com/images/eunwoo1341/post/885ef2b8-61f1-49a6-b4ba-1165c4eef0bf/image.png'
+    alt='ISR 비교 그래프'
+    width='320'
+  />
+</p>
+
+# 1. PWA 기본 세팅: manifest와 `<head>` 메타 태그
+
+## manifest.json
+
+`public/manifest.json`에서 PWA의 기본 정보를 정의한다.
+
+```json
+{
+  "id": "/",
+  "name": "Moment",
+  "short_name": "Moment",
+  "description": "매일의 소중한 순간을 기록하고 공유하는 플랫폼",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#0a0a0f",
+  "background_color": "#0a0a0f",
+  "orientation": "portrait",
+  "gcm_sender_id": "138468882061",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
+```
+
+위 코드에서 중요한 부분을 알아보자.
+
+`display: "standalone"`
+→ 설치 후 브라우저 UI 없이 앱처럼 열린다.
+
+`theme_color`, `background_color`
+→ 스플래시 화면/상태바 색상을 통일해 브랜드 느낌을 맞춘다.
+
+`gcm_sender_id`
+→ FCM 연동 시 필요한 필드(푸시 알림용). FCM 프로젝트의 messagingSenderId 와 일치시킨다.
+
+`icons`
+→ 일반 아이콘(any)과 홈 화면용 maskable 아이콘을 모두 등록해서 다양한 디바이스에서 보기 좋게 나온다.
+
+## index.html
+
+`public/index.html`에서는 PWA와 SEO, SNS 공유에 필요한 메타 태그를 한 번에 정리했다.
+
+```html
+<link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
+<meta name="theme-color" content="#0a0a0f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Moment" />
+<meta name="mobile-web-app-capable" content="yes" />
+<link rel="icon" sizes="192x192" href="/icon-192x192.png" />
+<link rel="apple-touch-icon" sizes="192x192" href="/icon-192x192.png" />
+<link rel="apple-touch-icon" sizes="512x512" href="/icon-512x512.png" />
+```
+
+`apple-mobile-web-app-*` : iOS에서 홈 화면에 추가했을 때의 동작을 제어
+
+`manifest` + `theme-color` : Android / 데스크탑 브라우저에서 PWA로 인식하는 핵심
+
+이 단계까지 설정하면, 브라우저 주소창 메뉴에서 ‘홈 화면에 추가’가 뜨고 앱처럼 전체 화면으로 실행되는 기본 PWA 골격이 만들어진다.
+
+# 2. Service Worker로 오프라인 대응 + 푸시 알림
+
+Moment에서는 하나의 Service Worker(`public/firebase-messaging-sw.js`)로 두 가지를 동시에 처리한다.
+
+1. 정적 리소스 캐싱 + 오프라인 페이지 제공
+2. FCM 백그라운드 푸시 알림 처리
+
+## 2-1. 설치/활성화 및 캐시 전략
+
+```ts
+const CACHE_NAME = 'moment-cache-v1';
+const urlsToCache = ['/manifest.json', '/icon-192x192.png', '/icon-512x512.png', '/offline.html'];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.addAll(urlsToCache))
+      .then(() => self.skipWaiting()),
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+```
+
+설치 시점에 기본적으로 필요한 파일들을 캐시에 담아둔다.
+`offline.html`도 같이 캐싱해 두었다가, 네트워크 오류 시 fallback으로 사용한다.
+`skipWaiting`, `clients.claim()`으로 새 버전 Service Worker가 빠르게 활성화되게 했다.
+
+## 2-2. fetch 이벤트에서 오프라인 페이지 제공
+
+```ts
+self.addEventListener('fetch', (event) => {
+  // API 요청 및 외부 도메인은 캐싱 X
+  if (
+    event.request.url.includes('api.connectingmoment.com') ||
+    !event.request.url.startsWith(self.location.origin)
+  ) {
+    return;
+  }
+
+  // SPA 라우팅: 페이지 전환(navigate) 요청은 네트워크 실패 시 offline.html로 대체
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request).catch(() => caches.match('/offline.html')));
+  } else {
+    // 정적 리소스: 캐시 우선, 없으면 네트워크
+    event.respondWith(
+      caches.match(event.request).then((response) => response || fetch(event.request)),
+    );
+  }
+});
+```
+
+이렇게 하면,
+네트워크가 끊어져도 사용자는 브라우저 에러 화면 대신 서비스가 준비한 `offline.html`을 보게 된다.
+API 요청이나 외부 도메인은 캐싱하지 않아, 데이터 정합성을 해치지 않는다.
+
+`offline.html`은 심플한 UI로 구성했다.
+
+```html
+<h1>인터넷 연결이 끊어졌습니다</h1>
+<p>네트워크 연결을 확인한 뒤 다시 시도해 주세요.</p>
+<button onclick="window.location.reload()">다시 시도</button>
+```
+
+접근성 측면에서,
+기본 HTML + 시스템 폰트만 사용 → 스크린 리더, 저사양 환경에서도 무리 없이 동작하고
+JS 복잡도 최소화하여 오프라인에서 실패 가능성을 줄였다.
+
+## 2-3. FCM 백그라운드 메시지 처리
+
+Service Worker에서는 Firebase SDK의 `onBackgroundMessage`로 백그라운드 알림을 처리한다.
+
+```ts
+messaging.onBackgroundMessage((payload) => {
+  const notificationTitle = payload.notification?.title || '새 알림';
+
+  const notificationOptions = {
+    body: payload.notification?.body || '내용 없음',
+    icon: '/icon-512x512.png',
+    data: payload.data,
+    tag: payload.data.eventId || 'default',
+    requireInteraction: true,
+    renotify: false,
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
+```
+
+클릭 시 어떤 화면으로 보낼지 역시 Service Worker에서 제어한다.
+
+```ts
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const urlToOpen = event.notification.data?.redirectUrl || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.startsWith(self.location.origin)) {
+          client.navigate(urlToOpen);
+          return client.focus();
+        }
+      }
+
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    }),
+  );
+});
+```
+
+이미 열려 있는 탭이 있으면 그 탭을 포커스 + 해당 URL로 이동하고,
+없으면 새 창을 연다.
+
+이렇게 하면, 알림에서 바로 특정 Moment 상세 페이지로 딥링크가 필요한 서비스이기 때문에, 이 부분으로 UX를 매끄럽게 만들었다.
+
+# React 앱에서 FCM 초기화와 권한 요청
+
+PWA가 준비되었으면, React 쪽에서는 알림 권한 요청 → 토큰 발급 → 서버 등록 플로우를 구성한다.
+
+## 3-1. Firebase 초기화 및 Messaging 지원 체크
+
+```ts
+// src/shared/utils/firebase.ts
+import { getApps, initializeApp } from 'firebase/app';
+import { getMessaging, getToken, isSupported, Messaging, onMessage } from 'firebase/messaging';
+
+const firebaseConfig = {
+  /* Firebase 콘솔에서 발급받은 설정 */
+};
+
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+
+let messagingPromise: Promise<Messaging | null> | null = null;
+
+export const getMessagingIfSupported = (): Promise<Messaging | null> => {
+  if (messagingPromise) return messagingPromise;
+
+  messagingPromise = (async () => {
+    if (typeof window === 'undefined') return null;
+    const supported = await isSupported().catch(() => false);
+    if (!supported) return null;
+    return getMessaging(app);
+  })();
+
+  return messagingPromise;
+};
+```
+
+`isSupported()`로 FCM을 지원하지 않는 브라우저(일부 iOS Safari 등)를 사전에 거른다.
+그리고 `Promise` 캐싱을 통해 Messaging 인스턴스를 한 번만 생성한다.
+
+## 3-2. 토큰 발급 로직
+
+```ts
+export const requestFCMPermissionAndToken = async (): Promise<string | null> => {
+  if (typeof window === 'undefined') return null;
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') {
+    console.warn('[FCM] 알림 권한이 거부되었습니다.');
+    return null;
+  }
+
+  const messaging = await getMessagingIfSupported();
+  if (!messaging) {
+    console.warn('[FCM] Messaging을 지원하지 않습니다.');
+    return null;
+  }
+
+  const registration = await navigator.serviceWorker.ready;
+
+  const token = await getToken(messaging, {
+    vapidKey: process.env.FCM_VAPID_KEY,
+    serviceWorkerRegistration: registration,
+  });
+
+  return token ?? null;
+};
+```
+
+권한 요청(`Notification.requestPermission()`)을 통해 `granted` 상태에서만 FCM 토큰을 요청한다.
+`navigator.serviceWorker.ready` 로 이미 등록된 Service Worker와 연결된 토큰을 발급하고,
+`vapidKey`는 환경 변수로 관리해 빌드 환경별로 구분한다.
+
+## 3-3. 서버에 토큰 등록
+
+```ts
+// src/notifications/registerFCMToken.ts
+import { api } from '@/app/lib/api';
+
+export const registerFCMToken = async (registrationToken: string) => {
+  return await api.post<void>('/push-notifications', {
+    deviceEndpoint: registrationToken,
+  });
+};
+```
+
+서버에서는 `deviceEndpoint`를 사용자 계정과 매핑해서, 특정 사용자에게 푸시를 보낼 수 있다.
+토큰 등록 오류는 Sentry로 수집해 디버깅 가능하게 했다.
+
+# 4. React 훅으로 알림 UX 다듬기
+
+알림 권한 요청은 "한 번에 끝나는 기술 작업"이 아니라, 사용자에게 동의를 받는 UX다. Moment에서는 이 부분을 훅으로 캡슐화했다.
+
+## 4-1. 알림 버튼에 연결하는 useNotification
+
+```tsx
+// src/notifications/useNotification.ts
+export const useNotification = () => {
+  const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleNotificationClick = () => {
+    return new Promise<boolean>((resolve) => {
+      if (permission === 'granted') {
+        alert('이미 알림을 받고 있습니다.');
+        resolve(true);
+        return;
+      }
+
+      setIsLoading(true);
+
+      Notification.requestPermission()
+        .then(async (permissionResult) => {
+          setPermission(permissionResult);
+
+          if (permissionResult === 'granted') {
+            try {
+              await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+
+              const messagingInstance = await getMessagingInstance();
+              const token = await getToken(messagingInstance, {
+                vapidKey: process.env.FCM_VAPID_KEY,
+              });
+
+              if (token) {
+                await registerFCMToken(token);
+                alert('알림 설정이 완료되었습니다.');
+                resolve(true);
+              } else {
+                alert('알림 설정에 실패했습니다.');
+                resolve(false);
+              }
+            } catch (error) {
+              Sentry.captureException(error);
+              alert('알림 설정에 실패했습니다.');
+              resolve(false);
+            }
+          }
+        })
+        .catch(() => {
+          resolve(false);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    });
+  };
+
+  useEffect(() => {
+    if ('Notification' in window) {
+      setPermission(Notification.permission);
+    }
+  }, []);
+
+  return { permission, isLoading, handleNotificationClick };
+};
+```
+
+이 훅을 사용하면 컴포넌트에서는 단순히,
+
+```tsx
+const { permission, isLoading, handleNotificationClick } = useNotification();
+
+// ...
+<button disabled={isLoading} onClick={() => handleNotificationClick()}>
+  {permission === 'granted' ? '알림 설정 완료' : '알림 받기'}
+</button>;
+```
+
+처럼 붙여 쓸 수 있다.
+
+## 4-2. PWA 환경에서 FCM을 자동 초기화하는 useInitializeFCM
+
+PWA로 설치된 환경에서는 앱 실행과 동시에 FCM을 초기화하고 싶었다. 이때 "모바일 브라우저에서 매번 알림 권한 팝업이 뜨는 것"은 피해야 한다.
+
+```ts
+// src/notifications/useInitializeFCM.ts
+import { isDevice, isPWA } from '../utils/device';
+import { requestFCMPermission, setupForegroundMessage } from './firebase';
+
+export const useInitializeFCM = () => {
+  useEffect(() => {
+    const initializeFCM = async () => {
+      if (!('serviceWorker' in navigator) || (isDevice() && !isPWA())) return;
+
+      try {
+        await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        const token = await requestFCMPermission();
+
+        if (token) {
+          await setupForegroundMessage();
+        }
+      } catch (error) {
+        Sentry.captureException(error);
+      }
+    };
+
+    initializeFCM();
+  }, []);
+};
+```
+
+`!('serviceWorker' in navigator)` -> `Service Worker`를 지원하지 않는 브라우저는 바로 탈락한다.
+
+`isDevice() && !isPWA()` -> 모바일 브라우저에서 설치되지 않은 상태라면 자동 초기화를 하지 않는다.
+-> 사용자가 명시적으로 "알림 받기"를 누를 때만 권한을 요청하도록 분리한다.
+
+설치된 PWA에서는 앱을 열자마자 FCM이 초기화 되고, 웹 브라우저에서는 접근성·프라이버시를 존중하는 UX를 유지한다.
+
+# 5. Foreground / Background 알림 처리 전략
+
+브라우저 탭이 열린 상태(포그라운드)와 백그라운드에서의 알림 경험을 통일하기 위해 두 가지를 모두 처리했다.
+
+- Service Worker의 `onBackgroundMessage`
+  -> 브라우저가 백그라운드에 있거나 닫혀있어도 OS 알림 센터에 노출
+
+- 앱 내부의 `setupForegroundMessage`
+  -> onMessage 리스너를 등록해 Firebase가 포그라운드 메시지를 감지하게 하고,
+  실제 알림 표시는 Service Worker에 위임해 동작을 일관되게 유지
+
+결과적으로,
+
+사용자는 앱을 열어둔 상태/닫은 상태 상관없이 동일한 알림 UX를 경험한다.
+알림 클릭 시 항상 해당 Moment로 딥링크되어, "새 댓글 알림 -> 바로 해당 게시물로 이동" 플로우가 완성된다.
+
+# 추가적인 UX 고려사항
+
+추가적으로 사용자가 PWA 앱이 아닌 웹으로 접속하였을 때 아래와 같이 배너가 뜰 수있도록 하여 UX를 개선하였다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/0a6cdb04-89c4-4cb9-ac6a-4b356f94fa34/image.png)
+
+해당 배너에서 "자세히 보기"를 클릭하면 사용자가 PWA앱을 쉽게 설치할 수 있도록 안내 모달을 띄워주었다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/2d2ffc3f-b868-4294-af28-b13aad09a4a8/image.png)
+
+# 마무리: 웹 접근성을 유지하면서 앱 수준 UX에 가까워지기
+
+이 구현을 통해 Moment는 다음과 같은 효과를 얻었다.
+
+- 설치 가능한 PWA로, 웹 페이지가 아닌 “앱”처럼 인식
+- 오프라인에서도 서비스 컨텍스트를 유지하는 전용 offline 페이지 제공
+- FCM 기반 푸시 알림으로, 댓글/이벤트가 발생했을 때 빠르게 사용자에게 도달
+- 모바일 브라우저, 데스크탑, 설치된 PWA 각각에서 과한 권한 요청 없이 자연스러운 UX
+
+중요하게 의식했던 것은,
+
+> "웹 접근성을 해치지 않으면서, 앱에 가까운 경험을 얼마나 끌어올릴 수 있을까?"
+
+표준 Web API와 Service Worker, Firebase를 조합하면, 별도의 네이티브 앱 없이도 꽤 높은 수준의 앱 UX를 만들 수 있었다.
