@@ -1,5 +1,5 @@
 ---
-title: '[React] PWA + FCM 푸시 알림으로 웹을 앱처럼 만든 구현기'
+title: '[React] 웹인데 앱처럼: React 서비스에 PWA와 FCM 푸시 알림 붙이기'
 author: 'Eunwoo'
 thumbnail: '/thumbnail/reactjs.webp'
 publishDate: '2025-11-17'
@@ -32,6 +32,7 @@ categoryId: 6
 를 구현하기로 하였다.
 
 그래서 이번 글에서는 실제로 Moment에 적용한 코드를 기준으로, PWA + FCM 구조를 정리한 내용과 어떻게 구현하였는지에 대해서 공유하고자 한다.
+참고로 `Firebase` 프로젝트 설정, `Firebase SDK` 설치 등 기본적인 부분은 구글링하면 쉽게 정보를 얻을 수 있기에 생략하고, 핵심 로직과 흐름 위주로 다룬다.
 
 # 한 번에 보는 전체 동작 흐름
 
@@ -733,6 +734,79 @@ export const useInitializeFCM = () => {
 해당 배너에서 "자세히 보기"를 클릭하면 사용자가 PWA앱을 쉽게 설치할 수 있도록 안내 모달을 띄워주었다.
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/2d2ffc3f-b868-4294-af28-b13aad09a4a8/image.png)
+
+# 전체 구조 한 번에 보기 (PWA + SW + FCM)
+
+```text
+ ┌───────────────────────────────────────────────────────────┐
+ │                        백엔드 서버                        │
+ │   - 댓글 생성, 알림 이벤트 발생                           │
+ │   - 유저 ↔ FCM 토큰 매핑 저장                            │
+ │   - FCM API 호출 (이 토큰들에 푸시 보내줘)               │
+ └───────────────▲───────────────────────────────────────────┘
+                 │
+                 │ (푸시 요청)
+                 │
+ ┌───────────────┴───────────────────────────────────────────┐
+ │                  Firebase Cloud Messaging                 │
+ │   - 서버에서 받은 요청 기반으로                           │
+ │   - 각 브라우저/디바이스로 Web Push 전달                  │
+ └───────────────▲───────────────────────────────────────────┘
+                 │ (Web Push)
+                 │
+        ┌────────┴────────┐
+        │                 │
+        │                 │
+┌───────┴─────────────────▼──────────────────────────────────┐
+│         Service Worker (firebase-messaging-sw.js)          │
+│                                                            │
+│  [푸시 관련]                                               │
+│    - onBackgroundMessage(payload)                          │
+│    - showNotification(title, options)                      │
+│    - notificationclick → redirectUrl로 탭 이동/새 창 열기  │
+│                                                            │
+│  [네트워크/오프라인 관련]                                   │
+│    - install: offline.html, manifest, icon 캐싱           │
+│    - fetch:                                                │
+│        · API/외부 도메인 → 그냥 네트워크                   │
+│        · navigate 요청 → 네트워크 실패 시 offline.html     │
+│        · 정적 리소스 → 캐시 우선, 없으면 네트워크          │
+└───────▲─────────────────▲──────────────────────────────────┘
+        │                 │
+        │                 │ (알림 클릭 시 탭 포커스/오픈)
+        │                 │
+┌───────┴─────────────────┴──────────────────────────────────┐
+│                 브라우저 / PWA (React 앱)                  │
+│                                                            │
+│  - index.html                                              │
+│      · manifest.json 링크                                  │
+│      · PWA 메타 태그 (theme-color, apple-* 등)             │
+│                                                            │
+│  - manifest.json                                           │
+│      · name, short_name, icons, display=standalone         │
+│      · gcm_sender_id (FCM 연동 정보)                       │
+│                                                            │
+│  - React 코드                                              │
+│      · useNotification()                                   │
+│          · Notification.requestPermission()                │
+│          · getToken(messaging, VAPID)                      │
+│          · /push-notifications 로 토큰 서버 전송           │
+│      · useInitializeFCM()                                  │
+│          · Service Worker 등록                             │
+│          · PWA 환경에서 FCM 초기화                         │
+└───────▲────────────────────────────────────────────────────┘
+        │
+        │ (화면/알림 UI)
+        │
+┌───────┴────────────────────────────────────────────────────┐
+│                         사용자                             │
+│  - 브라우저로 접속                                        │
+│  - 홈 화면에 설치(PWA)                                    │
+│  - "알림 받기" 동의                                       │
+│  - OS 알림(상태바/잠금화면/알림센터) 확인                 │
+│  - 알림 클릭 → 바로 해당 Moment 상세 화면                 │
+└────────────────────────────────────────────────────────────┘
+```
 
 # 마무리: 웹 접근성을 유지하면서 앱 수준 UX에 가까워지기
 
