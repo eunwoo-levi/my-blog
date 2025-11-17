@@ -671,6 +671,10 @@ const { permission, isLoading, handleNotificationClick } = useNotification();
 
 처럼 붙여 쓸 수 있다.
 
+![](https://velog.velcdn.com/images/eunwoo1341/post/e0de6c4a-9e87-4d30-9bda-4d8d5ef240e2/image.png)
+
+해당 모달 컴포넌트는 PWA앱 내에서 로그인을 했을 때만 뜨도록 하여, 불필요한 알림 권한 요청을 줄이고 UX를 개선하였다.
+
 ## 4-2. PWA 환경에서 FCM을 자동 초기화하는 useInitializeFCM
 
 PWA로 설치된 환경에서는 앱 실행과 동시에 FCM을 초기화하고 싶었다. 이때 "모바일 브라우저에서 매번 알림 권한 팝업이 뜨는 것"은 피해야 한다.
