@@ -28,7 +28,7 @@ export default function MobileNavbar({ isOpen, setIsOpen }: MobileNavbarProps) {
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, setIsOpen]);
 
   return (
     <div
