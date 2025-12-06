@@ -13,13 +13,13 @@ interface MobileNavbarProps {
 export default function MobileNavbar({ isOpen, setIsOpen }: MobileNavbarProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const handleClickOutside = (event: MouseEvent) => {
-    if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-      setIsOpen(false);
-    }
-  };
-
   useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
     if (isOpen) {
       document.addEventListener('click', handleClickOutside);
     } else {
