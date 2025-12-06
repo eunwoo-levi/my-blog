@@ -12,6 +12,33 @@ categoryId: 4
 하지만 EC2로 구축을 하게 되면 서버가 24시간 동안 켜져있어야 하기 때문에 비용이 많이 들고, 또한 서버 관리가 어렵다는 단점이 있었다.
 그래서 해당 문제들을 해결할 수 있는 해결책을 찾아보다가 AWS CodeBuild + CodePipeline + Lambda를 활용하여 정적 웹사이트를 배포하는 방법이 있다는 것을 알게 되었고 해당 방법으로 구축을 성공하였다.
 
+# 기존 EC2 self-hosted runner 구축 방식의 문제점
+
+기존에는 EC2 self-hosted runner를 사용하여 EC2 인스턴스에서 GitHub Actions 워크플로우를 실행하였다.
+
+이 방식의 주요 문제점은 다음과 같다.
+
+1. **비용 문제**: EC2 인스턴스는 24시간 동안 실행되어야 하므로 비용이 많이 든다. 특히, 트래픽이 적은 시간에도 인스턴스를 유지해야 하기 때문에 비효율적이다.
+2. **서버 관리의 복잡성**: EC2 인스턴스를 직접 관리해야 하므로, 보안 패치, 소프트웨어 업데이트, 모니터링 등 추가적인 관리 작업이 필요하다. 이는 개발자의 부담을 증가시킨다.
+3. **확장성 제한**: 트래픽이 급증할 경우, EC2 인스턴스의 성능이 부족할 수 있으며, 이를 해결하기 위해 추가 인스턴스를 수동으로 설정해야 한다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/bd91f9fb-b23e-40ab-9022-ec5184ce4197/image.png)
+
+- 실제 프로젝트의 EC2 모니터링 화면
+
+위 이미지와 같이 EC2 인스턴스가 24시간 내내 실행되고 있어 비용이 많이 발생하는 것을 확인할 수 있었다.
+
+위 문제로부터 "Access Key를 제공하지 않는 환경에서도, 저렴한 비용으로 사람이 서버에 접속하지 않고 자동으로 배포되는 CI/CD 파이프라인을 만들자!"라는 목표를 세우게 되었고,
+문제 해결을 위해 방법을 찾던 중 AWS CodeBuild·CodePipeline·Lambda를 통해서 서버리스 CI/CD 파이프라인을 구현할 수 있음을 알게되었다.
+
+핵심 아이디어는 아래와 같다.
+
+CI/CD 자체를 EC2에서 떼어내고, 전부 AWS 관리형 서비스로 이전하여,
+`GitHub` → `CodePipeline` → `CodeBuild` → `S3` → `Lambda` → `CloudFront`로 이어지는 서버리스 파이프라인 설계하였다.
+그 결과, "필요할 때만 과금되는" 서버리스 구조로 바꾸어 인프라 비용 절감 및 운영 부담 제거를 동시에 달성할 수 있었다.
+
+이제 자세한 구축 과정을 살펴보자.
+
 # CodeBuild 구축
 
 **AWS CodeBuild**는 간단히 정리하면 빌드 자동화 및 S3 업로드 담당하는 서비스이다.
@@ -170,13 +197,21 @@ export const handler = async (event) => {
 
 ![](https://velog.velcdn.com/images/eunwoo1341/post/f66bcc56-a371-44c5-bb8b-61f68d80d6b8/image.png)
 
-처음에 main 브랜치에 코드를 commit 하게 되면 CodePipeline이 자동으로 빌드 단계를 시작한다.
-빌드 단계에서는 CodeBuild를 통해서 프론트엔드 코드를 빌드하고, S3에 업로드한다.
-그 후 Deploy 단계에서는 Lambda를 통해서 CloudFront의 캐시를 무효화한다.
+- 1. main 브랜치에 git push
+- 2. CodePipeline
+- GitHub Webhook으로 커밋 감지 및 소스 아티팩트 생성
+- 3. CodePipeline - Build
+- 소스 코드 체크아웃, 의존성 설치 및 빌드/테스트
+- 빌드 산출물(정적 파일) 생성
+- 4. CodePipeline - Deploy
+- 빌드 결과물을 S3 정적 호스팅 버킷에 업로드
+- 5. Lambda
+- CloudFront 캐시 무효화
 
 # 마무리
 
 정적 웹사이트를 AWS에서 운영하면서 자동 배포를 고민하고 있다면, 이번 방식은 매우 유용한 대안이 될 수 있다.
 EC2를 사용한 방식보다 관리와 비용 측면에서 큰 이점이 있다.
+실제로 CodeBuild·CodePipeline·Lambda 기반 서버리스 CI/CD로 전환하여 관리 부담을 제거하고 인프라 비용을 약 83% 절감하여 매우 만족스러운 결과를 얻었다.
 
 만약 회사에서 Access Key를 제공하지 않는다면 한 번 S3 + CloudFront + CodePipeline + Lambda 조합으로 서버리스 CI/CD를 도전해보길 추천한다.
