@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: ParamsProps) {
       : [category, frontmatter.title, '리액트', '프론트엔드', 'react', 'next.js'];
 
   const description =
-    frontmatter.description || `${frontmatter.title} - ${category} 카테고리의 개발 블로그 포스트`;
+    frontmatter.description || `${frontmatter.title} - ${category} 카테고리의 기술블로그 포스트`;
 
   return {
     title: frontmatter.title,
@@ -38,13 +38,13 @@ export async function generateMetadata({ params }: ParamsProps) {
     keywords,
     authors: [{ name: frontmatter.author }],
     creator: frontmatter.author,
-    publisher: '리바이 개발 블로그',
+    publisher: '리바이 기술블로그',
     openGraph: {
       type: 'article',
       title: frontmatter.title,
       description,
       url: postUrl,
-      siteName: '리바이 개발 블로그',
+      siteName: '리바이 기술블로그',
       publishedTime: frontmatter.publishDate,
       authors: [frontmatter.author],
       section: category,
@@ -96,7 +96,7 @@ export default async function BlogDetailPage({ params }: ParamsProps) {
       : [category, frontmatter.title, '리액트', '프론트엔드', 'react', 'next.js'];
 
   const description =
-    frontmatter.description || `${frontmatter.title} - ${category} 카테고리의 개발 블로그 포스트`;
+    frontmatter.description || `${frontmatter.title} - ${category} 카테고리의 기술블로그 포스트`;
 
   // JSON-LD 구조화된 데이터
   const jsonLd = {
@@ -109,7 +109,7 @@ export default async function BlogDetailPage({ params }: ParamsProps) {
     },
     publisher: {
       '@type': 'Organization',
-      name: '리바이 개발 블로그',
+      name: '리바이 기술블로그',
       logo: {
         '@type': 'ImageObject',
         url: 'https://www.eunwoo-levi.com/levi.webp',

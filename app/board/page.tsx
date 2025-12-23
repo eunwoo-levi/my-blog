@@ -2,7 +2,7 @@ import { Giscus } from '@/src/shared/ui';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Board - 리바이 개발 블로그',
+  title: 'Board - 리바이 기술블로그',
   description: '자유 게시판',
   alternates: {
     canonical: 'https://www.eunwoo-levi.com/board',
