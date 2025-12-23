@@ -22,6 +22,12 @@ export default {
               h1: {
                 paddingTop: '1rem',
               },
+              'code::before': {
+                content: '""',
+              },
+              'code::after': {
+                content: '""',
+              },
             },
           },
         };
