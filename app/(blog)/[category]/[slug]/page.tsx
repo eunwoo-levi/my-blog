@@ -5,6 +5,7 @@ import { Giscus } from '@/src/shared/ui';
 import { TableOfContents } from '@/src/features/blog';
 
 export const revalidate = 3600;
+export const dynamicParams = false; // generateStaticParams에 없는 값은 404
 
 export async function generateStaticParams() {
   const posts = await getAllPosts();
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: ParamsProps) {
   const { category, slug } = await params;
   const { frontmatter } = await getPostBySlug(category, slug);
 
-  if (!frontmatter) return {};
+  if (!frontmatter) notFound();
 
   const postUrl = `https://www.eunwoo-levi.com/${category}/${slug}`;
 
