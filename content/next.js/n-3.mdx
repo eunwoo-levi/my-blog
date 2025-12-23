@@ -4,6 +4,22 @@ author: 'eunwoo'
 thumbnail: '/thumbnail/nextjs.webp'
 publishDate: '2025-08-04'
 categoryId: 5
+keywords:
+  [
+    'Next.js',
+    'Monorepo',
+    'pnpm',
+    'workspace',
+    'Vite',
+    'Hybrid Monorepo',
+    'pnpm-workspace',
+    '모노레포',
+    '패키지 관리',
+    'shared',
+    'Admin 페이지',
+    '배포 전략',
+  ]
+description: 'Next.js와 Vite를 공존시키는 Hybrid Monorepo 구축. pnpm workspace로 패키지 통합 관리, 공용 모듈 분리, 배포 전략까지 실전 가이드.'
 ---
 
 이번 글에서는 Vite 기반 Admin 페이지 도입을 위해 기존 Next.js 기반 프로젝트를 Hybrid Monorepo 구조로 전환한 내용을 공유하고자 한다.
@@ -94,15 +110,12 @@ Vite 기반 프로젝트는 정적 SPA로 빌드하여 빠른 배포가 가능�
 # Monorepo 전환 장점 요약
 
 - 1. 패키지 관리 통합
-
   - 의존성 버전 일관성 유지, 중복 제거
 
 - 2. CI/CD 최적화
-
   - 디렉토리별 분기 실행 가능 (filter)
 
 - 3. 구조적 명료성
-
   - 사용자/관리자 앱 분리로 유지보수 편의
 
 - 4. 협업 효율
