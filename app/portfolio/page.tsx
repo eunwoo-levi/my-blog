@@ -1,6 +1,15 @@
 import { notFound } from 'next/navigation';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import { getPortfolio } from '@/src/shared/lib/mdx/getPortfolio';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: '포트폴리오 - 리바이 개발 블로그',
+  description: '리바이의 프로젝트 포트폴리오',
+  alternates: {
+    canonical: 'https://www.eunwoo-levi.com/portfolio',
+  },
+};
 
 export default async function PortfolioPage() {
   const post = await getPortfolio();

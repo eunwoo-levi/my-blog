@@ -16,12 +16,26 @@ const iansui = localFont({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.eunwoo-levi.com'),
-  title: '리바이 개발 블로그',
-  description: '리바이 프론트엔드 개발 블로그',
-  keywords: ['프론트엔드', '개발', 'React', 'Next.js', 'TypeScript', 'JavaScript', '블로그'],
+  title: '리바이 기술블로그',
+  description:
+    '리바이의 프론트엔드 기술블로그 - React, Next.js, TypeScript, JavaScript 학습 기록 및 개발 경험 공유',
+  keywords: [
+    '리바이',
+    '리바이 기술블로그',
+    '기술블로그',
+    '프론트엔드',
+    '개발',
+    'React',
+    'Next.js',
+    'TypeScript',
+    'JavaScript',
+    '블로그',
+    '프론트엔드 개발자',
+    '웹 개발',
+  ],
   authors: [{ name: '리바이', url: 'https://www.eunwoo-levi.com' }],
   creator: '리바이',
-  publisher: '리바이 개발 블로그',
+  publisher: '리바이 기술블로그',
   formatDetection: {
     email: false,
     address: false,
@@ -29,24 +43,26 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    title: '리바이 개발 블로그',
-    description: '리바이 프론트엔드 개발 블로그',
+    title: '리바이 기술블로그',
+    description:
+      '리바이의 프론트엔드 기술블로그 - React, Next.js, TypeScript, JavaScript 학습 기록 및 개발 경험 공유',
     url: 'https://www.eunwoo-levi.com',
-    siteName: '리바이 개발 블로그',
+    siteName: '리바이 기술블로그',
     locale: 'ko_KR',
     images: [
       {
         url: 'https://www.eunwoo-levi.com/levi.webp',
         width: 1200,
         height: 630,
-        alt: '리바이 개발 블로그',
+        alt: '리바이 기술블로그',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: '리바이 개발 블로그',
-    description: '리바이 프론트엔드 개발 블로그',
+    title: '리바이 기술블로그',
+    description:
+      '리바이의 프론트엔드 기술블로그 - React, Next.js, TypeScript, JavaScript 학습 기록',
     creator: '@eunwoo_levi',
     images: ['https://www.eunwoo-levi.com/levi.webp'],
   },
