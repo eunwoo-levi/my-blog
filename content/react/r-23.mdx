@@ -4,6 +4,22 @@ author: 'Eunwoo'
 thumbnail: '/thumbnail/reactjs.webp'
 publishDate: '2025-06-02'
 categoryId: 6
+keywords:
+  [
+    'React',
+    'TanStack Query',
+    'React Query',
+    'useQuery',
+    'useMutation',
+    '서버 상태 관리',
+    'QueryClient',
+    'QueryClientProvider',
+    '캐싱',
+    'React 상태 관리',
+    'API 요청',
+    'ReactQueryDevtools',
+  ]
+description: 'TanStack Query(React Query) 완벽 가이드. useQuery, useMutation으로 서버 상태 관리하기. 캐싱, 동기화, 업데이트를 쉽게 처리하는 React 필수 라이브러리 사용법.'
 ---
 
 ![pic](https://velog.velcdn.com/images/eunwoo1341/post/ce7bcd93-ec43-42c9-a771-3adb46974325/image.png)
@@ -130,7 +146,6 @@ const { data, isLoading, error } = useQuery({
   - 캐시와 자동 재요청 여부 판단의 기준이 됨
   - 배열 형태로 넘기며, 파라미터를 포함할 수도 있음 → 예: ["post", id]
 - `queryFn`: 데이터를 가져오는 비동기 함수
-
   - 반드시 Promise를 반환해야 함
 
 - `retry`: 실패 시 재시도 횟수 설정 (기본값은 3)

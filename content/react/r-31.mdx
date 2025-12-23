@@ -4,6 +4,21 @@ author: 'Eunwoo'
 thumbnail: '/thumbnail/reactjs.webp'
 publishDate: '2025-08-20'
 categoryId: 6
+keywords:
+  [
+    'React',
+    'TanStack Query',
+    'useInfiniteQuery',
+    'Intersection Observer',
+    '무한스크롤',
+    'Infinite Scroll',
+    'Pagination',
+    'Cursor 기반',
+    'React Query',
+    '성능 최적화',
+    'UX',
+  ]
+description: 'TanStack Query의 useInfiniteQuery와 Intersection Observer API로 무한스크롤 구현하기. Cursor 기반 페이지네이션, 성능 최적화, UX 개선 완벽 가이드.'
 ---
 
 최근 프로젝트에서 많은 데이터를 한 페이지에서 효율적으로 보여주기 위해 **무한스크롤(Infinite Scroll)**을 구현했다. 이 과정에서 **TanStack Query**의 `useInfiniteQuery`와 **Intersection Observer API**를 활용하여 성능과 사용자 경험(UX)을 최적화했다.
@@ -383,39 +398,32 @@ const handleIntersect = useCallback(
 # 전체 데이터 플로우 분석
 
 - 1. 컴포넌트 마운트
-
   - `MyMomentsList`가 마운트되면 `useMomentsQuery()`가 실행된다.
   - 내부적으로 `useInfiniteQuery`가 작동하여 첫 페이지를 fetch 한다 (pageParam = null).
 
 - 2. 첫 페이지 로딩
-
   - `getMoments()` API 함수가 호출되어, `/moments/me?nextCursor=null&pageSize=10` 요청이 발생한다.
   - 응답에서 items, nextCursor, hasNextPage 등의 정보가 포함되어 반환된다.
 
 - 3. 데이터 렌더링
-
   - 응답 데이터를 기반으로 myMoments 배열을 구성 (여러 페이지 → 하나의 평탄화된 배열)
   - 각 MyMomentsItem을 MyMomentsCard 컴포넌트로 렌더링한다.
 
 - 4. `Intersection Observer` 작동
-
   - 화면 하단에 위치한 `<div ref={observerRef} />`가 렌더링되고
   - 해당 ref는 `useIntersectionObserver` 훅에 의해 `IntersectionObserver`로 감지되고 있다.
 
 - 5. 옵저버 트리거 → 다음 페이지 요청
-
   - 사용자가 스크롤을 내리면서 observerRef가 뷰포트에 들어오면 onIntersect가 실행된다.
   - 조건: `hasNextPage && !isFetchingNextPage`가 true일 때만 `fetchNextPage()`가 호출된다.
   - 이때 `pageParam`은 이전 응답에서 받은 `nextCursor` 값이다.
 
 - 6. 다음 페이지 데이터 로딩
-
   - `fetchNextPage()`는 `getMoments({ pageParam })`를 호출하여 다음 데이터를 요청한다.
   - 응답받은 items는 `momentsResponse.pages` 배열에 누적된다.
   - `flatMap()`을 통해 전체 데이터가 평탄화되어 다시 렌더링된다.
 
 - 7. 반복
-
   - 스크롤 → 옵저버 감지 → `fetchNextPage` → 렌더링 순으로 반복
   - `hasNextPage`가 false가 되면 옵저버는 더 이상 `onIntersect`를 실행하지 않음
   - 즉, 마지막 페이지까지 도달하면 무한스크롤 종료

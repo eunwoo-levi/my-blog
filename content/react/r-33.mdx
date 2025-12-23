@@ -4,6 +4,23 @@ author: 'Eunwoo'
 thumbnail: '/thumbnail/reactjs.webp'
 publishDate: '2025-09-02'
 categoryId: 6
+keywords:
+  [
+    'React',
+    '성능 최적화',
+    '로딩 성능',
+    '렌더링 성능',
+    'LCP',
+    'FCP',
+    'TTI',
+    'CLS',
+    'Web Vitals',
+    'Code Splitting',
+    '이미지 최적화',
+    '번들 최적화',
+    'Lighthouse',
+  ]
+description: '프론트엔드 성능 최적화 완벽 가이드. 로딩 성능과 렌더링 성능 개선 방법, Web Vitals, LCP, FCP 최적화, 측정-분석-개선 프로세스까지 딥다이브.'
 ---
 
 ### "성능이 곧 사용자 경험이다"
@@ -199,22 +216,18 @@ module.exports = {
 기본적으로 이 코드의 문제점들을 정리하면 아래와 같다.
 
 1. 압축/최적화 비활성화
-
    - optimization.minimize: false로 minify/uglify 비활성화.
    - 결과: JS 파싱·실행 시간 증가, 번들 크기 불필요하게 큼 → TBT 상승 요인.
 
 2. 캐시 부적합한 파일명
-
    - bundle.js 고정 파일명: 내용이 바뀌어도 파일명이 같아 브라우저 캐시가 꼬임(stale).
    - 결과: 배포 후에도 오래된 코드가 남거나, 반대로 매 배포마다 전체 캐시 무효화.
 
 3. 코드 스플리팅 부재
-
    - 모든 코드를 한 파일에: 초기 로드 때 큰 long task가 발생.
    - 결과: 메인 스레드 블로킹(TBT 상승), 첫 페인트 지연.
 
 4. 런타임/벤더와 앱 코드 섞임
-
    - 사소한 변경에도 번들 해시가 통째로 변해 롱캐시 효과 저하.
 
 5. 소스맵 전략 미분리

@@ -4,6 +4,21 @@ author: 'Eunwoo'
 thumbnail: '/thumbnail/reactjs.webp'
 publishDate: '2025-07-07'
 categoryId: 6
+keywords:
+  [
+    'React',
+    'Webpack',
+    'TypeScript',
+    'ts-loader',
+    'webpack-dev-server',
+    'html-webpack-plugin',
+    'React 환경 설정',
+    'Webpack 설정',
+    'tsconfig',
+    'babel',
+    'CRA 대체',
+  ]
+description: 'Webpack으로 React + TypeScript 개발 환경 직접 구축하기. CRA 없이 Webpack, ts-loader, webpack-dev-server 설정부터 실행까지 완벽 가이드.'
 ---
 
 최근 프로젝트에서 Create React App(CRA)나 Vite 같은 보일러플레이트 없이, Webpack 기반으로 직접 React + TypeScript 개발 환경을 구성해야 하는 상황이 생겼다.
@@ -63,25 +78,20 @@ my-webpack-app/
 ```
 
 - 'public/index.html': HTML 템플릿 파일
-
   - 기능: Webpack의 html-webpack-plugin이 이 파일을 기반으로 번들된 JS (bundle.js)를 자동으로 `<script>` 태그로 삽입해줌
   - 결과: 최종 결과물로 브라우저에 보이는 HTML의 기본 구조가 됨
 
 - 'src/index.tsx': React 애플리케이션의 진입점
-
   - 기능: ReactDOM을 사용하여 App 컴포넌트를 렌더링
   - 결과: 브라우저에서 React 애플리케이션이 시작되는 지점
 
 - 'src/App.tsx': 기본 App 컴포넌트
-
   - 기능: React 컴포넌트로, 애플리케이션의 UI
 
 - `package.json`: 프로젝트 메타데이터 및 의존성 관리
-
   - 기능: 프로젝트의 의존성, 스크립트, 버전 등을 정의
 
 - `tsconfig.json`: TypeScript 설정 파일
-
   - 기능: TypeScript 컴파일러 옵션을 정의
   - 결과: TypeScript가 어떻게 코드를 컴파일할지 설정
 
@@ -115,26 +125,22 @@ npx tsc --init
 ```
 
 - "target": "ES6"
-
   - TypeScript 코드를 어떤 JavaScript 버전으로 변환할지 결정
   - ES6 (ES2015)은 let, const, arrow function, Promise 등을 포함
   - 브라우저가 ES6 이상을 지원한다면 안전한 선택
 
 - "module": "ESNext"
-
   - 모듈 시스템을 어떤 방식으로 변환할지 설정 (import/export 등)
   - ESNext는 최신 모듈 시스템을 유지하며, Webpack이 이를 처리할 수 있음
   - 보통 Webpack이나 Babel과 함께 사용할 때 적절함
 
 - "jsx": "react-jsx"
-
   - React의 JSX를 어떻게 변환할지 설정
   - react-jsx는 React 17 이상에서 도입된 새로운 JSX 변환 방식
     (별도로 import React from "react" 하지 않아도 됨)
   - 구버전 React를 사용할 경우에는 "react"로 설정
 
 - "moduleResolution": "node"
-
   - 모듈 해석 방식을 Node.js 방식으로 설정
   - node_modules, 파일 경로 등을 Node처럼 해석 (e.g., 확장자 생략 가능)
 
@@ -146,7 +152,6 @@ npx tsc --init
   코드 안정성과 버그 예방에 매우 유용
 
 - "esModuleInterop": true
-
   - CommonJS 모듈과 ES 모듈 간의 호환성 문제 해결
   - 예를 들어 import fs from "fs"를 사용할 수 있게 함
 
@@ -204,7 +209,6 @@ module.exports = {
 ```
 
 - entry: './src/index.tsx'
-
   - **앱의 시작점(entry point)**을 지정한다.
   - 여기서부터 모든 모듈(.tsx, .ts, .js 등)을 따라가며 하나의 번들로 묶는다.
 
@@ -217,21 +221,17 @@ module.exports = {
 | `clean`    | 매 빌드 시 이전 `dist` 폴더 내용을 자동 삭제 |
 
 - resolve:
-
   - 파일 확장자 생략 가능하게 설정한다.
   - ex) import App from './App'; → .tsx 먼저 찾고, 없으면 .ts, 그다음 .js 순서로 찾는다.
 
 - module.rules: ts 처리와 css 처리
-
   - .ts, .tsx 파일은 **ts-loader**를 이용해 TypeScript를 JavaScript로 변환한다.
   - node_modules는 제외 (이미 번들되어 있음)
-
     - .css 파일은 **style-loader**와 **css-loader**를 이용해 CSS를 처리한다.
       - style-loader: CSS를 DOM에 삽입 (`<style>` 태그로)
       - css-loader: `import './style.css'` 가능하게 함
 
 - plugins: HtmlWebpackPlugin
-
   - `public/index.html`을 템플릿으로 삼아 HTML 파일을 생성합니다.
   - 자동으로 `<script src="bundle.js"></script>` 삽입됩니다.
 

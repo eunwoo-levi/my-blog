@@ -4,11 +4,27 @@ author: 'Eunwoo'
 thumbnail: '/thumbnail/reactjs.webp'
 publishDate: '2025-07-03'
 categoryId: 6
+keywords:
+  [
+    'React',
+    'Prettier',
+    'ESLint',
+    'React 19',
+    'eslint-config-prettier',
+    '@eslint-react/eslint-plugin',
+    'TypeScript ESLint',
+    'pnpm',
+    'Webpack',
+    '코드 포맷터',
+    '린터',
+    'Biome',
+  ]
+description: 'React 19 프로젝트에서 Prettier + ESLint 최신 설정 가이드. TypeScript, Webpack 환경에서 eslint-config-prettier와 @eslint-react 플러그인 완벽 설정 방법.'
 ---
 
 # React 19 프로젝트에서 Prettier + ESLint 설정하기
 
-React 19는 JSX 자동 런타임과 향상된 타입 호환성을 제공하기 때문에, ESLint와 Prettier도 이에 맞춰 설정해야 한다. 
+React 19는 JSX 자동 런타임과 향상된 타입 호환성을 제공하기 때문에, ESLint와 Prettier도 이에 맞춰 설정해야 한다.
 이 글에서는 `pnpm`과 `webpack`을 사용하는 React + TypeScript 환경을 기준으로, 최신 포맷터와 린터 설정 방법을 소개한다.
 
 # 1. 패키지 설치
@@ -117,7 +133,6 @@ Thumbs.db
 coverage/
 ```
 
-
 # 4. ESLint 설정
 
 프로젝트 루트에 `.eslintrc.json` 파일을 생성하고 다음과 같이 설정한다.
@@ -163,10 +178,10 @@ export default [
     },
     languageOptions: {
       parserOptions: {
-        ecmaVersion: 2022,        // 최신 ECMAScript 기능 사용
-        sourceType: 'module',     // import/export 문법 허용
+        ecmaVersion: 2022, // 최신 ECMAScript 기능 사용
+        sourceType: 'module', // import/export 문법 허용
         ecmaFeatures: {
-          jsx: true,              // JSX 문법 사용 허용
+          jsx: true, // JSX 문법 사용 허용
         },
       },
     },
@@ -186,7 +201,6 @@ export default [
   prettierConfig,
 ];
 ```
-
 
 # Biome에서 ESLint + Prettier로 전환한 이유
 

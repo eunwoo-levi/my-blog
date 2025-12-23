@@ -4,6 +4,22 @@ author: 'Eunwoo'
 thumbnail: '/thumbnail/reactjs.webp'
 publishDate: '2025-07-12'
 categoryId: 6
+keywords:
+  [
+    'React',
+    'Webpack',
+    'babel',
+    'babel-loader',
+    'ts-loader',
+    'TypeScript',
+    'JSX',
+    '트랜스파일',
+    'ES6',
+    'Webpack 최적화',
+    'fork-ts-checker-webpack-plugin',
+    '빌드 속도',
+  ]
+description: 'Webpack에서 ts-loader 대신 babel-loader를 선택한 이유. 빌드 속도 최적화, React 호환성, TypeScript 트랜스파일 방식 비교와 실전 적용 가이드.'
 ---
 
 최근 프로젝트에서 Webpack을 사용하여 React + TypeScript 환경을 설정하는 과정에서 `ts-loader` 대신 `babel-loader`를 선택했다.
@@ -26,7 +42,7 @@ Webpack은 기본적으로 .js와 .json만 이해할 수 있다.
 const sum = (a, b) => a + b;
 
 // 변환 후 (ES5)
-var sum = function(a, b) {
+var sum = function (a, b) {
   return a + b;
 };
 ```
@@ -100,55 +116,54 @@ module.exports = {
               presets: [
                 '@babel/preset-env', // 최신 JS 문법을 변환
                 '@babel/preset-react', // JSX를 변환
-                '@babel/preset-typescript' // 타입스크립트를 변환
-              ]
-            }
-          }
+                '@babel/preset-typescript', // 타입스크립트를 변환
+              ],
+            },
+          },
         ],
-        exclude: /node_modules/
-      }
-    ]
+        exclude: /node_modules/,
+      },
+    ],
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js'] // .tsx 확장자도 처리할 수 있게 한다
-  }
+    extensions: ['.tsx', '.ts', '.js'], // .tsx 확장자도 처리할 수 있게 한다
+  },
 };
 ```
 
 ## modules.rules와 resolve은 언제 수정해야 할까?
 
 - `module.rules`: "이런 파일도 웹팩이 이해했으면 좋겠는데?" 싶을 때
-    - .scss, .tsx 같은 새로운 파일을 추가했는데 웹팩이 못 읽을 때
-    - 로더를 새로 추가할 때 (예: 이미지, 폰트, SVG 등 처리용)
+  - .scss, .tsx 같은 새로운 파일을 추가했는데 웹팩이 못 읽을 때
+  - 로더를 새로 추가할 때 (예: 이미지, 폰트, SVG 등 처리용)
 
 - `resolve`: import, require문을 썼을 때 어떤 파일을 가리키는지 알려주고 싶을 때
-    - `import A from './A.tsx'` → `import A from './A'`처럼 확장자를 생략하고 싶을 때
-    - `src/components/...` 이런 긴 경로를 `@components/...`처럼 짧게 쓰고 싶을 때
-    - 모듈을 찾는 기준 경로를 바꾸고 싶을 때 (`node_modules` 말고 `src`도 보게 만들기 등)
+  - `import A from './A.tsx'` → `import A from './A'`처럼 확장자를 생략하고 싶을 때
+  - `src/components/...` 이런 긴 경로를 `@components/...`처럼 짧게 쓰고 싶을 때
+  - 모듈을 찾는 기준 경로를 바꾸고 싶을 때 (`node_modules` 말고 `src`도 보게 만들기 등)
 
-# fork-ts-checker-webpack-plugin 
+# fork-ts-checker-webpack-plugin
 
-타입 검사를 별도로 처리하기 위해 `fork-ts-checker-webpack-plugin`을 사용할 수 있다. 
+타입 검사를 별도로 처리하기 위해 `fork-ts-checker-webpack-plugin`을 사용할 수 있다.
 
 **fork-ts-checker-webpack-plugin**을 사용하는 가장 큰 장점은 타입 검사(Type Checking)와 Linting을 Webpack 번들링과 `병렬`로 수행할 수 있다는 것이다. 이를 통해 빌드 속도를 크게 향상시킬 수 있다.
 
 정리해보면
 
 - Webpack과 타입 체크를 병렬 처리
-    - 기본적으로 ts-loader는 **타입 검사 + 트랜스파일(코드 변환)**을 동시에 처리
-    - 하지만 이 경우 빌드 속도가 느려질 수 있다.
-    - babel-loader는 타입 검사를 생략하고 빠르게 **트랜스파일**만 수행
-    - 이때 fork-ts-checker-webpack-plugin을 사용하면, **타입 체크**는 별도의 프로세스에서 **병렬**로 수행되므로 Webpack 빌드 속도는 빨라지고, 타입 안전성도 유지
+  - 기본적으로 ts-loader는 **타입 검사 + 트랜스파일(코드 변환)**을 동시에 처리
+  - 하지만 이 경우 빌드 속도가 느려질 수 있다.
+  - babel-loader는 타입 검사를 생략하고 빠르게 **트랜스파일**만 수행
+  - 이때 fork-ts-checker-webpack-plugin을 사용하면, **타입 체크**는 별도의 프로세스에서 **병렬**로 수행되므로 Webpack 빌드 속도는 빨라지고, 타입 안전성도 유지
 
 - 빠른 핫 리로딩 (HMR) 유지
-    - Webpack 개발 서버에서는 빠른 HMR(Hot Module Replacement)이 중요한데,
-    - 타입 체크 때문에 매번 전체 빌드를 기다리면 개발 생산성이 떨어진다.
-    - 이 플러그인은 타입 검사를 백그라운드에서 하므로 빠른 HMR을 유지할 수 있다.
+  - Webpack 개발 서버에서는 빠른 HMR(Hot Module Replacement)이 중요한데,
+  - 타입 체크 때문에 매번 전체 빌드를 기다리면 개발 생산성이 떨어진다.
+  - 이 플러그인은 타입 검사를 백그라운드에서 하므로 빠른 HMR을 유지할 수 있다.
 
 HMR이란 코드 변경 시 전체 페이지를 새로고침하지 않고, 변경된 부분만 업데이트하는 기능이다. 이를 통해 개발 중에 빠르게 결과를 확인할 수 있다.
 
-
-##  fork-ts-checker-webpack-plugin 설정
+## fork-ts-checker-webpack-plugin 설정
 
 먼저, `fork-ts-checker-webpack-plugin`을 설치한다.
 
@@ -169,7 +184,6 @@ module.exports = {
 ```
 
 이제 Webpack 빌드 시 타입 검사를 별도의 프로세스에서 병렬로 수행하게 된다.
-
 
 # 결론
 

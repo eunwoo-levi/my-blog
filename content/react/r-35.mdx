@@ -4,6 +4,21 @@ author: 'Eunwoo'
 thumbnail: '/thumbnail/reactjs.webp'
 publishDate: '2025-09-26'
 categoryId: 6
+keywords:
+  [
+    'React',
+    'useSyncExternalStore',
+    'React 18',
+    'Concurrent Rendering',
+    '외부 스토어',
+    'Toast',
+    'Zustand',
+    'SSR',
+    'Hydration',
+    'tearing',
+    '동시성 렌더링',
+  ]
+description: 'useSyncExternalStore로 Toast 시스템 구현하기. React 18 동시성 렌더링 환경에서 외부 스토어 안전하게 구독하기, Zustand 원리 이해와 실전 활용.'
 ---
 
 이전에 프로젝트에서는 보통 Toast UI를 구현할 때는 Context API를 사용하여 전역으로 상태를 관리하는 방식을 사용하였다.
@@ -208,13 +223,11 @@ Strict Mode의 이중 호출/동시성에서도 메모리 누수 없이 안전�
 useSyncExternalStore의 3가지 인자를 분석해보면,
 
 1. `store.subscribe: (onStoreChange) => unsubscribe`
-
    - React가 커밋 시점에 이 함수를 호출해 구독을 설정한다.
    - 스토어 값이 바뀌면 내부에서 onStoreChange()를 호출 → React가 "업데이트 필요"로 표시.
    - 반환된 unsubscribe는 언마운트/재커밋 시 정리에 사용된다. (StrictMode에서 mount/unmount가 한 번 더 일어나도 누수 없이 안전)
 
 2. `store.getState: () => TState (getSnapshot)`
-
    - React가 렌더 순간마다 이 함수를 호출해서 현재 스냅샷을 "동기적으로" 읽는다.
    - 같은 렌더 패스에 있는 컴포넌트들이 동일한 값을 보도록 해 "찢어짐(anti-tearing)"을 방지한다.
 

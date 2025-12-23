@@ -4,6 +4,25 @@ author: 'Eunwoo'
 thumbnail: '/thumbnail/reactjs.webp'
 publishDate: '2025-11-17'
 categoryId: 6
+keywords:
+  [
+    'React',
+    'PWA',
+    'Progressive Web App',
+    'FCM',
+    'Firebase Cloud Messaging',
+    '푸시 알림',
+    'Service Worker',
+    'React PWA',
+    '웹 앱',
+    '홈 화면 추가',
+    '오프라인 지원',
+    'manifest.json',
+    'firebase-messaging-sw',
+    '웹 푸시',
+    '모바일 웹',
+  ]
+description: 'React 웹 서비스에 PWA와 FCM을 적용하여 앱처럼 사용하는 방법. 홈 화면 추가, 오프라인 지원, 실시간 푸시 알림 구현까지 실제 Moment 서비스 적용 사례로 알아봅니다.'
 ---
 
 기존에 개발하고 있었던 React 기반 웹 서비스 [Moment](https://connectingmoment.com)는 사용자가 매일 들어와서 기록하고, 댓글 알림을 확인하는 서비스다 보니, 자연스럽게 **앱 같은 사용 경험**이 필요했다.
@@ -73,25 +92,21 @@ categoryId: 6
 ![](https://velog.velcdn.com/images/eunwoo1341/post/04b6a816-54c8-4528-91e9-978b57cd7ac9/image.png)
 
 1. **PWA 셋업**
-
    - `manifest.json` + `<meta>` 태그로  
      "이 웹은 앱처럼 설치할 수 있다"는 정보를 브라우저에 전달.
    - `display: "standalone"` 등의 설정으로 설치 후 전체 화면 앱처럼 실행.
 
 2. **Service Worker 등록**
-
    - 브라우저가 `firebase-messaging-sw.js`를 Service Worker로 등록.
    - 이 워커가 네트워크 요청을 가로채서 **오프라인 페이지/캐시**를 처리하고,
    - 동시에 백그라운드에서 **푸시 알림을 수신**한다.
 
 3. **알림 권한 + FCM 토큰 발급**
-
    - React 앱에서 `Notification.requestPermission()` 으로 유저에게 알림 권한을 요청.
    - 권한을 허용하면 Firebase SDK로 **이 브라우저를 구분하는 고유 FCM 토큰**을 발급.
    - 이 토큰을 백엔드로 보내서 "이 사용자 = 이 디바이스/브라우저 토큰"을 연결해 둔다.
 
 4. **서버 → FCM → 브라우저로 푸시 전송**
-
    - 댓글이 달리는 등 이벤트가 발생하면 서버가 FCM에  
      "이 토큰으로 푸시를 보내라는" 요청을 날린다.
    - FCM 서버는 해당 브라우저/디바이스로 푸시 메시지를 전달한다.
@@ -134,7 +149,6 @@ DOM에는 직접 손을 못 대지만, 대신 다음 같은 일을 할 수 있�
 필자의 서비스인 Moment의 Service Worker(`firebase-messaging-sw.js`)는 크게 두 가지를 동시에 처리한다.
 
 1. **오프라인/캐시**
-
    - `/manifest.json`, 아이콘 파일, `offline.html` 등을 설치 시점에 캐시
    - `fetch`에서 `navigate` 요청이 실패하면 `offline.html`로 graceful degrade
    - 정적 리소스는 캐시 우선, API/외부 도메인은 그대로 네트워크로
