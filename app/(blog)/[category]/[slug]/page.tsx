@@ -1,10 +1,19 @@
-import { getPostBySlug } from '@/src/shared/lib/mdx/getBlog';
+import { getAllPosts, getPostBySlug } from '@/src/shared/lib/mdx/getBlog';
 import { ParamsProps } from '@/src/shared/model/type';
 import { notFound } from 'next/navigation';
 import { Giscus } from '@/src/shared/ui';
 import { TableOfContents } from '@/src/features/blog';
 
 export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  const posts = await getAllPosts();
+
+  return posts.map((post) => ({
+    category: post.category,
+    slug: post.slug,
+  }));
+}
 
 export async function generateMetadata({ params }: ParamsProps) {
   const { category, slug } = await params;
@@ -14,17 +23,25 @@ export async function generateMetadata({ params }: ParamsProps) {
 
   const postUrl = `https://www.eunwoo-levi.com/${category}/${slug}`;
 
+  const keywords =
+    frontmatter.keywords && frontmatter.keywords.length > 0
+      ? frontmatter.keywords
+      : [category, frontmatter.title, '리액트', '프론트엔드', 'react', 'next.js'];
+
+  const description =
+    frontmatter.description || `${frontmatter.title} - ${category} 카테고리의 개발 블로그 포스트`;
+
   return {
     title: frontmatter.title,
-    description: `${frontmatter.title} - ${frontmatter.author}의 개발 블로그 포스트`,
-    keywords: [category, frontmatter.title, '개발', '프론트엔드', frontmatter.author],
+    description,
+    keywords,
     authors: [{ name: frontmatter.author }],
     creator: frontmatter.author,
     publisher: '리바이 개발 블로그',
     openGraph: {
       type: 'article',
       title: frontmatter.title,
-      description: `${frontmatter.title} - ${frontmatter.author}의 개발 블로그 포스트`,
+      description,
       url: postUrl,
       siteName: '리바이 개발 블로그',
       publishedTime: frontmatter.publishDate,
@@ -43,7 +60,7 @@ export async function generateMetadata({ params }: ParamsProps) {
     twitter: {
       card: 'summary_large_image',
       title: frontmatter.title,
-      description: `${frontmatter.title} - ${frontmatter.author}의 개발 블로그 포스트`,
+      description,
       images: [`https://www.eunwoo-levi.com${frontmatter.thumbnail}`],
       creator: '@eunwoo_levi',
     },
@@ -72,6 +89,14 @@ export default async function BlogDetailPage({ params }: ParamsProps) {
     notFound();
   }
 
+  const keywords =
+    frontmatter.keywords && frontmatter.keywords.length > 0
+      ? frontmatter.keywords
+      : [category, frontmatter.title, '리액트', '프론트엔드', 'react', 'next.js'];
+
+  const description =
+    frontmatter.description || `${frontmatter.title} - ${category} 카테고리의 개발 블로그 포스트`;
+
   // JSON-LD 구조화된 데이터
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -91,11 +116,11 @@ export default async function BlogDetailPage({ params }: ParamsProps) {
     },
     datePublished: frontmatter.publishDate,
     dateModified: frontmatter.publishDate,
-    description: `${frontmatter.title} - ${frontmatter.author}의 개발 블로그 포스트`,
+    description,
     image: `https://www.eunwoo-levi.com${frontmatter.thumbnail}`,
     url: `https://www.eunwoo-levi.com/${category}/${slug}`,
     articleSection: category,
-    keywords: [category, '개발', '프론트엔드', frontmatter.author],
+    keywords,
     mainEntityOfPage: {
       '@type': 'WebPage',
       '@id': `https://www.eunwoo-levi.com/${category}/${slug}`,
