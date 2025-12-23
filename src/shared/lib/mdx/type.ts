@@ -4,6 +4,8 @@ export interface BlogFrontMatter {
   thumbnail: string;
   publishDate: string;
   categoryId: number;
+  keywords?: string[];
+  description?: string;
 }
 
 export interface PostData {
