@@ -3,6 +3,7 @@ import { CATEGORIES } from '@/src/features/blog/model/data';
 import { getAllPosts } from '@/src/shared/lib/mdx/getBlog';
 import { ParamsProps } from '@/src/shared/model/type';
 import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 
 export const revalidate = 3600;
 
@@ -51,9 +52,19 @@ export async function generateMetadata({ params }: ParamsProps): Promise<Metadat
 
 export default async function CategoryPage({ params }: ParamsProps) {
   const { category } = await params;
-  const categoryId = CATEGORIES.find((c) => c.path === category)?.id;
+  const categoryData = CATEGORIES.find((c) => c.path === category);
 
-  const posts = await getAllPosts(categoryId);
+  // 존재하지 않는 카테고리
+  if (!categoryData) {
+    notFound();
+  }
+
+  const posts = await getAllPosts(categoryData.id);
+
+  // 해당 카테고리에 글이 없으면 404
+  if (posts.length === 0) {
+    notFound();
+  }
 
   return (
     <main className='w-full'>

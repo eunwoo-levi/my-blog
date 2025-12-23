@@ -58,7 +58,7 @@ export const getPostBySlug = cache(async (category: string, slug: string) => {
   const filePath = path.join(contentDirectory, category, `${slug}.mdx`);
 
   if (!fs.existsSync(filePath)) {
-    throw new Error(`Post not found: ${category}/${slug}`);
+    return { content: null, frontmatter: null };
   }
 
   const source = fs.readFileSync(filePath, 'utf8');
