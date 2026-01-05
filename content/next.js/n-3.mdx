@@ -15,27 +15,71 @@ keywords:
     'pnpm-workspace',
     '모노레포',
     '패키지 관리',
-    'shared',
-    'Admin 페이지',
     '배포 전략',
   ]
 description: 'Next.js와 Vite를 공존시키는 Hybrid Monorepo 구축. pnpm workspace로 패키지 통합 관리, 공용 모듈 분리, 배포 전략까지 실전 가이드.'
 ---
 
-이번 글에서는 Vite 기반 Admin 페이지 도입을 위해 기존 Next.js 기반 프로젝트를 Hybrid Monorepo 구조로 전환한 내용을 공유하고자 한다.
+이번 글에서는 기존 Next.js기반 서비스에서 **Vite 기반 Admin 페이지를 도입하면서**, Next.js 단일 프로젝트를 **Hybrid Monorepo** 구조로 전환한 과정을 정리한다.
 
-# 프로젝트 배경
+단순히 “모노레포가 좋아 보였다”가 아니라, 전환을 결정하게 된 이유는 꽤 현실적이었다.  
+결론부터 말하면, 나는 아래 요구사항을 동시에 만족해야 했다.
 
-기존에는 `Next.js` 기반의 프론트엔드 프로젝트(`client`)만 존재했지만,
+- 사용자 서비스는 **Next.js (SSR/SSG/ISR)**로 유지해야 한다.
+- 관리자 페이지는 **빠른 개발/빌드/배포**가 핵심이라 **Vite(SPA)**가 더 적합했다.
+- 하지만 두 프로젝트는 **인증/권한, 디자인 시스템, API 클라이언트, 유틸** 등 “공통 코드”가 많아질 것이 확실했다.
+- 공통 코드를 “복붙”하면 언젠가 무조건 부채가 된다.  
+  반대로, 공통 코드를 “npm 패키지 배포”로 풀면 릴리즈/버전/배포가 개발 속도를 계속 잡아먹는다.
 
-- 별도의 관리자 페이지(admin) 도입이 필요했고,
-- 해당 페이지는 더 빠른 빌드, 간결한 설정을 위해 Vite 기반 + TypeScript + TailwindCSS를 사용하기로 결정했다.
+그래서 최종적으로 선택한 방식이 **Hybrid Monorepo**였다.
 
-이에 따라 `Next.js`(SSR/SSG 지원) 와 `Vite`(SPA 중심) 를 공존시키기 위해 `Hybrid Monorepo` 구조로 전환하였다.
+# 왜 모노레포를 선택했을까?
+
+관리자 페이지를 분리한다고 해서, 실제로는 **완전히 분리된 제품이 되기 어렵다.**  
+대부분의 팀에서 Admin은 “운영을 위한 내부 도구”이고, 사용자 서비스와 다음을 공유하게 된다.
+
+- 인증/인가 로직(토큰/쿠키/리프레시, role 체크)
+- 공통 UI(버튼/모달/폼 컴포넌트)
+- API 클라이언트 / 에러 처리 / 타입
+- 날짜/가격 포맷, validation schema, constants
+
+이 공통 영역을 어떻게 관리하느냐가 중요했고, 선택지는 보통 3개다.
+
+## 1) 복사/붙여넣기 (가장 빠르고 가장 위험)
+
+초기에는 빠르지만, 시간이 지나면 다음이 터진다.
+
+- 버그 수정이 한쪽만 반영됨
+- 디자인 시스템이 두 개가 됨
+- “어느 게 최신이지?”가 팀 커뮤니케이션 비용이 됨
+
+## 2) npm 패키지로 분리해 배포 (그럴듯하지만 운영 비용이 큼)
+
+“shared를 npm에 올려서 설치하면 되지 않나?”는 충분히 가능한 접근이다.  
+하지만 내가 가진 상황에서는 단점이 더 컸다.
+
+- 사내(혹은 프로젝트 내부) 공통 코드는 변경 빈도가 높다  
+  → 변경할 때마다 버전 올리고 배포하고 각 앱에서 업데이트해야 한다.
+- PR 하나에서 “공통 코드 수정 + client 적용 + admin 적용”을 **원자적으로** 처리하기 어렵다  
+  → 패키지 배포를 끼면 중간 상태가 생긴다.
+- private package, registry 관리, 권한, 토큰 등 **부가 운영**이 따라온다.
+- 타입/빌드 결과물/트리쉐이킹/ESM/CJS 호환 등 패키징 품질까지 신경 써야 한다.
+
+즉, npm 배포는 “제품화된 라이브러리”에는 좋지만,  
+**빠르게 변하는 내부 공통 코드**에는 오히려 속도를 낮출 가능성이 컸다.
+
+## 3) 모노레포로 묶고 workspace로 연결 (이번에 선택)
+
+- 한 PR에서 공통 코드와 두 앱 변경을 **동시에 리뷰/머지** 가능
+- 로컬 개발 시 공통 패키지를 실시간 링크로 사용
+- CI에서도 변경된 패키지만 선택 실행 가능
+
+그리고 사용자 서비스는 Next.js, 관리자 페이지는 Vite라는 특성이 달라서  
+**“동일 프레임워크 모노레포”가 아닌 “하이브리드 모노레포”**가 자연스러운 결론이었다.
 
 # 폴더 구조
 
-```
+```bash
 /my-project
 ├── client/           # Next.js 기반 사용자 웹앱
 │   ├── package.json
@@ -45,9 +89,12 @@ description: 'Next.js와 Vite를 공존시키는 Hybrid Monorepo 구축. pnpm wo
 │   ├── package.json
 │   ├── dist/
 │   └── ...
+├── shared/           # 공용 패키지(컴포넌트/유틸/타입 등)
+│   ├── package.json
+│   └── src/
 ├── pnpm-workspace.yaml
-├── package.json      # 루트 워크스페이스용 (공통 스크립트, 의존성 등)
-├── .gitignore        # 루트용 .gitignore (admin, client 포함)
+├── package.json      # 루트 워크스페이스(공통 스크립트/도구 설정)
+├── .gitignore
 └── ...
 ```
 
@@ -55,12 +102,15 @@ description: 'Next.js와 Vite를 공존시키는 Hybrid Monorepo 구축. pnpm wo
 
 Hybrid Monorepo를 도입하기 위해 Package Manager로 `pnpm` 을 사용하였고, `workspace` 를 통해 공통 의존성을 관리하였다.
 
-## 왜 pnpm?
+## 왜 pnpm인가?
 
-- 디스크 공간 절약: 패키지를 global store에 저장해 중복 설치 방지
-- 빠른 설치 속도: 병렬 다운로드 및 캐싱
-- 엄격한 의존성 격리: node_modules가 중첩되지 않고 논리적 구조 보장
-- 모노레포에 최적화: pnpm-workspace.yaml만으로 workspace 구성이 가능
+모노레포에서 pnpm의 장점은 “설치가 빠르다” 수준이 아니라,
+워크스페이스 운영 자체가 안정적이라는 데 있다.
+
+- 디스크 공간 절약: global store로 중복 설치 최소화
+- 빠른 설치 속도: 캐싱/병렬 처리
+- 엄격한 의존성 격리: 의도치 않은 dependency leak 방지
+- workspace 지원이 심플함: pnpm-workspace.yaml로 명확한 범위 관리
 
 ## 루트 pnpm-workspace.yaml
 
@@ -68,9 +118,12 @@ Hybrid Monorepo를 도입하기 위해 Package Manager로 `pnpm` 을 사용하�
 packages:
   - 'client'
   - 'admin'
+  - 'shared'
 ```
 
 ## 루트 package.json
+
+앱별 실행/빌드를 루트에서 제어할 수 있게 스크립트를 둔다.
 
 ```json
 {
@@ -85,57 +138,46 @@ packages:
 }
 ```
 
-각 디렉토리 내에서는 해당 프로젝트 전용 패키지와 설정만 관리한다.
+`--filter`는 CI에서 특히 유용하다.
 
-예를 들어, `admin` 폴더 내에서 tailwind는 공통 의존성이 아니기 때문에 각 프로젝트 내에서 설치하였다.
-
-```bash
-cd admin
-pnpm install -D tailwindcss postcss autoprefixer @tailwindcss/postcss
-```
+> 예: admin만 수정된 PR에서는 admin 빌드/테스트만 실행하도록 분기할 수 있다.
 
 # 배포 전략
 
-## /client
+Hybrid 구조에서 가장 중요한 건 “둘을 한 방식으로 억지로 맞추지 않는 것”이었다.
 
-Next.js 기반 프로젝트는 SSR, ISR 지원이 필요한 사용자 페이지이므로 Vercel에서 배포하였다.
-Vercel에서는 root directory를 client로 설정하고, client/package.json 기준으로 빌드하였다.
+### /client: Vercel (Next.js)
 
-## /admin
+- SSR/SSG/ISR 등 Next.js 장점을 그대로 쓰기 위해 Vercel 배포 유지
+- Vercel 설정에서 Root Directory를 `client`로 지정
+- `client/package.json` 기준으로 빌드/배포
 
-Vite 기반 프로젝트는 정적 SPA로 빌드하여 빠른 배포가 가능하도록 AWS S3 + CloudFront를 통해 배포하였다.
+### /admin: S3 + CloudFront (Vite SPA)
 
-루트 .gitignore에 모든 워크스페이스 디렉토리의 출력물, 환경파일 등을 통합 관리하였다.
+- `vite build` 결과물은 정적 파일이므로 S3 + CloudFront가 가장 단순하고 빠르다.
+- CloudFront를 붙이면 HTTPS/캐싱/전세계 엣지 서빙을 손쉽게 얻는다.
 
 # Monorepo 전환 장점 요약
 
-- 1. 패키지 관리 통합
-  - 의존성 버전 일관성 유지, 중복 제거
-
-- 2. CI/CD 최적화
-  - 디렉토리별 분기 실행 가능 (filter)
-
-- 3. 구조적 명료성
-  - 사용자/관리자 앱 분리로 유지보수 편의
-
-- 4. 협업 효율
-  - 팀원 간 코드 분담 및 독립 개발 가능
+- 패키지 관리 통합: 의존성 버전 일관성, 중복 제거
+- CI/CD 최적화: 변경된 패키지만 빌드/테스트 가능 (--filter)
+- 구조적 명료성: 사용자/관리자 앱을 분리하면서도 공통 코드 재사용
+- 협업 효율: 공통 코드 변경이 필요한 작업을 한 PR에서 끝낼 수 있음
 
 # 공용 모듈 분리
 
-## shared 디렉토리 생성
+Admin과 Client에서 공통으로 쓰는 모듈은 `shared`로 분리했다.
 
-`/admin`과 `/client` 폴더 내에서 공통으로 사용되는 모듈을 분리하여 관리하였다.
-
-```
+```bash
 /vital-trip
 ├── client/
 ├── admin/
-├── shared/   공용 패키지 디렉토리
+├── shared/
 │   ├── package.json
 │   └── src/
-│       └── components/
-│           └── Button.tsx
+│       └── hooks/
+│           └── useOverlay.tsx
+│       └── index.ts
 ```
 
 `shared` 폴더 내에서 공통으로 사용되는 모듈을 분리하여 관리하였다.
@@ -186,11 +228,30 @@ pnpm install react react-dom ... 등등
 
 # 마무리
 
-하나의 리포지토리에서 Next.js와 Vite를 공존시키기 위해 pnpm + workspace 기반의 하이브리드 모노레포 구조를 도입하였다.
-이는 장기적으로 사용자 서비스와 관리자 도구의 유지보수, 배포, 테스트까지 모두 유지보수성과 확장성을 고려한 선택이었다.
-이후 공통 컴포넌트 관리를 위해 공통 UI 컴포넌트 패키지 추출하여 개발할 예정이다.
-이번 경험을 통해서 pnpm의 장점과 하이브리드 모노레포 구조를 활용하는 방법을 알게된 뜻 깊은 시간이었다.
+Next.js와 Vite는 성격이 다르다.
+사용자 서비스는 SSR/SSG/ISR이 중요하고, 관리자 도구는 빠른 개발과 단순 배포가 중요하다.
 
-```
+처음에는 NPM 패키지 배포를 고민했었지만, 해당 방법의 장단점을 따져본 결과
 
-```
+#### npm 배포가 더 나은 경우
+
+- shared가 외부 공개 라이브러리이거나, 여러 레포에서 재사용해야 한다
+- 릴리즈 주기가 명확하고 변경 빈도가 낮다
+- 패키징(빌드 산출물, 호환성)을 정교하게 관리할 수 있다
+
+#### 모노레포가 더 나은 경우 (내 케이스)
+
+- shared는 내부 공통 코드이고, 변경 빈도가 높다
+- admin/client에서 같이 수정해야 하는 경우가 많다
+- “공통 수정 → 두 앱 적용”을 한 PR에서 끝내고 싶다
+- 배포/버전 관리 오버헤드를 최소화하고 싶다
+
+그래서 나는 Hybrid Monorepo + pnpm workspace를 선택했다.
+
+이번 전환에서 내가 얻고 싶었던 것은 단 하나였다.
+
+> “서로 다른 앱을 분리하되, 공통 코드는 한 번만 관리하고 싶다.”
+
+pnpm workspace 기반 Hybrid Monorepo는 그 목적에 꽤 잘 맞았다.
+이후에는 공통 UI를 더 체계적으로 운영하기 위해 shared를 디자인 시스템 형태로 확장하고,
+빌드/배포 전략(예: shared 빌드 산출물, CI 캐싱, 패키지 변경 감지)을 조금 더 고도화할 계획이다.
