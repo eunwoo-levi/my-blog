@@ -1,0 +1,129 @@
+---
+title: '[React] 로그인 직후 홈 “깜빡임(플리커)” 없애기: prefetchQuery로 프로필 캐시 선주입'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-12-12'
+categoryId: 6
+keywords: ['React', 'TanStack Query', 'React Query', 'prefetchQuery', 'setQueryData']
+description: 'Tanstack Query의 prefetchQuery로 캐시 선주입을 통해 깜빡임 문제를 해결한 트러블 슈팅 기록'
+---
+
+로그인 전환 UX에서 "깜빡임(플리커)"문제는 생각보다 자주 발생한다.
+특히 홈 화면이 프로필 기반 UI(유저명/권한 분기/로그인 상태별 컴포넌트)로 구성되어 있으면, 로그인 직후 라우팅 과정에서 아주 짧은 “데이터 공백”이 생기기 쉽다.
+
+이번 글에서는 제가 겪었던 문제를 TanStack Query(React Query)의 캐시 선주입 전략으로 해결한 과정을 정리한다.
+
+# 문제 원인
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/2b737073-745a-4c5d-b6aa-1514fac2e060/image.png)
+
+개발하던 프로젝트에서 로그인 성공 후에 아래와 같은 증상이 있었다.
+
+- 로그인 요청 성공
+- `navigate('/')`로 홈으로 이동
+- 그런데 홈에서 `useQuery(['profile'], getProfile)`가 그제서야 시작됌
+- 홈 첫 렌더 타이밍에 `profile`이 잠깐 `undefined`가 되면서
+  - 빈 화면이 보이거나
+  - 스켈레톤/로딩 UI가 찰나로 튀어나오는 플리커가 발생
+- 추가적으로 본인 서비스는 `FCM 권한 요청 및 토큰 등록/API 호출` 로직까지 있어서 더 불안정해짐
+
+만약 네트워크 상태가 더 불안정하다면 이러한 깜빡임 공백은 더 길어질 수가 있을 것이다.
+
+처음에는 라우팅 지연이나 렌더링 최적화 문제를 의심했지만, 핵심은 데이터 타이밍 문제인 것을 알게되었다.
+
+`홈 UI를 그리려면 profile이 필요한데, 홈에 들어가서야 profile을 요청하니 첫 렌더 순간에는 데이터가 없다.`
+
+즉, 문제는 “홈에서 profile을 가져오냐”가 아니라 “홈으로 이동하기 전에 profile을 준비해두느냐” 였다.
+
+# 해결 전략: 로그인 성공 직후, 캐시를 먼저 채우고 이동
+
+해결은 크게 3가지 포인트로 정리하였다.
+
+- 로그인 상태를 캐시에 즉시 반영해서 전환 직후 비로그인 UI가 잠깐 보이는 상태 불일치를 줄인다.
+- 홈에서 필요한 profile을 미리 prefetch해서 홈 진입 시점에 Cache hit로 즉시 렌더링되게 만든다.
+- 로그인 후속 작업(FCM 등록 등)은 전환 UX를 깨지 않도록 분리하고 실패해도 로그인 플로우는 유지한다.
+
+이를 구현하기 위해 나는 Tanstack Query의 `prefetchQuery`를 사용하여 해결하였다.
+
+```typescript
+export const useLoginMutation = () => {
+  const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: loginUser,
+
+    onSuccess: async () => {
+      // 1) 전환 순간 로그인 상태를 캐시에 즉시 반영
+      queryClient.setQueryData(['checkIfLoggedIn'], true);
+
+      // 2) 홈에서 필요한 profile을 미리 캐시에 채워 Cache hit 유도
+      await queryClient.prefetchQuery({
+        queryKey: ['profile'],
+        queryFn: getProfile,
+      });
+
+      // 3) 부가 작업(FCM)은 실패해도 로그인 성공 흐름을 깨지 않게 분리
+      try {
+        const token = await requestFCMPermission();
+        if (token) {
+          await registerFCMToken(token);
+        }
+      } catch (error) {
+        console.error('FCM 토큰 등록 실패:', error);
+      }
+
+      showSuccess('로그인에 성공했습니다!');
+      navigate('/');
+    },
+
+    onError: (error) => {
+      if (isAxiosError(error) && error.response?.data.message) {
+        showError(error.response.data.message);
+      } else {
+        showError('로그인에 실패했습니다. 다시 시도해주세요.');
+      }
+    },
+  });
+};
+
+const loginUser = async (loginData: LoginFormData): Promise<LoginResponse> => {
+  const response = await api.post('/auth/login', loginData);
+  return response.data;
+};
+```
+
+위 코드에서 핵심만 요약하면 다음과 같다.
+
+- `setQueryData(['checkIfLoggedIn'], true)`
+  → 전환 순간 비로그인 UI가 잠깐 보이는 상태 불일치를 줄인다.
+
+- `prefetchQuery(['profile'])`
+  → 홈이 필요로 하는 핵심 데이터(profile)를 선요청·선주입해서 홈 진입 시 Cache hit로 렌더되게 만든다.
+
+- FCM 작업은 전환 UX를 깨지 않게 분리
+  → 권한 거부/네트워크 오류가 있어도 로그인 성공 플로우는 유지
+
+하지만 가장 중요한 핵심은 홈에서 useQuery(['profile'])를 호출하는 순간이다.
+
+기존에는 로그인이 성공하면 `navigate('/')` 이후 홈이 렌더되고 → 그 다음에 `['profile']` 요청 시작했다
+그 결과 첫 렌더에 `profile === undefined` 구간이 생기는 문제가 발생하였다.
+
+하지만 개선한 이후로는,
+로그인 성공 시점에 `prefetchQuery(['profile'])` 실행되고 → 홈이 뜨는 순간엔 이미 `['profile']`이 캐시에 존재하게 된다.
+그 결과로 홈의 `useQuery(['profile'])`는 Cache hit로 즉시 데이터를 제공할 수 있게 되어, 플리커 없이 부드러운 전환이 가능해졌다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/a75cba53-b014-453a-8cd2-e4f66c077760/image.png)
+
+즉, 플리커는 “렌더링 속도”가 아니라 전환 직후 필요한 데이터의 준비 타이밍에서 발생했고, 캐시 선주입으로 공백을 제거해 해결했다.
+
+# 마무리
+
+이번 글에서는 로그인 직후 홈 화면에서 발생하는 깜빡임 문제를 TanStack Query의 `prefetchQuery`를 활용한 캐시 선주입 전략으로 해결한 경험을 공유했다.
+
+핵심을 요약해보자면,
+홈 이동 전에 `prefetchQuery(['profile'])`로 캐시를 채워 라우팅 직후 프로필 기반 UI가 즉시 렌더링되게 하였고,
+`setQueryData(['checkIfLoggedIn'], true)`로 전환 순간 비로그인 UI가 잠깐 보일 수 있는 상태 불일치 감소에도 신경썼다.
+
+전환 UX의 핵심은 라우터가 아니라 전환 직후 필요한 데이터(profile)를 언제 준비하느냐였다.
+즉, "필요한 데이터를 미리 준비해두는 것"이며, 이를 통해 사용자 경험을 크게 향상시킬 수 있었다.
