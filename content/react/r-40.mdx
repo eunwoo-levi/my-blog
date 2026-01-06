@@ -1,0 +1,260 @@
+---
+title: '[React] 빠른 로딩에서 지연 렌더링(DeferredComponent)과 스켈레톤으로 CLS와 플리커 없애기'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2025-12-24'
+categoryId: 6
+keywords:
+  [
+    'React',
+    'Suspense',
+    'Skeleton UI',
+    'CLS',
+    'Flicker',
+    '플리커',
+    'Deferred Rendering',
+    'DeferredComponent`,
+    '지연 렌더링',
+    '스켈레톤 컴포넌트',
+  ]
+description: '빠른 네트워크에서 스켈레톤이 잠깐 노출되며 발생하는 플리커·CLS 문제를, 실제 UI와 동일한 크기의 스켈레톤과 지연 렌더링(DeferredComponent) 패턴으로 개선한 과정과 구현을 정리합니다.'
+---
+
+로딩 UX를 개선할 때 가장 흔히 떠올리는 해법이 스켈레톤이다.
+빈 화면 대신 콘텐츠 형태를 미리 보여주면 사용자는 “앱이 잘 동작하고 있다”는 확신을 얻고, 기다림의 체감도 줄어든다.
+그래서 나도 리스트/피드성 화면에 스켈레톤을 넣었다. 그리고 초기에는 확실히 좋아졌다.
+
+그런데 배포 후 실제 사용자 환경(특히 빠른 네트워크 / 빠른 디바이스)에서 예상치 못한 문제가 생겼다.
+
+- 스켈레톤이 0.1~0.2초 정도 ‘잠깐’ 보였다가 바로 실제 UI로 바뀜
+- 이 짧은 순간이 오히려 **플리커(flicker)**처럼 느껴짐
+- 게다가 스켈레톤의 높이/폭이 실제 카드와 조금이라도 다르면, 전환 순간에 레이아웃이 툭 튀는 CLS가 발생
+
+아이러니하게도,
+
+- 느린 네트워크에서는 스켈레톤이 충분히 오래 떠 있어서 자연스럽고
+- 빠른 네트워크에서는 스켈레톤이 “깜빡이는 잡음”이 되어버렸다.
+
+즉, 내가 해결하려던 “로딩 불안감”보다
+**“순간 점멸 + 레이아웃 튐”**이 더 먼저 체감되는 상황이 된 거다.
+
+이 문제는 디테일 같지만, 피드처럼 진입이 잦은 화면에서는 UX 체감이 확 커진다.
+그래서 나는 로딩 UI를 “항상 보여주는 것”이 정답이 아닐 수 있다는 결론에 도달했다.
+
+# 문제 정의: 빠르게 로딩될수록 스켈레톤은 ‘노이즈’가 된다
+
+여기서 핵심은 “로딩이 짧다”는 사실 자체가 아니라, 로딩 UI가 화면에 올라왔다가 내려가는 비용이 존재한다는 점이다.
+
+### 플리커가 생기는 구조
+
+- 데이터가 매우 빨리 도착하면
+- Suspense fallback(스켈레톤)이 마운트 → 바로 언마운트
+- 사용자는 “깜빡임”으로 인지
+
+### CLS가 생기는 구조
+
+- 스켈레톤의 height/spacing이 실제 UI와 조금이라도 다르면
+- fallback → 실제 UI 전환 시 레이아웃이 이동
+- 이 이동이 누적되면 CLS로 잡히거나(측정 환경에 따라), 적어도 눈에 보이는 “툭”이 된다
+
+결국 목표는 두 가지였다.
+
+1. 스켈레톤이 나오더라도 레이아웃은 절대 안 움직이게(= 실제 UI와 동일 크기)
+2. 로딩이 너무 짧으면 아예 스켈레톤을 보여주지 않게(= 지연 렌더링)
+
+# 해결 전략 A: “실제 UI와 동일 크기” 스켈레톤로 CLS 원천 차단
+
+CLS를 줄이는 가장 확실한 방법은 간단하다.
+
+> 스켈레톤을 “대충 비슷하게” 만들지 말고, 실제 렌더링될 UI와 같은 박스 모델로 만든다.
+
+- 카드 높이, 이미지 영역 비율, 텍스트 라인 수, padding, gap
+- 리스트에서 한 아이템의 전체 높이
+- “더보기 버튼/하단 여백” 같은 주변 요소까지
+
+레이아웃 이동은 결국 ‘크기가 달라서’ 생기는 문제라서,
+크기를 동일하게 만들면 CLS의 대부분은 설계 단계에서 사라진다.
+
+본인은 해당 부분을 고려하여 `CommonSkeletonCard` 컴포넌트를 구현하여 props로 각 도메인에 맞는 스켈레톤을 쉽게 만들어 재사용할 수 있도록 하였다.
+
+#### CommonSkeletonCard 코드
+
+```tsx
+interface CommonSkeletonCardProps {
+  variant?: 'moment' | 'comment' | 'rewardHistory';
+}
+
+export const CommonSkeletonCard: React.FC<CommonSkeletonCardProps> = ({ variant = 'moment' }) => {
+  return (
+    <S.SkeletonCard variant={variant}>
+      <S.SkeletonCardTitle>
+        <S.SkeletonTitleRow>
+          <Skeleton width='16px' height='16px' borderRadius='50%' />
+          <Skeleton width='120px' height='16px' />
+        </S.SkeletonTitleRow>
+        <SkeletonText lines={2} lineHeight='18px' />
+      </S.SkeletonCardTitle>
+
+      {variant === 'moment' && (
+        <S.SkeletonMomentContent>
+            ...
+        </S.SkeletonMomentContent>
+      )}
+
+      {variant === 'comment' && (
+        <>
+          <S.SkeletonSection>
+            ...
+          </S.SkeletonCardAction>
+        </>
+      )}
+
+      {variant === 'rewardHistory' && (
+        <S.SkeletonRewardHistoryTable>
+            ...
+        </S.SkeletonRewardHistoryTable>
+      )}
+    </S.SkeletonCard>
+  );
+};
+```
+
+# 해결 전략 B: 스켈레톤 “지연 렌더링”으로 플리커 제거
+
+두 번째가 핵심이다.
+
+> 로딩이 200ms 안에 끝나면, 스켈레톤은 사용자에게 도움이 되기보다 방해가 된다.
+> 그래서 일정 시간 이상 로딩이 지속될 때만 fallback을 렌더링한다.
+
+이를 위해 만든 컴포넌트가 `DeferredComponent`다.
+
+#### DeferredComponent 코드
+
+```tsx
+import { PropsWithChildren, useEffect, useState } from 'react';
+
+export interface DeferredComponentProps {
+  delay?: number;
+}
+
+export const DeferredComponent = ({
+  children,
+  delay = 200,
+}: PropsWithChildren<DeferredComponentProps>) => {
+  const [isDeferred, setIsDeferred] = useState(false);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setIsDeferred(true);
+    }, delay);
+
+    return () => clearTimeout(timeoutId);
+  }, [delay]);
+
+  if (!isDeferred) {
+    return null;
+  }
+
+  return <>{children}</>;
+};
+```
+
+최초 렌더링 시 `isDeferred = false`는 아무것도 렌더링하지 않는다.
+
+`delay` ms 이후에만 `isDeferred = true` -> 그때부터 children 렌더링한다.
+
+로딩이 delay 안에 끝나면?
+-> `fallback`이 화면에 올라오기 전에 실제 UI가 렌더링되므로 플리커 자체가 사라짐
+
+cleanup에서 `clearTimeout`을 해주기 때문에 언마운트 시 불필요한 setState도 방지된다.
+
+## 실제 적용
+
+```tsx
+interface SuspenseSkeletonProps {
+  variant?: 'moment' | 'comment' | 'rewardHistory';
+  count?: number;
+}
+
+const SkeletonContainer = styled.section`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  margin: 20px;
+`;
+
+export const SuspenseSkeleton = ({ variant = 'moment', count = 3 }: SuspenseSkeletonProps) => {
+  return (
+    <SkeletonContainer>
+      <DeferredComponent>
+        {Array.from({ length: count }).map((_, index) => (
+          <CommonSkeletonCard key={`skeleton-${variant}-${index}`} variant={variant} />
+        ))}
+      </DeferredComponent>
+    </SkeletonContainer>
+  );
+};
+```
+
+SuspenseSkeleton은 여전히 fallback 역할을 수행하지만
+그 안에서 **“지금 당장 스켈레톤을 보여줄지”**를 `DeferredComponent`가 결정한다.
+
+빠른 로딩에서는
+`fallback`이 존재하더라도 실제로는 null 렌더링 -> 플리커 없다.
+
+느린 로딩에서는
+200ms 이후 스켈레톤 등장 -> “기다림에 대한 안내” 제공한다.
+
+## delay는 왜 200ms인가?
+
+정답은 없고, 서비스에 맞춰 조정해야 한다고 생각한다.
+나는 아래와 같은 이유로 200ms를 선택했다.
+
+너무 짧으면: 여전히 “잠깐 보였다 사라짐”이 남는다
+너무 길면: 느린 상황에서 사용자가 “아무 반응이 없네?”라고 느낄 수 있다.
+
+실무적으로는 이런 감각이 유용하다고 생각한다.
+
+- 100~200ms: “깜빡임 제거”에 효과적이면서, 느린 상황도 크게 불안하지 않음
+- 피드/리스트처럼 진입이 잦은 화면일수록 delay 전략의 체감 효과가 커짐
+
+추가로, delay를 고정값으로 박아두기보다,
+
+- 특정 페이지(피드 vs 상세),
+- 특정 데이터(프로필 vs 추천 리스트),
+- 특정 디바이스/환경(모바일)
+  에 따라 다르게 두는 것도 충분히 합리적이다
+
+## 트레이드오프와 주의점
+
+(1) delay 동안 “빈 공간”이 생길 수 있다
+
+`DeferredComponent`는 delay 이전에 null을 반환하니까, 그 구간엔 fallback이 비어 있을 수 있다.
+
+그래서 나는 여기서 ‘동일 크기 스켈레톤’ 전략과 함께 가야 한다고 봤다.
+
+스켈레톤이 안 보이는 구간이 있더라도 “레이아웃 틀”이 이미 안정적이면 사용자는 덜 불편하다
+
+만약 “빈 화면”이 너무 싫다면,
+
+delay 이전에는 아주 가벼운 placeholder(예: header만)만 보여준다든지 혹은 최소 높이만 확보하는 래퍼를 둔다든지 같은 타협도 가능하다.
+
+(2) delay가 길수록 “로딩 시작 인지”가 늦어진다
+
+느린 네트워크에서 스켈레톤이 늦게 나오면 답답해질 수 있다.
+그러니 delay는 “플리커 제거”에 필요한 만큼만 하는 것이 좋다.
+
+# 마무리 - 로딩 UX의 목표는 “보여주는 것”이 아니라 “거슬리지 않는 것”
+
+이번 개선에서 내가 얻은 결론은 이거다.
+
+- 스켈레톤은 무조건 좋은 UX가 아니다.
+- 특히 빠른 환경에서는 스켈레톤이 가치(안심)보다 비용(플리커/CLS)을 더 만들 수 있다.
+- 그래서 fallback은 “항상 렌더링”이 아니라
+  **“필요할 때만 렌더링”**이 더 좋은 선택이 될 수 있다.
+
+내가 적용한 조합은 단순하지만 효과가 확실했다.
+
+1. 실제 UI 동일 크기 스켈레톤 → CLS 원천 차단
+2. 지연 렌더링 `DeferredComponent` → 빠른 로딩에서 플리커 제거
