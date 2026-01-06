@@ -1,0 +1,329 @@
+---
+title: '[Next.js] CSR와 SSG에서 i18n(i18next)로 다국어 구현하여 글로벌 접근성 개선'
+author: 'eunwoo'
+thumbnail: '/thumbnail/nextjs.webp'
+publishDate: '2025-01-02'
+categoryId: 5
+keywords: 
+[
+   'React i18n', 'Next.js i18n', 'i18n', 'i18next', 'react-i18next', 'React 다국어', 'Next.js 다국어']
+description: '다국어 구현을 위해 CSR 영역은 i18next로 컴포넌트 단위 번역을 관리하고, 소개 페이지는 SSG로 언어별 라우트를 정적 생성해 글로벌 접근성 개선'
+---
+
+#### 글로벌 서비스에서 “다국어”는 기능이 아니라 접근성이다
+
+Next.js로 구현된 [VitalTrip](https://aivitaltrip.com) 서비스는 해외에서 응급 상황이 생긴 사용자가 즉시 이해할 수 있는 정보를 제공하는 서비스다. 여기서 언어는 단순 UI 옵션이 아니라, 실제로는 **안전과 직결되는 접근성(Accessibility)**에 가깝다.
+그래서 전세계 사용자들을 고려하여 한국어 뿐만 아니라 영어, 중국어 등등 다양한 언어를 지원하는 다국어 기능이 필요하였고 이를 구현하기 위해 알아본 결과 i18n(i18next) 라이브러리가 가장 적합하다고 판단하였다.
+
+하지만 문제는 i18n라이브러리의 경우 CSR(Client Side Rendering) 환경에서 주로 사용된다는 점이었고, VitalTrip의 소개 페이지는 SEO와 최초 랜딩 속도가 중요한 SSG(Static Site Generation) 환경에서 구현되어 있었다는 점에서 고민이 생겼다.
+
+서비스 본체(대부분 페이지)의 경우 로그인/병원찾기/번역/응급처치 등 -> 사용자 상호작용이 많고 상태가 계속 바뀌는 CSR 중심 UI이고,
+소개 페이지(About)의 경우 브랜드/서비스 설명이 들어간 사용자 진입 페이지이기 때문에, 검색 유입, 공유, 최초 랜딩이 중요한 SSG 정적 페이지로 구현되어 있었다.
+
+그래서 VitalTrip의 다국어는 한 가지 방식으로 통일하지 않고, 페이지 성격에 맞춰 CSR과 SSG를 분리 설계하기로 결심하였다.
+
+# 다국어 시스템 구축
+
+다국어 시스템을 만들면서 기준을 두 가지로 나눴다.
+
+### 1. 텍스트 관리 단위
+
+- 컴포넌트 내부에서 t('key')로 관리할 것인지
+- 페이지 단위로 번역 객체를 내려줄 것인지
+
+### 2. 생성 단위(빌드 타임 vs 런타임)
+
+- 사용자 브라우저에서 언어를 바꾸는 런타임 전환(CSR)
+- 언어별 URL을 미리 만들어 두는 정적 생성(SSG)
+
+이 기준으로,
+
+- CSR 파트는 `i18next` 기반 JSON 리소스로 “컴포넌트 단위 텍스트 관리”
+- SSG About는 `[lang]` 라우트를 만들어 “라우트별 언어 페이지 생성”
+
+으로 나눴다.
+
+# CSR 영역: i18next로 “컴포넌트 단위 텍스트 관리”
+
+CSR 화면에서는 유저가 돌아다니면서 기능을 쓰고, 로그인 상태/쿼리/모달 등 UI 상태가 계속 바뀐다.
+이 환경에서 다국어는 다음이 중요했다.
+
+- UI 컴포넌트가 어디서든 동일한 방식으로 번역을 가져오기
+- 유저가 언어를 바꾸면 즉시 UI 반영
+- 한 번 선택한 언어는 기억(localStorage)
+
+## 1. RootLayout에서 Provider로 감싸기
+
+가장 중요한 건, 앱 전역에서 `t()`를 쓰기 위한 Provider 구성이었다.
+
+```tsx
+// app/layout.tsx (핵심만)
+<body>
+  <I18nProvider>
+    <ReactQueryProvider>
+      {children}
+      <LanguageSelectionModal />
+    </ReactQueryProvider>
+  </I18nProvider>
+</body>
+```
+
+```typescript
+// I18nProvider.tsx
+'use client';
+
+import { i18n } from '@/src/shared/lib/i18n';
+import { I18nextProvider } from 'react-i18next';
+
+export const I18nProvider = ({ children }) => {
+  return <I18nextProvider i18n={i18n}>{children}</I18nextProvider>;
+};
+```
+
+이 구조 덕분에 어떤 컴포넌트에서도 `useTranslation()`만으로 번역을 가져올 수 있다.
+
+## 2. i18n 초기화: “리소스 로딩 + 언어 감지 + 캐시”
+
+CSR에서는 페이지 진입 시점이 제각각이라, 번역 리소스를 안정적으로 불러오고 감지해야 했다.
+
+```tsx
+import i18n from 'i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+import Backend from 'i18next-http-backend';
+import { initReactI18next } from 'react-i18next';
+
+const initializeI18n = async () => {
+  await i18n
+    .use(Backend)
+    .use(LanguageDetector)
+    .use(initReactI18next)
+    .init({
+      fallbackLng: 'en',
+      debug: false,
+
+      backend: {
+        loadPath: '/locales/{{lng}}/{{ns}}.json',
+        requestOptions: {
+          cache: 'default',
+        },
+      },
+
+      detection: {
+        order: ['localStorage', 'navigator', 'htmlTag'],
+        caches: ['localStorage'],
+      },
+
+      interpolation: {
+        escapeValue: false,
+      },
+
+      ns: ['common', 'symptoms'],
+      defaultNS: 'common',
+
+      react: {
+        useSuspense: false,
+        bindI18n: 'languageChanged loaded',
+        bindI18nStore: 'added removed',
+        transEmptyNodeValue: '',
+        transSupportBasicHtmlNodes: true,
+        transKeepBasicHtmlNodesFor: ['br', 'strong', 'i'],
+      },
+    });
+
+  const currentLang = i18n.language || 'en';
+  await i18n.loadLanguages([currentLang, 'en', 'ko']);
+};
+
+initializeI18n().catch(console.error);
+
+export { i18n };
+```
+
+이 코드는 i18next를 초기화하고, HTTP 백엔드를 통해 번역 리소스를 불러오며, 브라우저 언어 감지 및 로컬스토리지 캐싱을 설정한다.
+이로써 유저가 언어를 바꾸면 즉시 UI에 반영되고, 다음 방문 시에도 선택한 언어가 유지된다.
+
+### 번역 리소스 구조
+
+```bash
+locales/
+  en/common.json
+  en/symptoms.json
+  ko/common.json
+  ko/symptoms.json
+```
+
+이 구조를 선택한 이유는 namespace로 도메인을 나누면(common / symptoms) 번역 키 충돌을 줄이고, 기능/도메인 단위로 번역 파일을 관리할 수 있다.
+
+예를 들면 `symptoms` 도메인은 아래처럼 “열거형 값”까지 번역 키로 통일할 수 있었다.
+
+```json
+// ko/symptoms.json
+{
+  "symptoms": {
+    "title": "증상을 설명해주세요",
+    "types": {
+      "BLEEDING": "출혈",
+      "BURNS": "화상"
+    }
+  }
+}
+```
+
+## 3. UI에서 사용: “번역 키를 컴포넌트에 붙인다”
+
+CSR 컴포넌트에서는 이런 방식으로 번역을 가져왔다.
+
+```tsx
+'use client';
+import { useTranslation } from '@/src/shared/lib/i18n';
+
+export const MenuDropdown = () => {
+  const { t } = useTranslation('common');
+
+  return <button>{t('menu.about_us')}</button>;
+};
+```
+
+핵심은 “텍스트를 컴포넌트에 귀속시키는 방식”이다.
+이렇게 하면 페이지가 커져도 텍스트가 흩어지지 않고, 변경 영향 범위가 명확해진다.
+
+## 4. 언어 선택 UX: “선택을 요구하는 순간”을 설계하기
+
+단순 스위처만 두면 “사용자가 발견해야” 한다.
+VitalTrip은 글로벌 서비스라, 첫 진입 시 언어 선택 경험 자체를 제공했다.
+
+- localStorage에 설정이 없으면 모달 오픈
+- 사용자가 선택하면 언어 변경 + 설정 저장
+
+```tsx
+'use client';
+export const useLanguageSelection = () => {
+  const { i18n } = useTranslation();
+
+  useEffect(() => {
+    const userSetLanguage = localStorage.getItem('user-set-language');
+    if (!userSetLanguage) overlay.open();
+  }, []);
+
+  const selectLanguage = (languageCode: string) => {
+    i18n.changeLanguage(languageCode);
+    localStorage.setItem('user-set-language', 'true');
+    overlay.close();
+  };
+
+  return { selectLanguage };
+};
+```
+
+# SSG 소개 페이지: “언어별 라우트를 미리 생성”해야 했던 이유
+
+CSR 방식(i18next)은 대부분의 화면에서 문제 없었다.
+그런데 소개 페이지(About) 에서는 다른 요구사항이 튀어나왔다.
+
+- 검색 엔진/공유/메타데이터(OpenGraph, twitter)가 중요
+- /about을 누가 접속하든 즉시 완성된 언어 페이지가 보여야 함
+- “언어별 URL”이 있어야 SEO/공유가 안정적
+
+즉 About은 “런타임 번역”이 아니라 **빌드 시점에 언어 페이지를 생성(SSG)**하는 편이 더 자연스러웠다.
+
+그래서 폴더 구조를 아래처럼 분리했다.
+
+```bash
+about/
+  [lang]/page.tsx
+  _data/aboutTranslation.ts
+  _utils/translations.ts
+  _components/...
+```
+
+## 1. generateStaticParams로 언어 라우트를 생성
+
+```tsx
+export const dynamic = 'force-static';
+export const dynamicParams = false;
+
+export async function generateStaticParams() {
+  return supportedLanguages.map((lang) => ({ lang }));
+}
+// supportedLanguages = ['en', 'ko', ...]
+```
+
+여기서 핵심은
+`supportedLanguages` 기준으로 `/about/en`, `/about/ko`를 빌드 타임에 미리 만들도록 하였다.
+
+추가적으로, `dynamicParams = false`로 정해진 언어 외 접근을 막고,
+잘못된 언어 접근 시 next.js의 `notFound()`를 트리거하여 404 처리하게 하였다.
+
+## 2. 메타데이터까지 언어별로 “정적 생성”
+
+About 페이지는 SEO/공유가 목적이라, generateMetadata가 중요했다.
+
+```tsx
+export async function generateMetadata({ params }) {
+  const { lang } = await params;
+
+  const translations = getTranslations(lang);
+  const languageUrls = supportedLanguages.reduce((acc, language) => {
+    acc[language] = language === defaultLanguage ? '/about' : `/about/${language}`;
+    return acc;
+  }, {});
+
+  return {
+    title: translations.meta.title,
+    description: translations.meta.description,
+    alternates: {
+      canonical: lang === defaultLanguage ? '/about' : `/about/${lang}`,
+      languages: languageUrls,
+    },
+  };
+}
+```
+
+이걸 적용하면서 얻은 효과는 단순히 “다국어”가 아니라,
+
+- 언어별 OG/Twitter 카드가 정확히 떨어지고
+- 검색 결과에서 언어별 랜딩이 안정적으로 잡히고
+- 공유했을 때 “언어가 뒤늦게 바뀌는 깜빡임” 같은 문제를 피할 수 있었다.
+
+## 3. 페이지는 번역 객체를 내려서 렌더링
+
+SSG About은 `t()` 훅을 쓰지 않고, translations 객체를 props로 내려서 컴포넌트를 그린다.
+
+```tsx
+export default async function AboutLangPage({ params }) {
+  const { lang } = await params;
+  if (!isValidLanguage(lang)) notFound();
+
+  const translations = getTranslations(lang);
+
+  return (
+    <>
+      <HeroSection translations={translations} />
+      <FeaturesSection translations={translations} />
+    </>
+  );
+}
+```
+
+해당 방식을 통하여, 빌드 시점에 이미 텍스트가 확정되고 -> 정적 HTML로 완성된다.
+따라서 SEO 측면에서 유리하고, 최초 랜딩 속도도 빨라지게 된다.
+
+소개 페이지 컴포넌트는 “UI만” 담당하고, 텍스트는 `translations` 객체에서 가져오는 형태로 구현되어 의존성이 단순하고 관리가 편리하게 되었다.
+
+# 마무리 - CSR i18n vs SSG 다국어는 “누가 책임지느냐”가 다르다
+
+정리하면 둘은 같은 다국어지만 책임 주체가 다르다.
+
+### CSR(i18next)
+
+- 책임: 브라우저 런타임
+- 강점: 앱 내부에서 어디서든 t()로 빠르게 적용
+- 적합: 로그인/기능/UI 상태가 많은 화면
+
+### SSG(언어 라우트 생성)
+
+- 책임: 빌드 타임
+- 강점: 언어별 URL, 메타데이터, SEO/공유에 최적
+- 적합: 소개/랜딩/문서처럼 “첫 인상”이 중요한 페이지
+
+VitalTrip에서는 이 둘을 섞어 “앱 사용성”과 “글로벌 유입/접근성”을 동시에 잡는 구조를 만들었다.
