@@ -368,6 +368,29 @@ if (event.key === 'Tab') {
 
 # VoiceOver으로 검증
 
+VoiceOver는 macOS/iOS에 내장된 스크린 리더다.
+해당 스크린리더를 통하여 시맨틱 태그와 ARIA가 제대로 동작하는지 검증할 수 있다.
+
+내가 실제로 VoiceOver(맥)에서 확인한 체크리스트는 아래다.
+
+### 키보드(Tab) 관점
+
+- Tab 순서가 시각적 흐름과 자연스러운가?
+- 포커스가 빠져나가거나(배경/주소창) 끊기지 않는가?
+- 모달 오픈 시 첫 포커스가 적절한 위치로 이동하는가?
+- 모달 내에서 Tab/Shift+Tab이 정상 순환하는가?
+- Escape로 닫히는가?
+
+### 스크린 리더(VoiceOver) 관점
+
+- 로그인 에러가 발생했을 때 즉시 읽히는가?
+- 버튼/링크가 역할에 맞게 읽히는가?
+- 아이콘/장식 요소가 불필요하게 읽히지 않는가?
+- 모달이 “dialog”로 인지되고 제목이 함께 읽히는가?
+- 모달이 열린 동안 배경을 읽으려 하지 않는가?
+
+## 로그인 페이지
+
 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', margin: '2rem 0' }}>
   <div>
     <h3 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>개선 전</h3>
@@ -384,6 +407,31 @@ if (event.key === 'Tab') {
     <video width='100%' controls>
       <source
         src='https://file.notion.so/f/f/de9ef6c4-6dc6-4556-9c1b-2e33489a8bfb/ad4ba44e-4be6-46a2-b08f-3b6551294099/%E1%84%92%E1%85%AA%E1%84%86%E1%85%A7%E1%86%AB_%E1%84%80%E1%85%B5%E1%84%85%E1%85%A9%E1%86%A8_2025-10-23_15.34.39.mov?table=block&id=295a3b1d-7145-8047-8ee9-e5f9c7ff609c&spaceId=de9ef6c4-6dc6-4556-9c1b-2e33489a8bfb&expirationTimestamp=1767830400000&signature=W8SPPntNm5-7vj9a4h-H1LtfjtCVJr8DaxSfeahX1GE'
+        type='video/mp4'
+      />
+      브라우저가 video 태그를 지원하지 않습니다.
+    </video>
+  </div>
+</div>
+
+## 글 작성 도메인 페이지
+
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', margin: '2rem 0' }}>
+  <div>
+    <h3 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>개선 전</h3>
+    <video width='100%' controls>
+      <source
+        src='https://file.notion.so/f/f/de9ef6c4-6dc6-4556-9c1b-2e33489a8bfb/d5b68966-658e-49b8-aa49-3b9f7c89e0fb/%E1%84%92%E1%85%AA%E1%84%86%E1%85%A7%E1%86%AB_%E1%84%80%E1%85%B5%E1%84%85%E1%85%A9%E1%86%A8_2025-10-21_11.51.41.mov?table=block&id=295a3b1d-7145-8038-8784-dbd529338130&spaceId=de9ef6c4-6dc6-4556-9c1b-2e33489a8bfb&expirationTimestamp=1767830400000&signature=Jr_mX_Z2lW23qXvJMJQRzgtabhFeY-kXUPicDo3lC8E'
+        type='video/mp4'
+      />
+      브라우저가 video 태그를 지원하지 않습니다.
+    </video>
+  </div>
+  <div>
+    <h3 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>개선 후</h3>
+    <video width='100%' controls>
+      <source
+        src='https://file.notion.so/f/f/de9ef6c4-6dc6-4556-9c1b-2e33489a8bfb/8707020f-a46a-4711-ba8e-dcdf11e5cd63/%E1%84%92%E1%85%AA%E1%84%86%E1%85%A7%E1%86%AB_%E1%84%80%E1%85%B5%E1%84%85%E1%85%A9%E1%86%A8_2025-10-23_15.37.54.mov?table=block&id=295a3b1d-7145-8084-9913-e64ac478ddd6&spaceId=de9ef6c4-6dc6-4556-9c1b-2e33489a8bfb&expirationTimestamp=1767830400000&signature=CK_znhBhjUT0_KujaGD2X-FMYfz2eq94yCYzUhPv8Qk'
         type='video/mp4'
       />
       브라우저가 video 태그를 지원하지 않습니다.
