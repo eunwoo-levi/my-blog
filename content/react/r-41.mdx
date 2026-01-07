@@ -1,5 +1,5 @@
 ---
-title: '[React] 시맨틱 태그·ARIA·포커스 트래핑으로 접근성(VoiceOver)과 SEO까지 개선하기'
+title: '[React] 시맨틱 태그, Aria, 포커스 트래핑으로 접근성(VoiceOver)과 SEO까지 개선하기'
 author: 'Eunwoo'
 thumbnail: '/thumbnail/reactjs.webp'
 publishDate: '2026-01-07'
@@ -150,7 +150,7 @@ form으로 자주 쓰이는 로그인 폼으로 어떻게 개선했는지 보자
 - `role="alert"` + `aria-live="polite"`: 에러 메시지에 라이브 영역을 지정해 에러가 생기면 스크린 리더가 즉시 읽도록 한다.
 
 즉, 화면에서 빨간 글씨가 보이는 것에 그치지 않고
-**“스크린 리더가 에러를 인지하고 안내하는 흐름”**을 만들 수 있다.
+“스크린 리더가 에러를 인지하고 안내하는 흐름”을 만들 수 있다.
 
 ## 2-2. 카드/내비게이션/아이콘: “의미”를 채우는 디테일
 
@@ -193,17 +193,13 @@ form으로 자주 쓰이는 로그인 폼으로 어떻게 개선했는지 보자
 아이콘은 접근성에서 흔한 함정이다.
 화면에는 예쁘지만, 스크린리더 입장에서는 의미 없는 요소가 반복해서 읽히는 노이즈가 되기 쉽다.
 
-#### 장식 아이콘(대부분의 경우)
-
+- 장식 아이콘(대부분의 경우)
 - 정보 전달이 목적이 아니라면: aria-hidden="true"
 - 예: 단순한 꾸밈, 레이아웃 분리, “분위기용” 아이콘
 
-#### 정보 아이콘(의미가 있는 경우)
-
-아이콘 자체가 의미라면,
-
-- 버튼이면 aria-label="..."로 의도를 설명
-- 상태 아이콘이면 주변 텍스트로 의미를 제공하거나 aria-label로 보완
+- 정보 아이콘(아이콘이 의미가 있는 경우)
+  - 버튼이면 aria-label="..."로 의도를 설명
+  - 상태 아이콘이면 주변 텍스트로 의미를 제공하거나 aria-label로 보완
 
 여기서 자주 하는 실수는 아이콘과 텍스트가 함께 있는데 둘 다 읽혀서 중복 낭독 발생할 수 있다.
 그래서 아이콘을 `aria-hidden="true"` 처리하고, 텍스트만 읽히게 정리하는 게 깔끔하다.
@@ -212,7 +208,7 @@ form으로 자주 쓰이는 로그인 폼으로 어떻게 개선했는지 보자
 
 UI에서 숫자 배지(알림 수), 폼 에러, 토스트처럼 텍스트가 실시간으로 바뀌는 요소는 시각 사용자에게는 즉시 보이지만, 스크린리더에게는 “변화가 있었는지”가 전달되지 않을 수 있다.
 
-#### 에러/중요 알림: role="alert" , aria-live="assertive"
+### 에러/중요 알림: role="alert" , aria-live="assertive"
 
 `role="alert"`를 사용하면 자동으로 `aria-live="assertive"`가 적용되어 즉시 낭독된다.
 
@@ -230,7 +226,7 @@ function showAlert() {
 </script>
 ```
 
-#### 덜 긴급한 변화: aria-live="polite"
+### 덜 긴급한 변화: aria-live="polite"
 
 사용자의 현재 작업을 방해하지 않고, 콘텐츠가 변경되었을 때만 읽어준다.
 주로 알림 메시지, 검색 결과 갱신 등에 사용된다
@@ -252,7 +248,7 @@ function updateSearchResults() {
 위 코드를 예시로 보면, 검색 버튼을 누르면 결과가 업데이트되며, 스크린 리더가 새로운 내용만 읽어준다.
 하지만 사용자의 현재 작업을 방해하지 않는다.
 
-#### 입력과 에러 연결: aria-describedby + aria-invalid
+### 입력과 에러 연결: aria-describedby + aria-invalid
 
 ```tsx
 <form>
@@ -281,7 +277,7 @@ function updateSearchResults() {
 
 그래서 나는 useModalFocus 훅으로 **포커스 트래핑(Focus Trap)**을 구현했다.
 
-#### useModalFocus 코드
+### useModalFocus 코드
 
 ```tsx
 import { useEffect, useRef } from 'react';
@@ -369,3 +365,28 @@ if (event.key === 'Tab') {
 ```
 
 정리하면, 브라우저에서 Tab 키를 누를 때 기본적으로 다음으로 넘어가는 기능을 제공해주지만, 자신이 구현한 모달(컴포넌트) 밖으로 포커스가 나가는 것을 방지하기 위해, `useModalFocus` 훅에서는 Tab 키 이벤트를 감지하여 포커스가 모달 내부에서 순환하도록 한다.
+
+# VoiceOver으로 검증
+
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', margin: '2rem 0' }}>
+  <div>
+    <h3 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>개선 전</h3>
+    <video width='100%' controls>
+      <source
+        src='https://file.notion.so/f/f/de9ef6c4-6dc6-4556-9c1b-2e33489a8bfb/a831f0fb-9230-42b4-9201-3024303b1970/%E1%84%92%E1%85%AA%E1%84%86%E1%85%A7%E1%86%AB_%E1%84%80%E1%85%B5%E1%84%85%E1%85%A9%E1%86%A8_2025-10-21_11.34.45.mov?table=block&id=295a3b1d-7145-80aa-b5f2-eabae85cdc57&spaceId=de9ef6c4-6dc6-4556-9c1b-2e33489a8bfb&expirationTimestamp=1767830400000&signature=EBsCMYL6HRpFnUEZfoU8qVRPM0Gru-EJ57rO0EleLuw'
+        type='video/mp4'
+      />
+      브라우저가 video 태그를 지원하지 않습니다.
+    </video>
+  </div>
+  <div>
+    <h3 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>개선 후</h3>
+    <video width='100%' controls>
+      <source
+        src='https://file.notion.so/f/f/de9ef6c4-6dc6-4556-9c1b-2e33489a8bfb/ad4ba44e-4be6-46a2-b08f-3b6551294099/%E1%84%92%E1%85%AA%E1%84%86%E1%85%A7%E1%86%AB_%E1%84%80%E1%85%B5%E1%84%85%E1%85%A9%E1%86%A8_2025-10-23_15.34.39.mov?table=block&id=295a3b1d-7145-8047-8ee9-e5f9c7ff609c&spaceId=de9ef6c4-6dc6-4556-9c1b-2e33489a8bfb&expirationTimestamp=1767830400000&signature=W8SPPntNm5-7vj9a4h-H1LtfjtCVJr8DaxSfeahX1GE'
+        type='video/mp4'
+      />
+      브라우저가 video 태그를 지원하지 않습니다.
+    </video>
+  </div>
+</div>
