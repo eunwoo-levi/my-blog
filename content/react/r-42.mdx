@@ -1,0 +1,340 @@
+---
+title: '[React] 웹뷰(WebView) 개발기 - React Native Expo로 기존 React 웹을 감싸 iOS/Android 앱 만들기'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/reactjs.webp'
+publishDate: '2026-01-10'
+categoryId: 6
+keywords:
+  [
+    '웹뷰',
+    '리액트 웹뷰',
+    'React WebView',
+    'React Native',
+    'Expo',
+    'WebView',
+    'react-native-webview',
+    'expo-router',
+  ]
+description: '기존 React 웹을 Expo(React Native) WebView 앱으로 감싸 iOS/Android MVP를 빠르게 구축하고, Safe Area/뒤로가기/로그인 이슈와 EAS 빌드·버전 자동화까지 정리'
+---
+
+웹 서비스가 이미 있는데도 “앱”을 만들어야 하는 순간이 온다.  
+나도 그 순간이 왔다. `/client`에는 Webpack 기반 React 웹이 있고, `/server`에는 Spring 백엔드가 따로 있는 상태였다. 웹은 이미 운영 도메인(`connectingmoment.com`)으로 배포되어 있었고, 기능적으로는 충분히 서비스가 굴러가고 있었다.
+
+그런데 모바일 경험을 기준으로 보면 웹만으로 해결되지 않는 요구가 생겼다.
+
+- 사용자 입장에서는 “주소창”이 없는 **앱 형태의 진입**이 더 자연스럽다.
+- 지인/사용자에게 공유할 때 “앱스토어에 있는 서비스”가 신뢰와 접근성을 만든다.
+- 푸시 알림, 딥링크, 권한(카메라/알림) 같은 영역은 브라우저에서 제약이 있다.
+- 무엇보다도 “앱이 있어야 한다”는 요구 자체가 프로젝트의 우선순위를 바꾸기도 한다.
+
+하지만 동시에 현실적인 문제도 있었다.
+
+- RN로 UI를 새로 다 만들면 개발 비용이 급격히 커진다.
+- 이미 웹 UI/기능이 완성되어 있는데, 같은 화면을 앱에서 다시 만드는 건 낭비다.
+- 당장 필요한 건 “완벽한 네이티브 앱”이 아니라, **iOS/Android에서 설치형으로 동작하는 MVP**였다.
+
+그래서 내 선택은 명확했다.
+
+> **기존 웹을 최대한 재사용하고, 앱 셸(shell)만 Expo(React Native)로 얹는다.**  
+> 즉, WebView 기반 하이브리드 앱으로 빠르게 MVP를 만들고,  
+> 앱에서만 해결 가능한 문제(Safe Area, 뒤로가기, OAuth 정책, 배포)를 RN에서 책임진다.
+
+사실 이전에 해당 문제를 해결하기 위해 [React PWA](https://www.eunwoo-levi.com/react/r-38)도 시도해본 적이 있었다.
+하지만 PWA는 여전히 브라우저 환경에 묶여 있고, 실제로 앱 스토어에 등록하는 것이 아닌, “홈 화면에 추가” 형태로 남아 있어 사용자 경험을 완전히 대체하지 못했다.  
+그래서 이번에는 Expo WebView 앱으로 iOS/Android 네이티브 앱을 빠르게 구축하기로 결심하였다.
+
+이 글은 그 과정 전체를 “처음부터 끝까지” 기록한 것이다.  
+단순 구현 방법뿐 아니라, 왜 이런 구조를 선택했는지와 실제로 부딪힌 문제들까지 정리한다.
+
+# WebView란?
+
+![WebView](https://private-user-images.githubusercontent.com/162898956/534147744-04b7aa9d-5f74-4e4f-bba4-e4a1354de6ad.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjgwMDE4OTksIm5iZiI6MTc2ODAwMTU5OSwicGF0aCI6Ii8xNjI4OTg5NTYvNTM0MTQ3NzQ0LTA0YjdhYTlkLTVmNzQtNGU0Zi1iYmE0LWU0YTEzNTRkZTZhZC5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjYwMTA5JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MDEwOVQyMzMzMTlaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT05Njc1NzAxMDgyYzQ1ZmNkOTY5NDVkNjA0YTNmZjA3ZDdmYmZhN2MwNzUyMmJiYTZjY2MzMzAzNjdiNDBlMzc1JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.RzCxROqYZdk04_kL2WhUW96JaiUR8mEV1FwXXdNPegM)
+
+**WebView는 앱 안에 내장된 브라우저 엔진**이다.
+즉, React Native 화면 위에 “웹 페이지를 렌더링하는 뷰”를 올릴 수 있다.
+
+위 그림에서 볼 수 있듯이, “WebView가 브라우저와 완전히 같지 않다”는 점이 중요하다.  
+사용자는 화면만 보면 웹과 앱의 차이를 잘 못 느끼지만, 개발자는 **실행 환경이 바뀌면서 생기는 차이**를 반드시 마주하게 된다.
+
+- **브라우저(Web)**: Safari/Chrome이 쿠키·스토리지·보안정책·새창·뒤로가기 같은 “표준 환경”을 제공한다.
+- **WebView(앱)**: 앱이 WebView를 “내부에” 포함하고, 앱이 그 위에 SafeArea/뒤로가기/권한/외부링크 처리 등을 결정한다.
+
+그래서 WebView 앱을 만들 때는 단순히 “웹을 띄운다”에서 끝나지 않고, 아래 같은 **플랫폼 레이어**를 앱에서 보정해야 한다.
+
+- **iOS Safe Area / StatusBar**: 상단 노치/상태바 영역과 콘텐츠가 겹치지 않도록 앱 레이아웃에서 안전영역을 잡아야 한다.
+- **Android 하드웨어 뒤로가기**: 웹 히스토리(`goBack`)와 앱 종료 사이의 우선순위를 설계해야 한다.
+- **쿠키/세션**: 브라우저와 WebView의 쿠키 저장소가 분리될 수 있어, “웹에서 되던 로그인”이 앱에서 깨질 수 있다.
+- **OAuth 정책(특히 Google)**: 임베디드 WebView 환경을 차단하는 경우가 있어, 시스템 브라우저 기반 OAuth로 설계를 바꿔야 하는 순간이 온다.
+- **외부 링크/새 창**: 결제, 전화, 메일, 새 탭 이동 같은 동작은 WebView에서 앱이 직접 처리 로직을 추가해야 한다.
+
+정리하면 WebView는 “모든 걸 네이티브로 다시 만들기 전에” 선택할 수 있는 매우 강력한 전략이다.  
+다만 성공적인 WebView 앱은 단순 래핑(wrapper)이 아니라, **웹이 해결하지 못하는 플랫폼 UX를 앱 셸이 책임지는 구조**로 설계되어야 한다.
+
+웹뷰(WebView)의 장단점은 다음과 같다.
+
+| 장점                                       | 단점                                            |
+| ------------------------------------------ | ----------------------------------------------- |
+| 기존 웹 자산(코드, UI, 기능)을 재사용 가능 | 네이티브 성능/UX에 비해 떨어질 수 있음          |
+| 빠른 개발 및 배포                          | 복잡한 네이티브 기능 구현에 제약이 있을 수 있음 |
+| 단일 코드베이스 유지 가능                  | 디버깅 및 문제 해결이 어려울 수 있음            |
+
+따라서 WebView는 **빠른 MVP 개발**이나 **기존 웹 자산을 활용한 앱 전환**에 적합하다.
+
+# Expo WebView 앱 만들기
+
+## Expo는 무엇인가?
+
+React Native를 “맨바닥”에서 시작하면 Xcode/Android Studio 세팅, 빌드 환경, 네이티브 설정이 부담이 된다.  
+Expo는 그 복잡도를 줄여서 **빠르게 실기기에서 실행하고 검증**할 수 있게 해준다.
+
+즉, Expo는 React Native 프로젝트를 쉽게 시작하고 관리할 수 있는 도구 모음이다.
+
+Expo의 핵심 가치는 다음과 같다.
+
+- QR 스캔으로 실기기 테스트(Expo Go)
+- 라우팅, 빌드, 배포(EAS)까지 하나의 흐름으로 연결
+- iOS/Android 크로스 플랫폼 MVP 제작에 최적
+
+## Expo 프로젝트 생성
+
+```bash
+npx create-expo-app app
+cd app
+pnpm start
+```
+
+이후 Expo Dev Tools가 열리면, Expo Go 앱으로 QR 코드를 스캔해 실기기에서 바로 실행할 수 있다.
+Expo는 모바일 개발 경험이 없는 상태에서도 빠르게 실기기 테스트(Expo Go)가 가능하다는 점이 장점이다.
+특히 WebView 기반 MVP를 만들 때는 “일단 뜨는지”를 빠르게 확인할 수 있는 것이 매우 유용하다.
+
+## expo-router 구조 이해
+
+`expo-router`를 쓰면 파일/폴더 구조가 라우트가 된다.
+
+내가 구성한 최소 구조는 다음과 같았다.
+
+- `app/_layout.tsx` : 루트 Stack
+- `app/(tabs)/_layout.tsx` : Tabs 레이아웃(단일 탭)
+- `app/(tabs)/index.tsx` : WebView 화면
+
+## WebView로 운영 웹 연결하기
+
+WebView는 `react-native-webview` 패키지를 사용한다.
+
+```bash
+pnpm add react-native-webview
+```
+
+이후 `WebView` 컴포넌트를 사용해 운영 중인 웹(`https://connectingmoment.com`)을 연결한다.
+
+```tsx
+import { StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
+
+const BG = '#0a0a0f';
+const WEB_URL = 'https://connectingmoment.com';
+
+export default function HomeScreen() {
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: BG }]} edges={['top', 'bottom']}>
+      <WebView source={{ uri: WEB_URL }} style={styles.webview} />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  webview: { flex: 1, backgroundColor: 'transparent' },
+});
+```
+
+여기서 중요한 건 “웹이 잘 만들어져 있다면 앱 코드는 정말 작아질 수 있다”는 점이었다.
+하지만 이 상태로 끝이 아니었다. 실기기에서 테스트 해보니 바로 문제가 터졌다.
+
+<div>
+  <h3 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>개선 후</h3>
+  <video width='100%' controls>
+    <source src='/videos/webview.mp4' type='video/mp4' />
+    브라우저가 video 태그를 지원하지 않습니다.
+  </video>
+</div>
+
+# WebView 앱에서 마주친 문제들과 해결법
+
+## iOS Safe Area / StatusBar 겹침 문제 해결
+
+실기기(iPhone)에서 QR로 실행하자마자 화면이 상단 상태바(시간/배터리 영역)와 겹쳤다.
+웹에서는 절대 등장하지 않는 문제다. 이게 바로 “앱 셸이 필요한 이유”였다.
+
+기존의 `ThemeView`의 문제점은 다음과 같았다.
+
+- `SafeAreaView`가 루트에 없어서, 개별 화면에서 일일이 Safe Area를 잡아줘야 했다.
+- `StatusBar`가 Safe Area 위에 겹쳐져서, 상태바 글자색이 배경과 충돌했다.
+
+해결은 SafeAreaProvider + SafeAreaView로 루트부터 안전영역을 잡는 것이었다.
+
+```tsx
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+
+export default function RootLayout() {
+  return (
+    <SafeAreaProvider>
+      <Stack>
+        <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
+      </Stack>
+      <StatusBar style='light' />
+    </SafeAreaProvider>
+  );
+}
+```
+
+추가적으로 `SafeAreaView` 배경색도 지정해주었다.
+SafeArea는 “내용이 들어가지 않는 여백”이 생기기 쉬워서, 웹 배경과 다르면 위/아래가 흰색으로 뜬다.
+그래서 서비스 톤(BG)을 SafeAreaView에 깔아서 상/하단이 튀지 않게 처리했다.
+
+## Android는 하드웨어 뒤로가기 버튼이 있다.
+
+WebView 앱에서 이걸 처리하지 않으면 다음 문제가 생길 수 있다.
+
+- 사용자는 웹 안에서 여러 페이지를 이동했는데
+- 뒤로가기를 누르면 웹이 뒤로 가는 게 아니라 앱이 종료되거나 기대와 다른 동작을 한다
+
+원하는 UX는 간단하다.
+
+1. WebView에 뒤로 갈 히스토리가 있으면 `goBack()`
+2. 더 이상 없으면 종료 confirm
+
+```tsx
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, BackHandler, Platform } from 'react-native';
+import { WebView } from 'react-native-webview';
+
+const webViewRef = useRef<WebView>(null);
+const [canGoBack, setCanGoBack] = useState(false);
+
+useEffect(() => {
+  if (Platform.OS !== 'android') return;
+
+  const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+    if (canGoBack) {
+      webViewRef.current?.goBack();
+      return true;
+    }
+    Alert.alert('앱 종료', '앱을 종료할까요?', [
+      { text: '취소', style: 'cancel' },
+      { text: '종료', style: 'destructive', onPress: () => BackHandler.exitApp() },
+    ]);
+    return true;
+  });
+
+  return () => sub.remove();
+}, [canGoBack]);
+```
+
+그리고 WebView에서 `canGoBack`을 갱신한다.
+
+```tsx
+<WebView
+  ref={webViewRef}
+  source={{ uri: WEB_URL }}
+  onNavigationStateChange={(nav) => setCanGoBack(nav.canGoBack)}
+/>
+```
+
+# 쿠키/로그인/Google OAuth: WebView가 브라우저와 달랐던 순간
+
+IOS에서 Expo Go로 앱을 실행했을 때, 일반 로그인(Auth)는 잘 되었지만 Google OAuth 로그인이 실패했다.
+
+`Error 403: disallowed_useragent`, `Use secure browsers` 라는 메시지가 떴는데 이는 Google이 WebView(임베디드 브라우저)에서의 OAuth 로그인 흐름을 정책상 차단하기 때문이다.
+
+웹에서는 Safari/Chrome이 “secure browser”로 인정되기 때문에 문제가 없었지만, WebView는 같은 URL을 열어도 Google 입장에서는 다른 환경이다.
+
+이를 해결하기 위해, WebView의 `userAgent`를 iOS Safari처럼 설정해서, 차단이 발생하지 않도록 처리했다.
+
+```tsx
+<WebView
+  userAgent='Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
+  source={{ uri: WEB_URL }}
+/>
+```
+
+이 방식은 “WebView 안에서 OAuth가 진행 → 우리 서비스 쿠키가 WebView 저장소에 저장”되는 형태로 보이기 때문에,
+결과적으로 앱에서도 로그인 상태가 유지되는 것처럼 보일 수 있다.
+
+# EAS 배포 준비 + 버전 자동화
+
+스토어 배포 단계에서 가장 자주 꼬이는 게 버전이다.
+
+iOS: buildNumber는 업로드할 때마다 증가해야 한다
+
+Android: versionCode는 업로드할 때마다 증가해야 한다
+
+이걸 사람이 매번 올리다 보면 언젠가 실수한다.
+그래서 나는 EAS의 “remote app version source”와 `autoIncrement`를 켰다.
+
+### app.json (식별자 설정)
+
+```json
+{
+  "expo": {
+    "ios": {
+      "bundleIdentifier": "com.~~~.connectingmoment"
+    },
+    "android": {
+      "package": "com.~~~.connectingmoment"
+    }
+  }
+}
+```
+
+### eas.json (버전 자동화)
+
+```json
+{
+  "cli": {
+    "version": ">= 16.28.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": { "distribution": "internal" },
+    "production": { "autoIncrement": true }
+  },
+  "submit": { "production": {} }
+}
+```
+
+이제 production 빌드를 만들 때마다 EAS가 자동으로 build number / version code를 올려준다.
+
+# 마무리: WebView를 선택할 때 중요한 건 “웹을 띄우는 것”이 아니다
+
+처음에는 WebView를 단순히 “웹을 앱 안에 넣는 방법” 정도로 생각했다.  
+하지만 실제로 만들고 나서 깨달은 건, WebView의 핵심은 **렌더링 자체가 아니라 ‘실행 환경의 전환’**이었다는 점이다.
+
+브라우저에서 잘 돌아가던 웹은, WebView로 들어오는 순간 다음 질문을 던지게 된다.
+
+- 이 웹은 **브라우저가 아니라 앱 안에서** 실행된다면 어떻게 동작할까?
+- 쿠키/세션은 어디에 저장되고, 로그인은 어떤 정책의 영향을 받을까?
+- Android의 뒤로가기는 웹 히스토리로 이어져야 할까, 앱 종료로 이어져야 할까?
+- iOS의 상태바/노치 영역은 누가 책임지고, 화면은 어디까지가 “안전한 영역”일까?
+- 새 창, 외부 링크, 결제, 권한 요청 같은 “브라우저가 알아서 하던 일”을 이제는 누가 처리해야 할까?
+
+그리고 이 질문들의 답은 대부분 “웹”이 아니라 **WebView를 감싸고 있는 앱 셸(shell)**에 있었다.  
+WebView 앱은 결국 웹을 재사용하는 전략이지만, 동시에 웹이 놓칠 수밖에 없는 플랫폼 레이어를 정리하는 과정이기도 했다.
+
+그래서 나는 WebView를 단순한 타협으로 보지 않게 됐다.  
+완전 네이티브로 다시 만들기 전에 선택할 수 있는 가장 현실적인 MVP 전략이면서도,  
+서비스가 모바일 환경에서 진짜로 사용되기 위해 필요한 “경계 조건”을 빠르게 검증할 수 있는 방식이었기 때문이다.
+
+이 글에서 정리한 것처럼 WebView는 **“웹을 그대로 가져오는 것”**이 목적이 아니라,  
+**“웹을 앱의 실행 환경에 안전하게 안착시키는 것”**이 목적이다.
+
+다음 단계에서는 WebView가 더 ‘앱’처럼 느껴지게 만드는 요소들(웹↔앱 통신, 외부 링크, 푸시/딥링크 연동)을 확장하면서,  
+단순 래퍼를 넘어 “앱 셸이 점점 기능을 가져가는 구조”로 발전시켜 보려고 한다.
