@@ -317,6 +317,38 @@ export default async function AboutLangPage({ params }) {
 
 소개 페이지 컴포넌트는 “UI만” 담당하고, 텍스트는 `translations` 객체에서 가져오는 형태로 구현되어 의존성이 단순하고 관리가 편리하게 되었다.
 
+### 언어별로 생성된 About 페이지
+
+<div
+  style={{
+    display: 'flex',
+    gap: '1rem',
+    marginTop: '2rem',
+    marginBottom: '2rem',
+    flexWrap: 'wrap',
+  }}
+>
+  <div style={{ flex: '1', minWidth: '300px' }}>
+    <img
+      src='https://private-user-images.githubusercontent.com/162898956/534163928-30326fb5-b094-47a0-a523-0465bfc4a7b5.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjgwMDYzMDEsIm5iZiI6MTc2ODAwNjAwMSwicGF0aCI6Ii8xNjI4OTg5NTYvNTM0MTYzOTI4LTMwMzI2ZmI1LWIwOTQtNDdhMC1hNTIzLTA0NjViZmM0YTdiNS5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjYwMTEwJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MDExMFQwMDQ2NDFaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT1lZTg1NWYwZjEwN2Q0YmFlNzVlN2I4MWM2YTlmNDcxYjE1NjcwYjBiMmY0OWQ3ZmI0MGFiYWNkZmQ3YjliM2ZlJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.L6AcuCIcckEXRZFWu5-triG2JKMIoOTxR6mtjkzCk_c'
+      alt='한국어 About 페이지'
+      style={{ width: '100%', borderRadius: '8px', border: '1px solid #e5e7eb' }}
+    />
+    <p style={{ textAlign: 'center', marginTop: '0.5rem', fontSize: '0.9rem', color: '#6b7280' }}>
+      한국어 버전 (/about/ko)
+    </p>
+  </div>
+  <div style={{ flex: '1', minWidth: '300px' }}>
+    <img
+      src='https://private-user-images.githubusercontent.com/162898956/534163786-bb6b65c8-9edc-4c60-9fcf-d540658f2a87.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjgwMDYzMDEsIm5iZiI6MTc2ODAwNjAwMSwicGF0aCI6Ii8xNjI4OTg5NTYvNTM0MTYzNzg2LWJiNmI2NWM4LTllZGMtNGM2MC05ZmNmLWQ1NDA2NThmMmE4Ny5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjYwMTEwJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MDExMFQwMDQ2NDFaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT0yM2UzMWQ4NmZmMmQ0ZjcyYTRlMWJjOTgxNjA0OGIzMWMwN2JjZDUyMzk0ZTY0YTdiOGJmYzcxNGQyOGY1M2I0JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.srP37ui4ZdVc87UXvKKvWimns6LxRrTB7cG-qKgoC_4'
+      alt='영어 About 페이지'
+      style={{ width: '100%', borderRadius: '8px', border: '1px solid #e5e7eb' }}
+    />
+    <p style={{ textAlign: 'center', marginTop: '0.5rem', fontSize: '0.9rem', color: '#6b7280' }}>
+      영어 버전 (/about/en)
+    </p>
+  </div>
+</div>
 # 마무리 - CSR i18n vs SSG 다국어는 “누가 책임지느냐”가 다르다
 
 정리하면 둘은 같은 다국어지만 책임 주체가 다르다.
