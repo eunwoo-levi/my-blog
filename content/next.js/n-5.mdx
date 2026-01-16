@@ -231,6 +231,129 @@ export default async function NewsPage({ params }: NewsPageProps) {
 }
 ```
 
+# On Demand 무효화: 사용자가 직접 캐시 갱신하기
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/13b62dac-7b2e-48b1-8407-72bf4d720841/image.png)
+
+ISR의 TTL 방식은 "일정 시간마다 자동 갱신"이지만, 때로는 **사용자가 원할 때 즉시 최신 데이터를 보고 싶을 수 있다**.
+예를 들어:
+
+- 뉴스 편집자가 긴급 속보를 발행한 직후
+- 관리자가 콘텐츠를 수정하고 바로 확인하고 싶을 때
+- 사용자가 "새로고침" 버튼으로 최신 뉴스를 요청할 때
+
+이를 위해 Next.js에서 제공하는 `revalidateTag()`를 사용하면 **TTL을 기다리지 않고 즉시 캐시를 무효화**할 수 있다.
+
+## 구현 방법
+
+### 1단계: fetch에 태그 달기
+
+데이터를 가져올 때 `tags` 옵션으로 캐시를 그룹핑한다:
+
+```typescript
+// src/features/news/api/newsApi.ts
+export async function fetchMedicalNewsSSR({ page = 1, pageSize = 10 }) {
+  const response = await httpServer.get(`/news/headlines`, {
+    next: {
+      tags: ['medical-news', `news-page-${page}`], // 👈 캐시 태그
+      revalidate: 3600,
+    },
+  });
+  return response.data;
+}
+```
+
+위 코드에서 현재는 `medical-news` 태그와 `news-page-{page}` 태그를 달았다.
+`medical-news`: 모든 뉴스 페이지 공통 태그 → 전체 갱신용
+`news-page-1`: 페이지별 개별 태그 → 특정 페이지만 갱신용
+
+### 2단계: Server Action으로 무효화 트리거
+
+```ts
+// src/features/news/actions/revalidateNews.ts
+'use server';
+import { revalidateTag } from 'next/cache';
+export async function revalidateNews(page?: number) {
+  try {
+    const tag = page ? `news-page-${page}` : 'medical-news';
+    revalidateTag(tag);
+
+    return {
+      success: true,
+      message: page ? `Page ${page} revalidated` : 'All news revalidated',
+    };
+  } catch (error) {
+    return { success: false, message: 'Failed to revalidate' };
+  }
+}
+```
+
+Server Action이란?
+
+- `use server` 지시어로 서버에서만 실행되는 함수
+- 클라이언트에서 직접 호출 가능 (RPC처럼)
+- 별도 API Route 불필요
+
+### 3단계: UI 버튼 컴포넌트
+
+```tsx
+// src/features/news/ui/RevalidateButton.tsx
+'use client';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { revalidateNews } from '../actions/revalidateNews';
+export const RevalidateButton = () => {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const handleRevalidate = async () => {
+    setIsLoading(true);
+
+    const result = await revalidateNews(); // 👈 Server Action 호출
+
+    if (result.success) {
+      router.refresh(); // 현재 페이지 리프레시
+    }
+
+    setIsLoading(false);
+  };
+  return (
+    <button onClick={handleRevalidate} disabled={isLoading}>
+      {isLoading ? 'Refreshing...' : 'Refresh News'}
+    </button>
+  );
+};
+```
+
+그리고 페이지에 통합한다.
+
+```tsx
+// app/news/[page]/page.tsx
+export default async function NewsPage({ params }) {
+  const { page } = await params;
+  const data = await fetchMedicalNewsSSR({ page: parseInt(page) });
+  return (
+    <div>
+      <RevalidateButton />
+      <NewsContent data={data} />
+    </div>
+  );
+}
+```
+
+전체 흐름을 그려보면 아래와 같다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/387ccdab-9c2e-440e-a259-80aa74fb0c3e/image.png)
+
+따라서 정리해보면,
+
+ISR를 On Demand 무효화로 확장하면,
+
+- 평소: 캐시된 빠른 페이지 로딩 (ISR)
+- 필요시: 버튼 클릭으로 즉시 최신 뉴스 확인 (온디맨드)
+- 자동: 1시간마다 자동 갱신 (TTL)
+
+와 같이 하이브리드 전략으로 성능과 최신성을 모두 확보할 수 있다.
+
 ### ISR 최적화 전후 lighthouse 결과
 
 | ISR 최적화 전                                                                                       | ISR 최적화 후                                                                                       |
