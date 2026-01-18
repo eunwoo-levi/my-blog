@@ -1,0 +1,651 @@
+---
+title: '[Next.js] Sentry 알림 자동화로 초동 대응 단축하기: Supabase(DB) 집계·로그 + LLM 트리아지'
+author: 'eunwoo'
+thumbnail: '/thumbnail/nextjs.webp'
+publishDate: '2026-01-18'
+categoryId: 5
+keywords:
+  [
+    'Next.js 알림 자동화',
+    'Next.js Sentry',
+    'React 알림 자동화',
+    'React Sentry',
+    'Slack',
+    'Supabase',
+    'Prisma',
+    'LLM',
+  ]
+description: 'Sentry 알림을 신호로 만들어 폭주 제어, 조건부 LLM 트리아지, Slack 운영 흐름 자동화를 구현하는 방법'
+---
+
+보통 우리는 Sentry를 통해 애플리케이션에서 발생하는 오류를 모니터링하고, 이를 개발자에게 알리는 용도로 사용한다.
+현재 Next.js로 구축된 [VitalTrip](https://aiaivitaltrip.com) 서비스에서도 서비스에 Sentry를 붙였고, 에러가 생기면 Slack에 알림이 오게 했다.
+
+하지만, 알림이 온다고 문제가 해결되는 건 아니었다. 오히려 알림이 잘 오기 시작하면서, 새로운 문제가 생겼다.
+
+### 1. 알림이 ‘정보’가 아니라 ‘잡음’이 되는 순간
+
+배포 직후 같은 에러가 연속으로 터지면 Slack은 금방 이런 상태가 된다.
+
+- 같은 제목의 알림이 10개, 20개, 30개…
+- 사람들이 처음엔 눌러본다 → 그러나 금세 피로해진다
+- “어차피 또 같은 거겠지” 하고 알림을 무시한다
+
+알림이 많아지면 팀은 두 가지 반응 중 하나로 간다.
+
+1. 알림을 꺼버린다
+2. 알림을 켜두지만 더 이상 신뢰하지 않는다
+
+둘 다 치명적이다. 특히 두 번째가 더 무섭다.  
+**중요한 알림도 평범한 잡음처럼 처리되기 시작**하기 때문이다.
+
+### 2. 시간 낭비의 진짜 원인은 ‘에러’가 아니라 ‘초동 대응’이었다
+
+내가 실제로 시간을 많이 쓰던 순간은 이런 순간들이었다.
+
+- Slack 알림 링크를 열고 Sentry 화면으로 이동
+- stacktrace를 훑고 “어디서 터졌는지” 정리
+- 최근 배포/변경사항을 떠올리며 “원인 후보”를 머릿속에서 뽑기
+- 팀원에게 공유할 수 있게 문장으로 다시 정리
+- 다음 액션(재현/로그/롤백/핫픽스)을 체크리스트처럼 적기
+
+그리고 더 문제였던 건, 이 과정이 **매번 처음부터 다시 시작**된다는 점이었다.
+
+같은 이슈가 다시 터지면  
+ “이거 전에 봤던 건데… 그때 뭐가 원인이었지?”  
+ “누가 확인하고 있었지?”  
+ “ACK는 됐나?”
+등등을 다시 떠올려야 했다.
+
+Slack에는 대화가 흩어져 있고, Sentry에는 이슈는 있지만 “우리 팀의 흐름”이 남아있지 않았다.
+
+### 3. 그래서 나는 “알림 봇”이 아니라 “알림 체계”를 만들기로 했다
+
+이 글에서 이야기하는 건 “Sentry 알림을 Slack으로 보내기”가 아니다.  
+내가 만들고자 했던 건 **Sentry 알림을 ‘신호’로 만드는 체계**다.
+
+이 체계는 세 가지 목표를 가진다.
+
+- **동일 이슈 도배를 막고**
+- **필요한 순간에만 분석을 자동화하며**
+- **대응 과정을 기록으로 남겨서 다음 대응이 더 빨라지게 만드는 흐름**
+
+즉, 목표는 한 줄로 정리하면 “알림을 늘리지 말고, 사고 시간을 줄이자.” 이다.
+
+## 목표(설계 기준)
+
+이 시스템은 3개의 기준으로 설계했다.
+
+1. **노이즈 제어**: 동일 이슈는 10분에 1번만 알림
+2. **초동 대응 단축**: 새 이슈/급증/심각할 때만 LLM 트리아지 + TTL 캐시
+3. **운영 가능한 기록**: DB에 알림/트리아지/상태를 남기고 대시보드로 조회
+
+포인트는 “AI를 썼다”가 아니라,  
+ “반복되던 초동 대응을 시스템으로 바꿨다” 이다.
+
+# 시스템 전체 흐름
+
+한 줄로 요약하면, **Sentry 이벤트를 ‘알림’으로 보내기 전에 한 번 정제해서 Slack에 전달하고, 그 기록을 운영툴로 남기는 흐름**이다.
+
+1. **Sentry → Webhook 전송**  
+   이슈가 생기면 Sentry가 우리 서버(`/api/sentry/webhook`)로 이벤트를 보낸다.
+
+2. **Webhook 수신 → 필드 정규화**  
+   payload에서 이슈 ID/제목/레벨/환경/링크 같은 핵심 정보만 추출해 “표준 형태”로 만든다.
+
+3. **DB 저장 + 발생 횟수 집계**  
+   이슈를 upsert하고, 누적 횟수와 “최근 10분 발생 횟수”를 함께 갱신한다.
+
+4. **10분 윈도우로 중복 알림 차단**  
+   같은 이슈는 10분에 1번만 Slack으로 보낸다.  
+   대신 메시지에는 “최근 10분 N회 / 누적 M회”를 넣어 상황 판단이 가능하게 한다.
+
+5. **(조건부) LLM 트리아지 + TTL 캐시**  
+   새 이슈/급증/error·fatal 같은 조건에서만 LLM을 호출해 요약·원인 후보·다음 액션을 생성한다.  
+   결과는 24시간 캐시해 같은 이슈에 재호출하지 않는다.
+
+6. **Slack 알림 전송 + 운영 기록 저장**  
+   Slack에는 구조화된 메시지(카운트 + 링크 + 트리아지)를 보내고,  
+   전송 성공/실패와 트리아지 결과는 DB에 남겨 대시보드에서 재확인할 수 있게 한다.
+
+## 핵심 아이디어 1. 10분 윈도우로 “노이즈”를 “지표”로 바꾸기
+
+알림이 폭주할 때, 나는 알림을 “줄이는” 게 아니라 형태를 바꾸고 싶었다.
+
+- 같은 이슈가 30번 뜨는 대신 → Slack에는 1번만
+- 대신 “최근 10분 발생 N회 / 누적 M회”를 보여주기
+
+이러면 팀은 링크를 무시하는 게 아니라, 상황을 판단할 수 있는 정보를 얻을 수. 있다.
+
+## 핵심 아이디어 2. LLM은 ‘항상’이 아니라 ‘조건부’로
+
+LLM을 모든 이슈에 붙이면 비용이 많이 든다. 중요하지 않은 이슈까지 분석해서 노이즈가 될 수도 있다.
+
+그래서 나는 LLM을 초동 시간 단축 도구로만 사용했다.
+
+LLM 호출 조건은 아래로 정했다.
+
+- 새 이슈 (first time)
+- error/fatal
+- 최근 10분 급증(예: 5회 이상)
+
+이 조건에 맞을 때만 LLM을 호출해 요약·원인 후보·다음 액션을 생성한다. 그리고 결과는 TTL 캐시(예: 24시간) 해서 같은 이슈가 반복되면 재호출을 막았다.
+
+# Slack Incoming Webhook & Supabase 준비하기
+
+Slack Incoming Webhook과 Supabase 세팅은 메인 내용이 아니기에 상세히는 다루지 않고 핵심만 명료하게 정리하겠다.
+
+## Slack Incoming Webhook 만들기
+
+[Slack 공식 문서](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks) 기준 흐름은 “Slack App 만들고 Incoming Webhooks 활성화 → 워크스페이스에 설치 → Webhook URL 생성”이다.
+
+1. Slack API에서 **Create an app**
+2. **Incoming Webhooks** 기능 활성화(ON)
+3. **Add New Webhook to Workspace**
+4. 채널 선택 → Webhook URL 복사
+
+여기서 생성된 Webhook URL을 환경 변수로 저장해 둔다. (예: `SLACK_WEBHOOK_URL`)
+
+## Sentry 설정: Internal Integration + Issue Alert Rule
+
+## Supabase 프로젝트 생성
+
+[Supabase](https://supabase.com)에서 새 프로젝트를 만든다. (무료 플랜 가능)
+
+1. Supabase 계정 생성/로그인
+2. New Project → 프로젝트 이름/비밀번호 입력 → Create new project
+3. Project Overview에서 상단에 Connect 클릭 후 DB 연결 문자열 2개 확보 (Method에서 선택)
+   - DATABASE_URL: “Pooler(세션/트랜잭션 풀링)” (Vercel 런타임용)
+   - DIRECT_URL: “직접 연결” (마이그레이션/CLI용)
+
+여기서도 얻은 연결 문자열을 환경 변수로 저장해 둔다. (예: `SUPABASE_DB_URL`, `SUPABASE_DB_DIRECT_URL`)
+
+추가적으로 이후에 `LLM`으로 `OpenAI`를 사용할 예정이므로, OpenAI API 키도 환경 변수로 저장해 둔다. (예: `OPENAI_API_KEY`)
+
+# Prisma 스키마(테이블) 생성하기
+
+Prisma를 사용해 `Supabase(PostgreSQL)`와 연결하고, 알림/트리아지/상태 관리를 위한 테이블을 만든다.
+우선 Prisma와 클라이언트를 설치하고 초기화한다.
+
+```bash
+npm i prisma @prisma/client
+npx prisma init
+
+or
+
+pnpm add prisma @prisma/client
+pnpm dlx prisma init
+```
+
+그리고 `prisma/schema.prisma`에서 데이터베이스 연결 문자열을 설정한다.
+
+```prisma
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum IssueStatus {
+  OPEN
+  ACK
+  FIXED
+  IGNORED
+}
+
+model SentryIssue {
+  id              String      @id
+  project         String?
+  environment     String?
+  level           String?
+  title           String?
+  culprit         String?
+  url             String?
+
+  firstSeenAt     DateTime    @default(now())
+  lastSeenAt      DateTime    @default(now())
+  totalCount      Int         @default(0)
+
+  windowStartAt   DateTime    @default(now())
+  windowCount     Int         @default(0)
+
+  status          IssueStatus @default(OPEN)
+  lastNotifiedAt  DateTime?
+
+  triageJson      Json?
+  triageUpdatedAt DateTime?
+
+  notifications   NotificationLog[]
+  triageRuns      TriageRun[]
+
+  @@index([lastSeenAt])
+}
+
+model NotificationLog {
+  id        String   @id @default(cuid())
+  issueId   String
+  channel   String   // "slack"
+  sentAt    DateTime @default(now())
+  success   Boolean  @default(true)
+  errorMsg  String?
+
+  issue     SentryIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId, sentAt])
+}
+
+model TriageRun {
+  id        String   @id @default(cuid())
+  issueId   String
+  provider  String   // "openai"
+  model     String?
+  createdAt DateTime @default(now())
+  result    Json
+
+  issue     SentryIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId, createdAt])
+}
+```
+
+여기서 `SentryIssue`는 Sentry 이슈를 나타내고, `NotificationLog`는 알림 전송 기록, `TriageRun`은 AI LLM 트리아지 실행 기록을 담는다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/e2c3a31b-ed93-49d3-b116-097ca004d929/image.png)
+
+이후에 다룰 모든 로직이 구현되고 Sentry 에러들이 담기면 `Supabase`에 접속해 `Table Editor`에서 테이블에 담긴 데이터를 위 이미지와 같이 직접 확인할 수 있다.
+
+마지막으로 마이그레이션을 실행해 테이블을 생성한다.
+
+```bash
+npx prisma migrate dev -n init
+
+or
+
+pnpm dlx prisma migrate dev -n init
+```
+
+해당 명령어를 실행하면 `/prisma/migrations` 폴더에 마이그레이션 파일(SQL 마이그레이션 파일 생성)이 생성된다.
+그 후, 자동으로 DATABASE_URL에 연결하여 SQL 실행되고 Supabase 데이터베이스에 테이블이 만들어진다.
+
+`_prisma_migrations` 테이블에 마이그레이션 기록 저장되는 것을 확인할 수 있다.
+
+# Prisma Client 설정하기
+
+`Prisma Client`를 사용해 PostgreSQL 데이터베이스와의 연결을 관리하는 Prisma 클라이언트를 설정한다.
+
+```ts
+// lib/prisma.ts
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
+
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    adapter,
+    log: ['error', 'warn'],
+  });
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+```
+
+- `PrismaPg`: Prisma의 PostgreSQL 어댑터, `PrismaClient`: Prisma ORM 클라이언트, `Pool`: node-postgres의 연결 풀
+
+`Pool`: 데이터베이스 연결을 효율적으로 관리하는 연결 풀 생성
+`adapter`: Prisma가 PostgreSQL과 직접 통신할 수 있도록 하는 어댑터
+
+이 설정을 통해 애플리케이션 어디서든 `prisma` 객체를 임포트하여 데이터베이스 작업을 수행할 수 있다.
+
+# Discord Webhook 전송
+
+해당 코드는 Slack Incoming Webhook으로 메시지를 전송하는 유틸리티 함수와, Sentry 이슈 정보를 바탕으로 Slack 메시지 블록을 생성하는 함수를 포함한다.
+즉, Sentry 에러를 Slack으로 전송하는 기능을 제공한다.
+
+```ts
+// lib/slack.ts
+type SlackTextObject = { type: 'mrkdwn'; text: string } | { type: 'plain_text'; text: string };
+
+type SlackBlock =
+  | { type: 'header'; text: { type: 'plain_text'; text: string } }
+  | { type: 'section'; text: SlackTextObject }
+  | { type: 'context'; elements: SlackTextObject[] }
+  | { type: 'divider' };
+
+export async function sendSlackWebhook(
+  webhookUrl: string,
+  payload: { text: string; blocks?: SlackBlock[] },
+) {
+  const res = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Slack webhook failed: ${res.status} ${text}`);
+  }
+}
+
+export function buildSlackBlocks(input: {
+  title: string;
+  project?: string | null;
+  environment?: string | null;
+  level?: string | null;
+  url?: string | null;
+  windowMin: number;
+  windowCount: number;
+  totalCount: number;
+  triage?: {
+    severity?: string;
+    summary?: string;
+    likely_causes?: string[];
+    next_actions?: string[];
+  } | null;
+}) {
+  const severity = input.triage?.severity ?? 'P?';
+  const header = `🚨 ${severity} | ${input.project ?? '-'} | ${input.environment ?? '-'} | level=${input.level ?? '-'}`;
+
+  const blocks: SlackBlock[] = [
+    { type: 'header', text: { type: 'plain_text', text: header } },
+    { type: 'section', text: { type: 'mrkdwn', text: `*${input.title}*` } },
+    {
+      type: 'context',
+      elements: [
+        {
+          type: 'mrkdwn',
+          text: `최근 ${input.windowMin}분: *${input.windowCount}* / 누적: *${input.totalCount}*`,
+        },
+      ],
+    },
+  ];
+
+  if (input.url) {
+    blocks.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: `🔗 <${input.url}|Open in Sentry>` },
+    });
+  }
+
+  if (input.triage?.summary) {
+    blocks.push({ type: 'divider' });
+    blocks.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: `*🧠 요약*\n${input.triage.summary}` },
+    });
+  }
+
+  const causes = input.triage?.likely_causes ?? [];
+  if (causes.length) {
+    blocks.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: `*🔎 원인 후보*\n• ${causes.join('\n• ')}` },
+    });
+  }
+
+  const actions = input.triage?.next_actions ?? [];
+  if (actions.length) {
+    blocks.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: `*✅ 다음 액션*\n• ${actions.join('\n• ')}` },
+    });
+  }
+
+  return blocks;
+}
+```
+
+`sendSlackWebhook` 함수는 주어진 Webhook URL로 POST 요청을 하여 Slack 메시지를 전송한다.
+
+`buildSlackBlocks` 함수는 Sentry 이슈 정보를 바탕으로 Slack 메시지 블록을 생성한다.  
+이 블록들은 메시지의 제목, 프로젝트, 환경, 레벨, URL, 발생 횟수, 트리아지 정보를 포함한다.
+severity를 통해 알림의 중요도를 시각적으로 구분할 수 있게 하였다.
+
+# OpenAI를 이용한 에러 트리아지
+
+아래 파일은 OpenAI GPT-4o-mini를 사용하여 Sentry 에러를 자동으로 분석하고 우선순위를 매기는 기능을 제공한다.
+
+```ts
+export type TriageJson = {
+  summary: string;
+  likely_causes: string[];
+  next_actions: string[];
+  severity: 'P0' | 'P1' | 'P2' | 'P3';
+  tags: string[];
+};
+
+function extractJson(text: string) {
+  const s = text.trim();
+  const start = s.indexOf('{');
+  const end = s.lastIndexOf('}');
+  if (start < 0 || end < 0) throw new Error(`LLM did not return JSON: ${s}`);
+  return JSON.parse(s.slice(start, end + 1));
+}
+
+export async function triageWithOpenAI(input: {
+  issue: {
+    id: string;
+    title?: string | null;
+    level?: string | null;
+    project?: string | null;
+    environment?: string | null;
+    url?: string | null;
+    windowCount: number;
+    totalCount: number;
+  };
+  payload: unknown;
+}): Promise<TriageJson> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error('Missing OPENAI_API_KEY');
+
+  const prompt = `
+    너는 시니어 프론트엔드 엔지니어다.
+    Sentry 이슈를 보고 팀이 바로 움직일 수 있도록 트리아지 JSON만 출력해라.
+    
+    규칙:
+    - Root Level에 아래 키들이 바로 나와야 함 (wrapping 금지)
+    - summary: 한글 요약 (한 문장)
+    - likely_causes: 원인 추정 (배열, 최대 3개)
+    - next_actions: 조치 사항 (배열, 3~7개)
+    - severity: P0(치명적)~P3(사소함)
+    - tags: 키워드 배열
+    
+    입력:
+    project=${input.issue.project ?? ''}
+    env=${input.issue.environment ?? ''}
+    level=${input.issue.level ?? ''}
+    title=${input.issue.title ?? ''}
+    url=${input.issue.url ?? ''}
+    recent_10m_count=${input.issue.windowCount}
+    total_count=${input.issue.totalCount}
+    
+    payload(일부):
+    ${JSON.stringify(input.payload).slice(0, 8000)}
+    `.trim();
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`OpenAI failed: ${res.status} ${text}`);
+  }
+
+  const data: unknown = await res.json();
+  const d = data as { choices?: { message?: { content?: string } }[] };
+  const text = d?.choices?.[0]?.message?.content ?? '';
+
+  return extractJson(String(text));
+}
+```
+
+`extractJson` 함수는 LLM 응답에서 JSON 부분만 추출하고, LLM이 추가 텍스트를 포함할 수 있으므로 중괄호 사이의 내용만 파싱한다.
+
+`triageWithOpenAI` 함수는 OpenAI GPT-4o-mini 모델을 사용하여 Sentry 이슈를 분석하고 트리아지 정보를 생성한다.
+인자로 Sentry 이슈 정보와 페이로드를 받아, OpenAI API에 요청을 보내고, 응답에서 트리아지 JSON을 추출하여 반환한다.
+
+여기서 `prompt`가 가장 중요한 부분이라고 생각한다.
+최대한 구체적으로 요구사항을 명시하고, 출력 형식을 엄격히 지정하여 LLM이 올바른 JSON만 반환하도록 유도하였다.
+비용 효율적인 모델 사용하기 위해 `gpt-4o-mini` 모델을 선택했다.
+
+# Sentry Webhook Router Handler 구현
+
+마지막으로, Sentry에서 오는 Webhook을 처리하는 API Router Handler를 구현하였다.
+코드가 길어서 핵심 로직을 함수로 추상화하여 설명해보겠다.
+
+```ts
+export async function POST(req: Request) {
+  // 1) Sentry 서명 검증
+  const ok = verifySentrySignature(rawBody, sig, secret);
+  if (!ok) return NextResponse.json({ message: 'Invalid signature' }, { status: 401 });
+
+  // 2) 이슈 정보 추출
+  const { issueId, title, level, project, environment, url } = extractSentryFields(body);
+
+  // 3) DB 업데이트 + 10분 윈도우 집계
+  const issue = await updateIssueWithWindow(issueId, now);
+
+  // 4) 도배 방지: 10분에 1번만 알림
+  if (!shouldNotify) return NextResponse.json({ ok: true, skipped: 'rate_limited' });
+
+  // 5) 조건부 LLM 호출 + 24시간 TTL 캐시
+  const triage = await getOrCreateTriage(issue, body);
+
+  // 6) Slack 알림 전송
+  await sendSlackNotification(issue, triage);
+
+  return NextResponse.json({ ok: true });
+}
+```
+
+여기서 핵심 부분은 "10분 윈도우 집계", "조건부 LLM 호출 + TTL 캐시", "Slack 알림 전송" 이다.
+
+### 10분 윈도우 집계
+
+```ts
+const WINDOW_MS = 10 * 60 * 1000; // 10분
+
+const windowExpired = now.getTime() - existing.windowStartAt.getTime() > WINDOW_MS;
+
+await tx.sentryIssue.update({
+  data: {
+    totalCount: { increment: 1 }, // 누적 횟수
+    windowStartAt: windowExpired ? now : existing.windowStartAt,
+    windowCount: windowExpired ? 1 : { increment: 1 }, // 10분 윈도우 카운트
+  },
+});
+```
+
+이 코드는 Sentry 이슈의 발생 횟수를 누적 카운트(`totalCount`)와 10분 윈도우 카운트(`windowCount`)로 관리한다.  
+10분이 지났으면 윈도우를 초기화하고, 그렇지 않으면 카운트를 증가시킨다.
+
+### 조건부 LLM 호출 + 24시간 TTL 캐시
+
+```ts
+const TRIAGE_TTL_MS = 24 * 60 * 60 * 1000; // 24시간
+
+// TTL 만료 체크
+const triageExpired =
+  !issue.triageUpdatedAt ||
+  now.getTime() - issue.triageUpdatedAt.getTime() > TRIAGE_TTL_MS;
+
+// 호출 조건: 새 이슈 OR 급증 OR error/fatal
+const isNew = issue.totalCount === 1;
+const isSpike = issue.windowCount >= 5;
+const isError = ['error', 'fatal'].includes(issue.level);
+
+// 조건 충족 시에만 LLM 호출
+if (!triage || triageExpired) && (isNew || isSpike || isError) {
+  triage = await triageWithOpenAI({ issue, payload: body });
+
+  // DB에 24시간 캐시
+  await prisma.sentryIssue.update({
+    data: {
+      triageJson: triage,
+      triageUpdatedAt: now  // TTL 시작 시점
+    },
+  });
+}
+```
+
+이 코드는 LLM 트리아지를 24시간 동안 캐시하여 동일 이슈에 대해 반복 호출을 방지한다.
+반복 호출을 방지함으로써, LLM 사용 비용을 절감하고, 불필요한 분석을 줄인다.
+LLM 호출 조건은 새 이슈, 급증, error/fatal 레벨로 제한하였다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/9230d252-ee99-43f7-86bb-5dd110dd13a3/image.png)
+
+이후, 대시보드 페이지를 구현하여 운영자가 Sentry 이슈와 트리아지 결과를 쉽게 조회할 수 있도록 하였다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/ccbb23f6-e515-4683-9ff4-116263ebb454/image.png)
+
+위 사진과 같이 Slack에서도 매번 에러가 발생하면 트리아지 결과를 바로 확인할 수 있는 것을 확인할 수 있다.
+
+### 아키텍처 다이어그램
+
+```
+Sentry Webhook
+    ↓
+[1] 서명 검증 (보안)
+    ↓
+[2] DB 업데이트
+    - totalCount (누적)
+    - windowCount (최근 10분)
+    ↓
+[3] 도배 방지 체크
+    - 10분에 1번만 알림
+    ↓
+[4] LLM 트리아지 (조건부)
+    - 새 이슈 OR 급증 OR error/fatal
+    - 24시간 TTL 캐시
+    ↓
+[5] Slack 알림 전송
+```
+
+# 운영하면서 느낀 점 / 배운 점
+
+이 시스템을 운영하면서 몇 가지 중요한 점을 깨달았다.
+
+## 자동화는 기능이 아니라 “흐름”을 바꾸는 일
+
+처음에는 “Slack으로 알림 보내는 봇”이면 끝날 줄 알았다.
+하지만 진짜 시간을 잡아먹는 건 알림 자체가 아니라, 반복되는 초동 대응이었다.
+
+- 중복/폭주 제어(윈도우 집계)
+- 상태 관리(ACK/FIXED)
+- 히스토리(대시보드)
+- 조건부 LLM(체크리스트 생성)
+
+이걸 하나의 흐름으로 만들었을 때, 비로소 “일이 줄어드는” 느낌이 났다.
+
+## LLM은 ‘정답 생성기’가 아니라 ‘초동 시간 단축기’
+
+LLM을 도입하면서 기대했던 건 “정확한 원인 분석”이었다.
+하지만 실제로 도움이 된 건, “초동 대응 시간을 줄여주는 도구”였다.
+LLM이 항상 정확한 답을 주진 않지만, “요약 + 원인 후보 + 다음 액션”을 빠르게 제시해 주는 것만으로도 대응 시간을 크게 단축할 수 있었다.
+
+## 비용/안정성은 기능만큼 중요하다
+
+LLM을 모든 이슈에 붙이면 비용이 많이 든다. 중요하지 않은 이슈까지 분석해서 노이즈가 될 수도 있다.
+
+- LLM은 조건부 + TTL 캐시로 제어
+- Slack 발송 실패도 로그로 남겨 운영 가능하게
+- 이슈 폭주 상황에서도 알림이 “도배”로 무력화되지 않게 설계
+
+이 시스템을 통해 Sentry 알림이 단순한 ‘잡음’이 아니라, 팀이 신속하게 대응할 수 있는 ‘신호’로 바뀌었다고 생각한다.
