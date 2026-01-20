@@ -1,7 +1,12 @@
-import { notFound } from 'next/navigation';
-import { MDXRemote } from 'next-mdx-remote/rsc';
-import { getPortfolio } from '@/src/shared/lib/mdx/getPortfolio';
 import { Metadata } from 'next';
+import {
+  HeroSection,
+  ActivitiesSection,
+  AwardsSection,
+  ProjectsSection,
+  ContributionsSection,
+  ContactSection,
+} from './components';
 
 export const metadata: Metadata = {
   title: '포트폴리오 - 리바이 기술블로그',
@@ -11,20 +16,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function PortfolioPage() {
-  const post = await getPortfolio();
-
-  if (!post) {
-    notFound();
-  }
-
+export default function PortfolioPage() {
   return (
-    <div className='flex w-full flex-col items-center py-12'>
-      <article className='prose prose-lg prose-invert w-full max-w-7xl rounded-xl bg-gray-900 px-6'>
-        <h1>{post.frontmatter.title}</h1>
-        <p className='text-gray-500'>{post.frontmatter.publishDate}</p>
-        <MDXRemote source={post.content} />
-      </article>
+    <div className='min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950'>
+      <HeroSection />
+      <ActivitiesSection />
+      <AwardsSection />
+      <ProjectsSection />
+      <ContributionsSection />
+      <ContactSection />
     </div>
   );
 }
