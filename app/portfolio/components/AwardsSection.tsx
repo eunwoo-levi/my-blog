@@ -7,7 +7,7 @@ export default function AwardsSection() {
       <div className='mx-auto max-w-7xl'>
         <div className='mb-12 flex items-center gap-3'>
           <Trophy className='h-8 w-8 text-yellow-400' />
-          <h2 className='text-4xl font-bold text-white'>Awards & Achievements</h2>
+          <h2 className='text-4xl font-bold text-white'>Awards</h2>
         </div>
         <div className='grid gap-6 md:grid-cols-3'>
           {awards.map((award, index) => (

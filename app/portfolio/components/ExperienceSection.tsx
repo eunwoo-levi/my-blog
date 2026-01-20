@@ -1,13 +1,13 @@
 import { Users } from 'lucide-react';
 import { activities } from '../data';
 
-export default function ActivitiesSection() {
+export default function ExperienceSection() {
   return (
     <section className='border-b border-gray-800 px-6 py-20'>
       <div className='mx-auto max-w-7xl'>
         <div className='mb-12 flex items-center gap-3'>
           <Users className='h-8 w-8 text-blue-400' />
-          <h2 className='text-4xl font-bold text-white'>Extracurricular Activities</h2>
+          <h2 className='text-4xl font-bold text-white'>Experiences</h2>
         </div>
         <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
           {activities.map((activity, index) => (

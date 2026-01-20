@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import {
   HeroSection,
-  ActivitiesSection,
+  ExperienceSection,
   AwardsSection,
   ProjectsSection,
   ContributionsSection,
@@ -20,7 +20,7 @@ export default function PortfolioPage() {
   return (
     <div className='min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950'>
       <HeroSection />
-      <ActivitiesSection />
+      <ExperienceSection />
       <AwardsSection />
       <ProjectsSection />
       <ContributionsSection />
