@@ -208,6 +208,11 @@ SuspenseSkeleton은 여전히 fallback 역할을 수행하지만
 느린 로딩에서는
 200ms 이후 스켈레톤 등장 -> “기다림에 대한 안내” 제공한다.
 
+![](https://velog.velcdn.com/images/eunwoo1341/post/45e74cc3-c07e-4ee8-8e46-ac431de18980/image.png)
+
+`실제 UI와 동일 크기의 스켈레톤`과 `지연 렌더링` 조합 덕분에, 빠른 환경에서는 플리커·CLS 없이 바로 실제 UI가 나타나고, 느린 환경에서는 스켈레톤이 자연스럽게 등장하여 로딩 안내 역할을 한다.
+결과적으로, `React Performance` DevTools로 측정한 결과, CLS가 0.15에서 0.07로 감소한 것을 볼 수 있다.
+
 ## delay는 왜 200ms인가?
 
 정답은 없고, 서비스에 맞춰 조정해야 한다고 생각한다.
