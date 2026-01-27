@@ -66,9 +66,49 @@ export default async function CategoryPage({ params }: ParamsProps) {
     notFound();
   }
 
+  // JSON-LD 구조화 데이터
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `${categoryData.name} - 리바이 기술블로그`,
+    description: `${categoryData.name} 카테고리의 기술블로그 포스트들을 확인해보세요.`,
+    url: `https://www.eunwoo-levi.com/${category}`,
+    breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: '홈',
+          item: 'https://www.eunwoo-levi.com',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: categoryData.name,
+          item: `https://www.eunwoo-levi.com/${category}`,
+        },
+      ],
+    },
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: posts.map((post, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        url: `https://www.eunwoo-levi.com/${post.category}/${post.slug}`,
+      })),
+    },
+  };
+
   return (
-    <main className='w-full'>
-      <BlogContainer posts={posts} />
-    </main>
+    <>
+      <script
+        type='application/ld+json'
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main className='w-full'>
+        <BlogContainer posts={posts} />
+      </main>
+    </>
   );
 }
