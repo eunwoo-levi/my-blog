@@ -160,7 +160,10 @@ export default async function BlogDetailPage({ params }: ParamsProps) {
           </div>
         </header>
 
-        <main className='[&_a]:overflow-wrap-anywhere prose relative z-10 w-full min-w-0 max-w-full overflow-x-hidden break-words rounded-xl bg-white px-2 py-4 dark:prose-invert sm:prose-lg dark:bg-neutral-800 dark:text-white sm:px-5 sm:py-6 lg:px-14 [&>*]:max-w-full [&>*]:break-words [&_a]:break-all [&_code]:break-words [&_img]:!h-auto [&_img]:!w-full [&_img]:!max-w-full [&_pre]:overflow-x-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_table]:block [&_table]:w-full [&_table]:overflow-x-auto'>
+        <main
+          className='[&_a]:overflow-wrap-anywhere prose relative z-10 w-full min-w-0 max-w-full overflow-x-hidden break-words rounded-xl bg-white px-2 py-4 dark:prose-invert sm:prose-lg dark:text-white sm:px-5 sm:py-6 lg:px-14 [&>*]:max-w-full [&>*]:break-words [&_a]:break-all [&_code]:break-words [&_img]:!h-auto [&_img]:!w-full [&_img]:!max-w-full [&_pre]:overflow-x-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_table]:block [&_table]:w-full [&_table]:overflow-x-auto'
+          style={{ backgroundColor: 'var(--content-bg)' }}
+        >
           {content}
         </main>
 
