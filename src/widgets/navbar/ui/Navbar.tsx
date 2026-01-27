@@ -43,7 +43,7 @@ export default function Navbar() {
         <div className='flex items-center justify-end gap-5'>
           <Link
             href='https://github.com/eunwoo-levi'
-            className='rounded-lg p-1 transition-colors dark:hover:bg-gray-700 hover:lg:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500'
+            className='rounded-lg p-1 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 dark:hover:bg-gray-700 hover:lg:bg-gray-200'
             aria-label='GitHub 프로필'
           >
             <FaGithub size={40} />

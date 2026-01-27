@@ -12,6 +12,8 @@ const iansui = localFont({
   weight: '500',
   style: 'normal',
   display: 'swap',
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+  adjustFontFallback: 'Arial',
 });
 
 export const metadata: Metadata = {
