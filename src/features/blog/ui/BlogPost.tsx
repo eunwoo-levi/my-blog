@@ -2,7 +2,13 @@ import { PostData } from '@/src/shared/lib/mdx/type';
 import Image from 'next/image';
 import Link from 'next/link';
 
-export default function BlogPost({ post }: { post: PostData }) {
+export default function BlogPost({
+  post,
+  priority = false,
+}: {
+  post: PostData;
+  priority?: boolean;
+}) {
   return (
     <Link href={`/${post.category}/${post.slug}`} className='block'>
       <div className='h-[420px] w-[350px] transform overflow-hidden rounded-lg bg-white/20 shadow-lg transition duration-200 hover:scale-105 hover:text-purple-500'>
@@ -12,6 +18,7 @@ export default function BlogPost({ post }: { post: PostData }) {
           height={160}
           alt={`${post.frontmatter.title} thumbnail`}
           className='h-[200px] w-full object-cover'
+          priority={priority}
         />
 
         <div className='flex h-[calc(420px-200px)] flex-col justify-between p-4'>

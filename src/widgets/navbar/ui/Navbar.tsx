@@ -22,6 +22,7 @@ export default function Navbar() {
               height={40}
               className='h-10 w-10 rounded-full object-cover'
               alt='levi'
+              priority
             />
             <h1 className='text-xl font-bold md:text-2xl'>리바이&apos;s Tech Blog</h1>
           </Link>

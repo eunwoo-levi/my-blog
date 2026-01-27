@@ -33,8 +33,8 @@ export default function BlogContainer({ posts }: { posts: PostData[] }) {
   return (
     <div ref={topRef} className='mb-32 flex w-full flex-col items-center justify-center'>
       <div className='grid w-full max-w-[1200px] grid-cols-1 justify-items-center gap-8 lg:grid-cols-3'>
-        {currentPosts.map((post) => (
-          <BlogPost key={post.slug} post={post} />
+        {currentPosts.map((post, index) => (
+          <BlogPost key={post.slug} post={post} priority={index < 3 && currentPage === 1} />
         ))}
       </div>
 
