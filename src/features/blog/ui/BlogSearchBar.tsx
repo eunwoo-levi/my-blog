@@ -30,7 +30,11 @@ export default function BlogSearchBar() {
         placeholder='읽고 싶은 블로그 글이 있으신가요?'
         aria-label='블로그 검색'
       />
-      <button type='submit' className='text-gray-600 hover:text-gray-700'>
+      <button 
+        type='submit' 
+        className='rounded-md p-1 text-gray-600 transition-colors hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-gray-400 dark:hover:text-gray-200'
+        aria-label='검색'
+      >
         <FaSearch size={20} />
       </button>
     </form>
