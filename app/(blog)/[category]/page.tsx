@@ -6,6 +6,13 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 export const revalidate = 3600;
+export const dynamicParams = false;
+
+export async function generateStaticParams() {
+  return CATEGORIES.filter((c) => c.path !== '').map((category) => ({
+    category: category.path,
+  }));
+}
 
 export async function generateMetadata({ params }: ParamsProps): Promise<Metadata> {
   const { category } = await params;
