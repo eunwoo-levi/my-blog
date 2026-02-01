@@ -1,0 +1,672 @@
+---
+title: '[React] 웹뷰(Webview)로 앱 배포하기: WebView 실행환경 차이와 Native Bridge 구현'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/etc/webview.webp'
+publishDate: '2026-02-01'
+categoryId: 6
+keywords:
+  [
+    'WebView',
+    'React Native',
+    'Expo',
+    '리액트 웹뷰',
+    '웹뷰 앱',
+    'Native Bridge',
+    'WKWebView',
+    'postMessage',
+  ]
+description: 'React 웹 서비스를 React Native WebView로 앱스토어에 출시하며 겪은 실행 환경 차이를 분석하고, Native Bridge로 인증·상태 동기화를 구현한 과정을 정리하였다.'
+---
+
+기존에 웹(client)로 운영하던 서비스를 앱스토어(iOS/Android) 에 출시하기 위해, Expo 기반 React Native 앱(app)에서 WebView로 감싸는 하이브리드 구조를 구현했다.
+Expo의 `react-native-webview` 패키지를 사용하여 비교적 쉽게 WebView를 띄우는 방법은 [Expo로 기존 React 웹을 감싸 WebView 앱 구축하기](https://www.eunwoo-levi.com/react/r-42)에서 다룬 바 있다.
+
+겉으로는 “웹 URL을 WebView로 띄우는 작업”처럼 보이지만, 실제로는 웹 브라우저 vs 앱 내 WebView라는 실행 환경(Runtime) 차이를 이해하고, 그 차이를 기능 설계/UX/인증/상태 동기화로 풀어내는 과정이 필요했다.
+
+이번 글에서는 내가 겪은 WebView 실행 환경 차이와, 이를 극복하기 위해 구현한 Native Bridge 패턴을 중심으로 정리한다.
+
+본론에 들어가기 앞서 결론부터 말하자면,
+
+`WebView`는 "웹을 그냥 띄우는 껍데기"라고 사람들이 오해하기 쉽지만,
+**브라우저와 다른 런타임(WKWebView/Android WebView)** 위에서 웹을 실행시키는 것이고,  
+그 차이를 이해하지 못하면 인증/네비게이션/UX 등에서 구현하는 도중에 반드시 문제가 터진다.
+
+## 앱을 고려하게 되는 배경
+
+요즘 서비스 트래픽에서 모바일 비중은 이미 과반을 넘어섰다. 예를 들어 StatCounter 기준으로도 **2025년 12월 전 세계 웹 트래픽은 모바일이 약 54%** 수준이다.
+그리고 “모바일 사용자” 규모 자체도 압도적이다. DataReportal은 2025년 초 기준으로 **전 세계 모바일 사용자가 약 57.8억** 수준이라고 요약한다.
+
+5G 같은 연결 환경도 계속 좋아지고 있고, 2017년부터 GSMA는 **2025년 5G 연결이 10억(1.1B+)을 넘길 것**으로 전망해왔다.
+즉, 모바일은 “서브 채널”이 아니라 **서비스의 기본 전장**이다.
+
+# 1. WebView를 선택하게 된 이유
+
+앱스토어 출시를 고민하면 보통 3개로 갈린다.
+
+### 1. 웹 앱(Web App)
+
+- HTML/CSS/JS로 개발
+- 브라우저에서 실행(모바일에서도 “앱처럼” 보이게는 가능)
+- 배포/업데이트가 빠름
+- 하지만 **푸시/권한/네이티브 로그인/스토어 노출**은 제약이 큼(특히 iOS)
+
+### 2. 네이티브 앱(React Native/Swift/Kotlin/Flutter 등)
+
+- 기기 기능과 가장 잘 맞물림
+- UX를 “앱답게” 만들기 좋음
+- 대신 **기존 웹을 거의 다시 만들게 됨** (비용/리드타임 큼)
+
+### 3. WebView 하이브리드(내가 선택한 방식)
+
+- 기존 웹을 최대한 재사용
+- 네이티브 기능은 “필요한 만큼만” 붙임(푸시, 애플 로그인, 탭, Safe Area 등)
+- 대신 **브라우저와 다른 런타임 비용을 설계로 떠안아야 함**
+
+내가 WebView를 택한 이유는 단순히 “빨리 내려고”가 아니었다.
+
+- 이미 운영 중인 웹(화면/비즈니스 로직)을 최대한 유지하고 싶었고
+- 앱스토어가 기대하는 기본 UX(탭/세이프에어리어/로그인/푸시)는 제공해야 했고
+- 출시 이후에도 웹 배포로 빠르게 개선하고 싶었다
+
+이 조건을 동시에 만족시키는 게 `WebView`였다.
+
+# 2. WebView는 "앱 안의 브라우저"가 아니다
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/00289fce-ba24-44a8-83ee-e65abe66d250/image.png)
+
+`WebView`는 “앱 안에 넣는 작은 브라우저”처럼 보이지만, 실제로는 아래와 같이 다르다.
+
+- iOS: **WKWebView**
+- Android: **Android System WebView(Chromium 기반)**
+
+이들은 브라우저와 같은 엔진을 쓰더라도,
+브라우저 UI(주소창/탭/쿠키 정책/프로세스 모델)가 없는 **앱 내 임베디드 런타임**이다.
+
+즉, WebView는 “브라우저 엔진을 앱 내부에 내장한 컴포넌트” (별도의 실행환경(런타임)을 가진 플랫폼)로,  
+앱이 WebView를 포함하고, WebView 위에 Safe Area/뒤로가기/권한/외부링크 처리 등을 앱이 직접 결정한다.
+
+# 3. 웹(Web) vs 웹뷰(WebView): 실행환경 차이 “정밀” 비교
+
+사실 이번 블로그 글에서는 이 부분이 가장 중요하다고 생각한다.
+왜냐하면 WebView 프로젝트에서 겪는 대부분의 문제는 “브라우저와 WebView의 실행환경 차이”에서 비롯되기 때문이다.
+
+`App Store`에 앱을 배포하기 까지 기능들을 구현하면서 많은 문제를 마주쳤고, 이들을 해결하면서 “웹과 웹뷰의 차이”를 명확히 이해하게 되었다.
+
+### 3-1. 지금이 브라우저인지 WebView인지 “정확히” 알아야 한다
+
+웹은 기본적으로 실행환경이 여러 가지다.
+
+- 데스크톱/모바일 브라우저
+- 인앱 브라우저(카카오/인스타/라인 등)
+- 네이티브 앱의 WebView
+
+환경에 따라 UI/권한/네비게이션 전략이 달라야 하므로, 식별하는 것이 중요하다.
+나는 주로 `window.ReactNativeWebView` 객체 존재 여부로 WebView를 감지하여 판별하였다.
+
+```ts
+// client/src/shared/utils/isWebView.ts
+export const isWebView = () => {
+  return typeof window !== 'undefined' && (window as any).ReactNativeWebView;
+};
+```
+
+이렇게 해두면 아래 예시와 같이 “WebView에서만 해야 할 것”을 안전하게 분기할 수 있다.
+
+- 앱(WebView)에서만: 네이티브 탭을 쓰므로 웹 하단 네비게이션 숨기기
+- 앱(WebView)에서만: 특정 액션에서 Bridge로 메시지 보내기
+- 웹에서만: 브라우저 UX 유지(예: history/back, 새탭 등)
+
+### 3-2. 쿠키/세션: 브라우저에서는 당연한 게 WebView에서는 사건이 된다
+
+`브라우저`에선 로그인 후 쿠키가 유지되는 게 당연해 보이지만,
+`WebView`는 쿠키 저장/공유가 설정과 OS 정책에 크게 좌우된다.
+
+대표적으로 아래가 이슈가 된다.
+
+- 앱 재실행 후 세션 유지
+- 탭마다 WebView 인스턴스가 따로 있을 때 세션 공유 불안정
+- 리다이렉트 기반 OAuth에서 쿠키 세팅 타이밍 이슈(iOS에서 특히 체감)
+- iOS(WKWebView) / Android(WebView) 정책 차이
+
+나는 앱에서 아래 옵션을 적극적으로 켰다.
+
+```tsx
+<WebView
+  source={{ uri: url }}
+  sharedCookiesEnabled={true} // iOS: WKWebView에서 쿠키 공유 허용
+  thirdPartyCookiesEnabled={true} // Android: 타사 쿠키 허용
+  domStorageEnabled={true} // DOM Storage 허용
+/>
+```
+
+하지만 이런 옵션 설정만으로는 한계가 있다.
+특히 "탭마다 WebView 인스턴스가 따로 있을 때" 근본적인 문제는 해결되지 않는다.
+
+그래서 구조적으로 더 큰 결론이 하나 있었다.
+
+> 탭마다 WebView를 여러 개 띄우기보다, WebView 1개를 두고 URL만 전환하는 게
+> 인증 안정성/메모리/화이트스크린 관점에서 유리한 경우가 많다.
+
+### 3-3. JavaScript 엔진의 차이: V8 vs JavaScriptCore
+
+브라우저와 WebView는 서로 다른 JavaScript 엔진을 사용한다.
+
+| 플랫폼  | 브라우저                | WebView                                      |
+| ------- | ----------------------- | -------------------------------------------- |
+| iOS     | Safari (JavaScriptCore) | WKWebView (JavaScriptCore)                   |
+| Android | Chrome (V8)             | Android WebView (V8, 단 버전이 다를 수 있음) |
+
+같은 엔진이라도 **버전 차이**가 문제다.
+
+- Android WebView는 시스템 WebView 버전에 의존 → 사용자 기기마다 다름
+- iOS WKWebView는 OS 버전에 종속 → iOS 12와 iOS 17의 JavaScriptCore는 다름
+
+이로 인해 발생하는 실제 이슈:
+
+- 최신 ES 문법(`??`, `?.`, `Array.at()` 등)이 구형 WebView에서 동작 안 함
+- `Intl` API 지원 범위가 다름
+- `BigInt`, `WeakRef` 같은 기능이 없을 수 있음
+
+```ts
+// 안전한 옵셔널 체이닝 대안 (구형 WebView 대응)
+// ❌ 구형에서 문법 에러
+const value = obj?.nested?.value;
+
+// ✅ Babel/SWC로 트랜스파일 필수
+const value = obj && obj.nested && obj.nested.value;
+```
+
+따라서 WebView 타겟이라면 **Babel/SWC 타겟을 보수적으로 설정**해야 한다.
+
+### 3-4. Web API 지원 범위: 브라우저에서 되는 게 WebView에서는 안 된다
+
+WebView는 브라우저의 모든 Web API를 지원하지 않는다.
+
+| API                   | Chrome 브라우저 | iOS WKWebView   | Android WebView |
+| --------------------- | --------------- | --------------- | --------------- |
+| `navigator.share()`   | ✅              | ❌ (미지원)     | ⚠️ (제한적)     |
+| `navigator.clipboard` | ✅              | ⚠️ (HTTPS 필수) | ⚠️ (제한적)     |
+| `Notification API`    | ✅              | ❌              | ❌              |
+| `Web Bluetooth`       | ✅              | ❌              | ❌              |
+| `Payment Request API` | ✅              | ❌              | ⚠️              |
+| `getUserMedia()`      | ✅              | ⚠️ (권한 필요)  | ⚠️ (권한 필요)  |
+
+특히 **푸시 알림**은 WebView에서 Web Push API를 쓸 수 없다.
+대신 네이티브 푸시(APNs/FCM)를 구현하고 Bridge로 연동해야 한다.
+
+```ts
+// ❌ WebView에서 동작 안 함
+Notification.requestPermission();
+
+// ✅ 네이티브에 푸시 권한 요청 위임
+sendToNative({ type: 'REQUEST_PUSH_PERMISSION' });
+```
+
+### 3-5. localStorage/sessionStorage: 영구 저장이 아니다
+
+브라우저에서 `localStorage`는 사실상 영구 저장소처럼 동작하지만, WebView에서는 다르다.
+
+| 저장소         | 브라우저        | WebView                                                |
+| -------------- | --------------- | ------------------------------------------------------ |
+| localStorage   | 영구 저장       | 앱 삭제 시 소멸, **iOS에서 시스템이 임의로 정리 가능** |
+| sessionStorage | 탭 종료 시 소멸 | WebView 인스턴스 종료 시 소멸                          |
+| IndexedDB      | 영구 저장       | OS 저장 공간 정책에 따라 정리될 수 있음                |
+
+iOS의 WKWebView는 **메모리 압박 시 웹 데이터를 삭제**할 수 있다.
+Apple 문서에도 이 동작이 명시되어 있다.
+
+따라서 중요한 상태(토큰, 사용자 설정)는 localStorage만 믿지 말고, 네이티브 저장소와 동기화해야 한다.
+
+```ts
+// 토큰 저장 시 네이티브에도 백업
+function saveToken(token: string) {
+  localStorage.setItem('accessToken', token);
+
+  if (isWebView()) {
+    sendToNative({ type: 'TOKEN_BACKUP', token });
+  }
+}
+
+// 앱 시작 시 네이티브에서 토큰 복원 요청
+if (isWebView() && !localStorage.getItem('accessToken')) {
+  sendToNative({ type: 'TOKEN_RESTORE_REQUEST' });
+}
+```
+
+### 3-6. Navigation과 History: 뒤로가기가 다르게 동작한다
+
+브라우저에서 뒤로가기는 단순히 `history.back()`이지만, WebView에서는 복잡해진다.
+
+**뒤로가기 트리거가 여러 개다:**
+
+- Android 하드웨어 백버튼
+- iOS 스와이프 제스처
+- 앱 내 커스텀 백버튼
+- 웹 내 뒤로가기 버튼
+
+**SPA 히스토리와 WebView 히스토리가 별개다:**
+
+- `history.pushState()`로 쌓은 히스토리는 WebView의 `canGoBack`에 반영됨
+- 하지만 WebView가 "뒤로 갈 곳이 없다"고 판단하면 앱이 종료될 수 있음
+
+```tsx
+// React Native에서 뒤로가기 처리
+const [canGoBack, setCanGoBack] = useState(false);
+
+<WebView
+  ref={webViewRef}
+  onNavigationStateChange={(navState) => {
+    setCanGoBack(navState.canGoBack);
+  }}
+/>;
+
+// Android 백버튼 인터셉트
+useEffect(() => {
+  const handler = BackHandler.addEventListener('hardwareBackPress', () => {
+    if (canGoBack) {
+      webViewRef.current?.goBack();
+      return true; // 이벤트 소비, 앱 종료 방지
+    }
+    return false; // 앱 종료 허용
+  });
+  return () => handler.remove();
+}, [canGoBack]);
+```
+
+### 3-7. 렌더링과 성능: 같은 코드, 다른 체감
+
+WebView는 브라우저보다 리소스 제약이 크다.
+
+| 항목     | 브라우저      | WebView                            |
+| -------- | ------------- | ---------------------------------- |
+| 메모리   | 여유로움      | 앱과 메모리 공유, 제한적           |
+| GPU 가속 | 기본 활성화   | 플랫폼/설정에 따라 다름            |
+| 프로세스 | 독립 프로세스 | 앱 프로세스 내 또는 별도 (OS 정책) |
+
+체감되는 차이:
+
+- 무거운 애니메이션이 버벅임
+- 큰 이미지/리스트에서 메모리 경고
+- 스크롤 성능이 네이티브보다 떨어짐
+
+```tsx
+// 하드웨어 가속 활성화 (Android)
+<WebView androidLayerType='hardware' androidHardwareAccelerationDisabled={false} />
+```
+
+# 4. Native Bridge: WebView에서 "앱다운 UX"를 만들기 위한 통신
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/59d9dda7-a9fd-4d16-9fce-b4d8a442fdff/image.png)
+
+WebView의 진짜 가치는 “웹을 보여준다”가 아니라,
+네이티브 기능과 결합해서 앱다운 UX를 만드는 것이다.
+
+그걸 가능하게 하는 게 `Bridge`(양방향 통신) 다.
+
+- 웹(WebView) → 네이티브: `window.ReactNativeWebView.postMessage()`
+- 네이티브 → 웹(WebView): `injectJavaScript()` 또는 `injectedJavaScript`
+
+여기서 중요한 건 “연결만 하면 끝”이 아니라,
+운영 가능한 프로토콜로 만드는 것이다.
+
+## 4-1. 브릿지 설계 원칙
+
+### 1. 메시지는 반드시 “타입”이 있어야 한다
+
+문자열 한 줄로 주고받기 시작하면, 2주 뒤부터 메시지 해석이 무너진다.
+그래서 `Bridgemessage`라는 공통 타입을 정의하여 메시지 구조를 엄격히 했다.
+
+```ts
+// 공통(권장): client/app이 공유하는 스키마(또는 동일한 형태로 복제)
+type BridgeMessage =
+  | { type: 'APP_READY'; version: string }
+  | { type: 'ROUTE'; url: string }
+  | { type: 'AUTH_REQUEST'; provider: 'apple' }
+  | { type: 'AUTH_RESULT'; ok: boolean; token?: string; reason?: string }
+  | { type: 'PUSH_TOKEN'; token: string }
+  | { type: 'TAB_FOCUS'; tab: 'home' | 'collection' | 'comment' }
+  | { type: 'ERROR'; message: string; detail?: unknown };
+```
+
+위의 예시처럼 메시지 타입을 미리 정의해두면, 아래와 같이 안정적으로 용도를 구분할 수 있다.
+
+```
+  ┌──────────────────────────────────────────────┬────────────────────┐
+  │                    메시지                    │        용도        │
+  ├──────────────────────────────────────────────┼────────────────────┤
+  │ { type: 'AUTH_REQUEST', provider: 'apple' }  │ Apple 로그인 요청  │
+  ├──────────────────────────────────────────────┼────────────────────┤
+  │ { type: 'AUTH_REQUEST', provider: 'google' } │ Google 로그인 요청 │
+  ├──────────────────────────────────────────────┼────────────────────┤
+  │ { type: 'GROUP_CHANGED', groupId }           │ 그룹 변경 알림     │
+  ├──────────────────────────────────────────────┼────────────────────┤
+  │ { type: 'TAB_FOCUS', tab: 'comment' }        │ 탭 이동 요청       │
+  └──────────────────────────────────────────────┴────────────────────┘
+```
+
+### 2. 네이티브에서 “파싱 실패”는 정상 케이스로 처리
+
+웹이 언제든 이상한 값을 보낼 수 있다(버그/캐시/구버전/해킹).
+그리고 브릿지 메시지는 외부 입력이므로, 파싱 실패가 언제든 일어날 수 있다.
+따라서 네이티브에서 JSON 파싱에 실패해도 앱이 죽지 않도록 방어 코드를 넣어야 한다.
+
+- JSON.parse는 `try/catch`로 감싸기
+- type 없는 메시지는 무시
+- 필요한 필드 없으면 무시 + 로그 남기기
+
+### 3. 브릿지는 “네이티브 API의 프록시”다
+
+웹이 직접 시스템 API를 못 부르니, 결국 브릿지는 네이티브 함수 호출의 대리자(proxy) 다.
+예를 들어, 웹에서 “애플 로그인 요청”을 하면 아래와 같이 동작한다.
+
+- 웹: `postMessage({ type: 'AUTH_REQUEST', provider: 'apple' })`
+- 네이티브: 애플 로그인 API 호출 → 결과 수신 → 웹에 결과
+
+```
+  ┌─────────────────┐                    ┌─────────────────┐
+  │   Web (Client)  │  ───postMessage──► │  Native (App)   │
+  │                 │                    │                 │
+  │ ReactNativeWeb  │                    │ 애플 로그인 API  │
+  │ View.postMessage│                    │ 호출 및 결과 수신│
+  └─────────────────┘                    └─────────────────┘
+           │                                      │
+           │                                      │
+           │◄──────────injectJavaScript──────────│
+           │        { type: 'AUTH_RESULT',        │
+           │          ok: true, token: '...' }    │
+           │                                      │
+```
+
+- 웹: 결과 수신 후 처리
+
+## 4-2. 통신 예시: 웹 → 네이티브
+
+웹에서 라우팅을 앱에 위임하고 싶다면 아래와 같이 구현할 수 있다.
+
+```ts
+export function sendToNative(message: unknown) {
+  if (!(window as any).ReactNativeWebView) return;
+
+  (window as any).ReactNativeWebView.postMessage(JSON.stringify(message));
+}
+
+sendToNative({ type: 'ROUTE', url: 'https://example.com/groups/123' });
+```
+
+`ReactNativeWebView.postMessage`는 웹(Client) → 네이티브 앱(React Native) 으로 메시지를 전송하는 브릿지 함수이다.
+
+```
+  ┌─────────────────┐                    ┌─────────────────┐
+  │   Web (Client)  │  ───postMessage──► │  Native (App)   │
+  │                 │                    │                 │
+  │ ReactNativeWeb  │                    │ WebView의       │
+  │ View.postMessage│                    │ onMessage 핸들러│
+  └─────────────────┘                    └─────────────────┘
+```
+
+## 4-3. 통신 예시: 네이티브 → 웹
+
+네이티브에서 웹으로 메시지를 보낼 때는 `injectJavaScript`를 사용하여
+“웹이 이해할 수 있는 자바스크립트 코드”를 주입해야 한다는 점이다.
+
+```tsx
+// RN(WebView)에서 웹으로 이벤트 주입
+webViewRef.current?.injectJavaScript(`
+  window.dispatchEvent(new CustomEvent("native:tabFocus", { detail: { tab: "home" } }));
+  true;
+`);
+```
+
+그리고 웹에서는 이 이벤트를 수신한다.
+
+```ts
+useEffect(() => {
+  const handler = (e: any) => {
+    // e.detail.tab 기반으로 invalidateQueries 등
+  };
+
+  window.addEventListener('native:tabFocus', handler);
+  return () => window.removeEventListener('native:tabFocus', handler);
+}, []);
+```
+
+# 5. App Store 배포 시 고려사항
+
+앱스토어에 앱을 배포할 때는 WebView 외에도 고려해야 할 점이 많다.
+
+“그냥 웹을 그대로 감싼 수준”이면 앱스토어/플레이스토어에서 리젝 사유가 될 수 있다. (특히 앱 고유 가치 부족)
+최소한의 네이티브 기능(푸시/로그인/딥링크/탭 UX 등)과 안정적인 UX(네트워크 오류 처리/로딩/뒤로가기)가 있어야 설득력이 생긴다
+
+예를 들어, Apple의 [App Store Review Guidelines](https://developer.apple.com/app-store/review/guidelines/)에서는 다음과 같이 명시하고 있다.
+
+> 4.2 Minimum Functionality  
+> Your app should include features, content, and UI that elevate it beyond a repackaged
+> website. If your app doesn’t provide some sort of lasting entertainment value or is just plain creepy, it may not be accepted.
+> 따라서 다음을 고려해야 한다.
+
+- 네이티브 탭 바/세이프에어리어 대응
+- 푸시 알림
+- 네이티브 로그인(Apple Sign-In 등)
+- 앱 고유 기능(오프라인 모드, 카메라/위치 권한 등)
+- 앱 아이콘/스플래시 스크린
+
+# 트러블슈팅: 탭마다 WebView를 띄우면 안 되는 이유
+
+## 문제 상황: 네이티브 탭 + 다중 WebView 구조
+
+처음에는 "네이티브 탭 바"를 사용하기 위해 각 탭마다 별도의 WebView 인스턴스를 띄웠다.
+
+```
+┌─────────────────────────────────────────────────────┐
+│                      App                            │
+├─────────┬─────────┬─────────┬─────────┬─────────────┤
+│ WebView │ WebView │ WebView │ WebView │ WebView     │
+│ (모멘트) │ (코멘트) │  (홈)   │ (모음집) │ (마이페이지) │
+└─────────┴─────────┴─────────┴─────────┴─────────────┘
+         ↑ 각각 독립적인 WebView 인스턴스
+```
+
+이 구조를 선택한 이유는 단순했다:
+
+- Expo Router의 `Tabs` 레이아웃을 그대로 사용할 수 있음
+- 각 탭이 자연스럽게 네이티브 탭 전환 애니메이션을 가짐
+- 탭별로 스크롤 위치가 유지됨
+
+## 발생한 문제: 상태 불일치와 SSOT 위반
+
+하지만 운영하면서 심각한 문제들이 터졌다.
+
+**문제 1: 로그인/로그아웃 시 상태 불일치**
+
+마이페이지 탭에서 로그아웃 후 다시 로그인하면, **마이페이지 WebView에서 홈 화면이 보이는** 현상이 발생했다.
+
+```
+1. 마이페이지 탭에서 로그아웃 클릭
+2. 웹이 로그인 페이지로 리다이렉트
+3. 로그인 완료 → 웹이 홈("/")으로 리다이렉트
+4. 하지만 현재 탭은 여전히 "마이페이지" 탭
+5. 결과: 마이페이지 탭에 홈 화면이 표시됨 😱
+```
+
+**문제 2: 인증 토큰/쿠키 동기화 실패**
+
+각 WebView가 독립적인 쿠키 저장소를 가질 수 있어서, 한 탭에서 로그인해도 다른 탭에서는 로그아웃 상태로 보이는 경우가 있었다.
+
+**문제 3: 메모리 사용량 급증**
+
+5개의 WebView가 동시에 메모리를 점유하면서, 저사양 기기에서 앱이 강제 종료되는 문제도 있었다.
+
+이 모든 문제의 근본 원인은 **SSOT(Single Source of Truth) 위반**이었다.
+
+> 인증 상태, 현재 URL, 사용자 데이터가 5개의 WebView에 분산되어 있으니
+> 어느 것이 "진짜" 상태인지 알 수 없게 된 것이다.
+
+## 해결: 단일 WebView + 커스텀 탭 바
+
+해결책은 **WebView를 1개만 두고, 탭 전환 시 URL만 변경**하는 것이었다.
+
+```
+┌─────────────────────────────────────────────────────┐
+│                      App                            │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│              단일 WebView (URL 전환)                 │
+│                                                     │
+├─────────────────────────────────────────────────────┤
+│  [모멘트]  [코멘트]  [홈]  [모음집]  [마이페이지]     │
+│              ↑ 커스텀 탭 바 (React Native)          │
+└─────────────────────────────────────────────────────┘
+```
+
+네이티브 `Tabs`를 버리고, 커스텀 탭 바를 직접 구현했다.
+
+```tsx
+// app/components/CustomTabBar.tsx
+export type TabType = 'home' | 'moment' | 'comment' | 'collection' | 'my';
+
+interface TabConfig {
+  key: TabType;
+  title: string;
+  icon: ImageSourcePropType;
+  requiresGroup: boolean; // 그룹 가입 필요 여부
+}
+
+const TABS: TabConfig[] = [
+  {
+    key: 'moment',
+    title: '모멘트',
+    icon: require('@/assets/images/paperAirplane.webp'),
+    requiresGroup: true,
+  },
+  {
+    key: 'comment',
+    title: '코멘트',
+    icon: require('@/assets/images/bluePlanet.webp'),
+    requiresGroup: true,
+  },
+  { key: 'home', title: '홈', icon: require('@/assets/images/rocket.webp'), requiresGroup: false },
+  {
+    key: 'collection',
+    title: '모음집',
+    icon: require('@/assets/images/starPlanet.webp'),
+    requiresGroup: true,
+  },
+  {
+    key: 'my',
+    title: '마이페이지',
+    icon: require('@/assets/images/spaceMan.webp'),
+    requiresGroup: false,
+  },
+];
+
+interface CustomTabBarProps {
+  currentTab: TabType;
+  onTabPress: (tab: TabType) => void;
+  hasGroup: boolean;
+}
+
+export function CustomTabBar({ currentTab, onTabPress, hasGroup }: CustomTabBarProps) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+      {TABS.map((tab) => {
+        const isActive = currentTab === tab.key;
+        const isDisabled = tab.requiresGroup && !hasGroup;
+
+        // 그룹이 없으면 그룹 필요 탭은 숨김
+        if (isDisabled) return null;
+
+        return (
+          <TouchableOpacity
+            key={tab.key}
+            style={styles.tab}
+            onPress={() => onTabPress(tab.key)}
+            activeOpacity={0.7}
+          >
+            <Image source={tab.icon} style={[styles.icon, { opacity: isActive ? 1 : 0.5 }]} />
+            <Text style={[styles.label, { opacity: isActive ? 1 : 0.5 }]}>{tab.title}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+```
+
+탭을 누르면 WebView의 URL을 변경한다.
+
+```tsx
+// 탭 → URL 매핑
+const TAB_URLS: Record<TabType, string> = {
+  home: `${BASE_URL}/`,
+  moment: `${BASE_URL}/moment`,
+  comment: `${BASE_URL}/comment`,
+  collection: `${BASE_URL}/collection`,
+  my: `${BASE_URL}/my`,
+};
+
+function MainScreen() {
+  const [currentTab, setCurrentTab] = useState<TabType>('home');
+  const webViewRef = useRef<WebView>(null);
+
+  const handleTabPress = (tab: TabType) => {
+    setCurrentTab(tab);
+    // WebView URL 변경 (새로고침 없이)
+    webViewRef.current?.injectJavaScript(`
+      window.location.href = '${TAB_URLS[tab]}';
+      true;
+    `);
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <WebView
+        ref={webViewRef}
+        source={{ uri: TAB_URLS[currentTab] }}
+        // ... 기타 설정
+      />
+      <CustomTabBar currentTab={currentTab} onTabPress={handleTabPress} hasGroup={hasGroup} />
+    </View>
+  );
+}
+```
+
+## 결과: SSOT 복원
+
+이 구조로 변경한 후:
+
+| 항목            | Before (다중 WebView) | After (단일 WebView) |
+| --------------- | --------------------- | -------------------- |
+| 인증 상태       | 5곳에 분산            | 1곳에서 관리         |
+| 쿠키/세션       | 동기화 불안정         | 자연스럽게 공유      |
+| 메모리          | 5배 사용              | 1/5로 감소           |
+| 로그인/로그아웃 | 상태 불일치 발생      | 정상 동작            |
+
+**트레이드오프:**
+
+- 탭 전환 시 스크롤 위치가 초기화됨 (필요하면 웹에서 상태 저장 필요)
+- 네이티브 탭 전환 애니메이션 없음 (커스텀 애니메이션으로 대체 가능)
+
+하지만 **상태 일관성**이라는 핵심 가치를 얻었기에 충분히 가치 있는 트레이드오프였다.
+
+# 마무리: WebView 프로젝트의 실력은 "실행환경 차이를 다루는 능력"에서 나온다
+
+WebView는 웹을 그대로 가져올 수 있는 강력한 선택이다.
+하지만 그 힘은 “웹과 동일하게 동작할 것”이라는 기대에서 나오는 게 아니라,
+
+- 브라우저와 다른 런타임이라는 현실을 인정하고
+- 쿠키/세션/스토리지/네비게이션/라이프사이클/세이프에어리어 같은 차이를
+- 설계와 프로토콜(Bridge)로 흡수할 때 비로소 나온다.
+
+이번 작업을 통해 얻은 가장 큰 교훈은 이것이었다.
+
+> WebView를 잘하는 프론트엔드 개발자는
+> 단순히 “웹을 띄우는 사람”이 아니라
+> 실행환경 차이를 이해하고 제품 경험으로 바꿔내는 사람이다.
+
+## 참고자료
+
+- https://www.youtube.com/watch?v=hsh8BS7gyrY
+- https://developer.apple.com/documentation/webkit/wkwebview
+- https://docs.tosspayments.com/resources/glossary/webview
