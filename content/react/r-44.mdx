@@ -1,0 +1,699 @@
+---
+title: '[React] GA4 기반 사용자 행동 분석 고도화로 데이터 기반 UX 개선하기'
+author: 'Eunwoo'
+thumbnail: '/thumbnail/etc/ga.webp'
+publishDate: '2026-02-04'
+categoryId: 6
+keywords:
+  [
+    'GA4',
+    'Google Analytics 4',
+    '사용자 행동 분석',
+    '데이터 기반 UX',
+    'UX 개선',
+    '전환율 개선',
+    'CTA',
+    '커스텀 이벤트',
+    '이벤트 설계',
+    '경로 탐색',
+    'Path exploration',
+    'react-ga4',
+    'React',
+  ]
+description: 'GA4 커스텀 이벤트/파라미터 트래킹 체계를 구축해 전환 흐름의 이탈 지점과 경로를 가시화하고, 사용자 데이터 기반으로 CTA·노출 타이밍·작성 흐름을 개선해 CTA 클릭률을 8.8%→16.9%로 끌어올린 과정을 정리했다.'
+---
+
+"CTA 버튼 색상을 바꾸면 전환율이 올라갈까요?"
+
+팀 회의에서 이런 질문이 나왔을 때, 우리는 명확한 근거를 제시할 수 없었다. 감에 의존한 의사결정, 검증 없이 진행되는 UI 변경, 그리고 "그냥 이게 더 나을 것 같아서"라는 이유로 배포되는 기능들. 이것이 우리 팀이 직면한 현실이었다.
+
+이 글에서는 [Moment](https://connectingmoment.com) 서비스에서 GA4 기반 사용자 행동 분석 체계를 구축하고, 2달간의 데이터 수집과 분석을 통해 CTA 클릭률을 **8.8%에서 16.9%로 약 92% 개선**한 과정을 공유한다.
+
+---
+
+# 도입 배경: 왜 데이터가 필요했는가
+
+### 서비스 소개: Moment
+
+Moment는 소규모 그룹 내에서 일상을 공유하는 소셜 서비스이다. 사용자는 그룹에 가입하여 오늘의 모멘트(글)를 작성하고, 다른 멤버의 모멘트에 댓글을 남기며 소통한다.
+
+서비스의 핵심 전환 흐름은 다음과 같다:
+
+```
+홈 페이지 방문 → 회원가입/로그인 → 그룹 생성/참여 → 모멘트 작성 → 코멘트 작성
+```
+
+### 초기 상황: 기본 GA4만으로는 부족했다
+
+프로젝트 초기에 GA4를 연동했지만, 기본 페이지뷰 트래킹만으로는 다음 질문들에 답할 수 없었다:
+
+1. **어디서 이탈하는가?** - 홈페이지에서 이탈하는지, 회원가입 중 이탈하는지, 모멘트 작성 중 이탈하는지?
+2. **왜 이탈하는가?** - 사용자가 모멘트 작성을 시작했다가 포기한 것인지, 아예 시작조차 하지 않은 것인지?
+3. **어떤 경로로 전환하는가?** - CTA를 통해 전환하는지, 네비게이션을 통해 전환하는지?
+4. **콘텐츠를 얼마나 소비하는가?** - 페이지의 어느 정도까지 스크롤하는지, 얼마나 오래 머무는지?
+
+### 비데이터 기반 의사결정의 문제점
+
+데이터 없이 진행된 몇 가지 의사결정과 그 결과를 공유한다:
+
+| 가설                                     | 적용한 변경                      | 실제 결과                      |
+| ---------------------------------------- | -------------------------------- | ------------------------------ |
+| "CTA가 눈에 띄지 않아서 클릭이 적다"     | CTA 버튼 색상을 더 화려하게 변경 | 변화 없음 (측정 불가)          |
+| "설명이 부족해서 가입하지 않는다"        | 홈페이지에 서비스 설명 추가      | 오히려 스크롤 포기 증가 (추정) |
+| "모멘트 작성이 어려워서 작성하지 않는다" | 작성 가이드 팝업 추가            | 가이드 닫기만 증가 (추정)      |
+
+문제는 '추정'이었다. 우리는 변경의 효과를 정량적으로 측정할 수 없었고, 따라서 어떤 변경이 효과가 있었는지, 없었는지 알 수 없었다.
+
+---
+
+# 문제 분석: 보이지 않는 사용자 행동
+
+### 전환 퍼널의 블랙박스
+
+GA4 기본 리포트로 확인할 수 있는 것은 페이지뷰뿐이었다. 아래는 커스텀 이벤트 트래킹 도입 전의 경로 탐색 분석 데이터이다.
+
+### 개선 전 경로 탐색 (Path Exploration)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/ba627c00-b7e9-4a0a-8c68-cc9d4468d12a/image.png)
+
+이 데이터에서 알 수 있는 것은 제한적이었다.
+
+- page_view 137회 중 scroll이 95회 발생
+- 버튼 클릭 이벤트들이 있지만, **일관된 네이밍 체계가 없어** 분석이 어려움
+- **CTA 클릭을 명확히 추적하지 않아** 전환율 계산이 불가능
+
+### 세 가지 핵심 미지수
+
+분석 결과, 우리에게 필요한 데이터는 크게 세 가지 영역으로 나뉘었다.
+
+#### 1. 이탈 지점 파악
+
+- 스크롤 깊이: CTA가 있는 위치까지 스크롤했는가?
+- CTA 노출 vs 클릭: CTA를 보았는데 클릭하지 않은 것인가?
+
+#### 2. 작성 행동 분석
+
+- 작성 시작 vs 작성 완료: 작성을 시작했다가 포기한 비율은?
+- 포기 시점의 상태: 어느 정도 작성하다가 포기했는가?
+
+#### 3. 전환 경로 추적
+
+- CTA vs 네비게이션: 어느 경로로 전환이 더 많이 일어나는가?
+- 진입점별 전환율: 어디서 유입된 사용자가 더 잘 전환하는가?
+
+---
+
+# 해결 전략: 커스텀 이벤트 트래킹 체계 설계
+
+### 이벤트 분류 체계
+
+사용자 행동을 체계적으로 추적하기 위해 이벤트를 다음과 같이 분류했다.
+
+```
+이벤트 체계
+├── 인게이지먼트 이벤트
+│   ├── scroll_depth (스크롤 깊이)
+│   ├── dwell_start / dwell_end (체류 시간)
+│   └── give_likes (좋아요)
+│
+├── 전환 이벤트
+│   ├── click_cta (CTA 클릭)
+│   ├── click_navigation (네비게이션 클릭)
+│   ├── click_auth (인증 버튼 클릭)
+│   └── open_composer (작성 시작)
+│
+├── 완료 이벤트
+│   ├── publish_moment (모멘트 발행)
+│   └── submit_comment (코멘트 작성)
+│
+├── 이탈 이벤트
+│   └── abandon_composer (작성 포기)
+│
+└── 그룹 이벤트
+    ├── select_group / create_group
+    ├── join_group / leave_group
+    └── invite_member
+```
+
+### 이벤트 설계 원칙
+
+#### 1. 행동의 시작과 끝을 모두 추적
+
+단순히 "페이지 방문"이 아닌, 행동의 시작과 끝을 추적하여 **포기율**을 계산할 수 있도록 설계했다.
+
+```
+open_composer → publish_moment (성공)
+open_composer → abandon_composer (포기)
+```
+
+#### 2. 맥락 정보를 파라미터로 전달
+
+같은 이벤트라도 맥락에 따라 다른 인사이트를 얻을 수 있도록 파라미터를 설계했다.
+
+```typescript
+// 작성 시작 - 어디서 진입했는지 추적
+track('open_composer', {
+  entry: 'nav' | 'cta' | 'reminder', // 진입 경로
+  composer: 'moment' | 'comment', // 작성 유형
+});
+
+// 작성 포기 - 어느 정도 작성했는지 추적
+track('abandon_composer', {
+  composer: 'moment',
+  has_media: true, // 이미지 첨부 여부
+  content_length_bucket: 's' | 'm' | 'l', // 작성량
+});
+```
+
+#### 3. 버킷화(Bucketing)를 통한 분석 용이성
+
+연속적인 값(스크롤 %, 글자 수, 체류 시간)은 버킷으로 그룹화하여 분석을 용이하게 했다.
+
+```typescript
+// 스크롤 깊이: 연속값 → 5단계 버킷
+percent_bucket: '0' | '25' | '50' | '75' | '100'
+
+// 콘텐츠 길이: 연속값 → 3단계 버킷
+content_length_bucket: 's' (≤60) | 'm' (≤140) | 'l' (>140)
+```
+
+---
+
+# 구현: 타입 안전한 GA4 트래킹 시스템
+
+### 아키텍처 개요
+
+```
+src/shared/lib/ga/
+├── index.ts          # GA4 초기화 및 페이지뷰
+├── track.ts          # 이벤트 트래킹 함수 및 타입 정의
+└── hooks/
+    ├── useScrollDepth.ts  # 스크롤 깊이 추적 훅
+    └── useDwell.ts        # 체류 시간 추적 훅
+```
+
+### GA4 초기화: 환경 분리
+
+개발 환경에서의 테스트 데이터가 프로덕션 데이터를 오염시키지 않도록, 철저한 환경 분리를 구현했다.
+
+```typescript
+// src/shared/lib/ga/index.ts
+import ReactGA from 'react-ga4';
+
+const GA_MEASUREMENT_ID = process.env.REACT_APP_GA_ID;
+const isProdEnv = process.env.NODE_ENV === 'production';
+const allowedHosts = ['connectingmoment.com', 'www.connectingmoment.com'];
+const isAllowedHost = allowedHosts.includes(window.location.hostname);
+
+let initialized = false;
+
+export const initGA = () => {
+  // 프로덕션 환경이 아니면 초기화하지 않음
+  if (!isProdEnv || !isAllowedHost) return;
+  if (initialized) return;
+  if (!GA_MEASUREMENT_ID) {
+    console.warn('GA_MEASUREMENT_ID is not set');
+    return;
+  }
+
+  ReactGA.initialize(GA_MEASUREMENT_ID);
+  initialized = true;
+};
+
+export const isGAEnabled = () => initialized;
+
+export const sendPageview = (path: string) => {
+  if (!isGAEnabled()) return;
+  ReactGA.send({
+    hitType: 'pageview',
+    page: path,
+    title: document.title,
+  });
+};
+```
+
+**설계 의도:**
+
+- `isProdEnv`: 프로덕션 빌드에서만 GA 활성화
+- `isAllowedHost`: 실제 도메인에서만 데이터 수집 (로컬호스트 제외)
+- 이중 검증으로 테스트 데이터 유입 완전 차단
+
+### 타입 안전한 이벤트 트래킹
+
+TypeScript의 타입 시스템을 활용하여 이벤트 이름과 파라미터의 타입 안전성을 보장했다.
+
+```typescript
+// src/shared/lib/ga/track.ts
+import ReactGA from 'react-ga4';
+import { isGAEnabled } from '.';
+
+// 이벤트별 파라미터 타입 정의
+type EventMap = {
+  // 그룹 관련
+  select_group: { source?: 'home' | 'my_page' };
+  create_group: Record<string, never>;
+  join_group: Record<string, never>;
+  leave_group: Record<string, never>;
+  invite_member: Record<string, never>;
+
+  // 모멘트/코멘트
+  give_likes: { item_type: 'moment' | 'comment' };
+  open_composer: {
+    entry?: 'nav' | 'cta' | 'reminder';
+    composer: 'moment' | 'comment';
+  };
+  publish_moment: {
+    has_media?: boolean;
+    content_length_bucket?: 's' | 'm' | 'l';
+  };
+  submit_comment: { length_bucket?: 's' | 'm' | 'l' };
+  abandon_composer: {
+    composer: 'moment' | 'comment';
+    has_media?: boolean;
+    content_length_bucket?: 's' | 'm' | 'l';
+  };
+
+  // 체류/스크롤
+  dwell_start: { surface: 'composer' | 'feed' | 'collection' };
+  dwell_end: {
+    surface: 'composer' | 'feed' | 'collection';
+    dwell_seconds: number;
+  };
+  scroll_depth: { percent_bucket: '0' | '25' | '50' | '75' | '100' };
+
+  // CTA/네비게이션
+  click_navigation: {
+    destination: 'today_moment' | 'today_comment' | 'collection';
+  };
+  click_auth: { device: 'desktop' | 'mobile' };
+  click_cta: { cta_type: 'primary' | 'secondary' };
+};
+
+// 공통 파라미터
+type CommonParams = { screen?: string };
+
+const getCommonParams = (): CommonParams => ({
+  screen: window.location.pathname,
+});
+
+// 타입 안전한 track 함수
+export function track<E extends keyof EventMap>(
+  eventName: E,
+  params: EventMap[E] & CommonParams = {} as any,
+) {
+  if (!isGAEnabled()) return;
+  ReactGA.event(eventName as string, {
+    ...getCommonParams(),
+    ...params,
+  });
+}
+```
+
+**타입 안전성의 이점:**
+
+```typescript
+// 컴파일 타임에 오류 감지
+track('click_cta', { cta_type: 'tertiary' }); // Error: 'tertiary'는 허용되지 않음
+track('open_composer', { entry: 'nav' }); // Error: 'composer' 필드 누락
+track('unknwon_event', {}); // Error: 존재하지 않는 이벤트
+
+// 올바른 사용
+track('click_cta', { cta_type: 'primary' }); // OK
+track('open_composer', { entry: 'nav', composer: 'moment' }); // OK
+```
+
+---
+
+# 핵심 트래킹 구현
+
+### 1. 스크롤 깊이 추적 (useScrollDepth)
+
+사용자가 페이지의 어느 지점까지 스크롤했는지 추적한다. 특히 CTA가 위치한 지점을 통과했는지 확인하는 데 유용하다.
+
+```typescript
+// src/shared/lib/ga/hooks/useScrollDepth.ts
+import { useEffect, useRef } from 'react';
+import { track } from '../track';
+
+export function useScrollDepth() {
+  const maxDepth = useRef(0);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const percent =
+        docHeight > 0 ? Math.min(100, Math.round((scrollTop / docHeight) * 100)) : 100;
+
+      // 최대 스크롤 깊이만 기록 (후퇴는 무시)
+      if (percent > maxDepth.current) {
+        maxDepth.current = percent;
+      }
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll(); // 초기 위치 기록
+
+    // 페이지 이탈 시 최종 스크롤 깊이 전송
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      const p = maxDepth.current;
+      const bucket: '0' | '25' | '50' | '75' | '100' =
+        p >= 100 ? '100' : p >= 75 ? '75' : p >= 50 ? '50' : p >= 25 ? '25' : '0';
+
+      track('scroll_depth', { percent_bucket: bucket });
+    };
+  }, []);
+}
+```
+
+**사용 예시:**
+
+```typescript
+// src/pages/home/index.tsx
+function HomePage() {
+  useScrollDepth(); // 홈페이지 스크롤 깊이 추적
+
+  return (
+    <main>
+      {/* 페이지 컨텐츠 */}
+    </main>
+  );
+}
+```
+
+**설계 포인트:**
+
+- `passive: true`: 스크롤 성능에 영향을 주지 않음
+- 최대값만 기록: 스크롤 후 위로 올라가도 최대 도달 지점 유지
+- cleanup 함수에서 전송: 페이지 이탈 시점에 한 번만 전송하여 이벤트 과다 방지
+
+### 2. 체류 시간 추적 (useDwell)
+
+특정 화면에서 사용자가 얼마나 오래 머물렀는지 추적한다.
+
+```typescript
+// src/shared/lib/ga/hooks/useDwell.ts
+import { useEffect, useRef } from 'react';
+import { track } from '../track';
+
+export function useDwell(surface: 'composer' | 'feed' | 'collection') {
+  const start = useRef<number>(0);
+
+  useEffect(() => {
+    start.current = Date.now();
+    track('dwell_start', { surface });
+
+    return () => {
+      const dwellMs = Date.now() - start.current;
+      const dwell = Math.max(0, Math.round(dwellMs / 1000));
+      track('dwell_end', { surface, dwell_seconds: dwell });
+    };
+  }, [surface]);
+}
+```
+
+**사용 예시:**
+
+```typescript
+// src/pages/todayMoment/index.tsx
+function TodayMomentPage() {
+  useDwell('composer'); // 모멘트 작성 페이지 체류 시간 추적
+
+  return (
+    <MomentComposer />
+  );
+}
+```
+
+### 3. 작성 포기 추적 (abandon_composer)
+
+사용자가 모멘트나 코멘트 작성을 시작했다가 완료하지 않고 이탈한 경우를 추적한다. 이는 UX 개선에 가장 핵심적인 데이터이다.
+
+```typescript
+// src/features/moment/hook/useSendMoments.ts
+export function useSendMoments() {
+  const [content, setContent] = useState('');
+  const [imageData, setImageData] = useState<ImageData | null>(null);
+  const { mutate, isSuccess } = useMomentsMutation();
+
+  // 작성 포기 추적
+  useEffect(() => {
+    return () => {
+      // 작성을 시작했는지 확인 (텍스트 입력 또는 이미지 첨부)
+      const typed = content.trim().length > 0 || imageData != null;
+
+      // 성공하지 않았는데 작성을 시작한 경우 = 포기
+      if (!isSuccess && typed) {
+        const length = content.length;
+        const content_length_bucket = length <= 60 ? 's' : length <= 140 ? 'm' : 'l';
+        const has_media = Boolean(imageData);
+
+        track('abandon_composer', {
+          composer: 'moment',
+          has_media,
+          content_length_bucket,
+        });
+      }
+    };
+  }, [content, imageData, isSuccess]);
+
+  // ... 나머지 로직
+}
+```
+
+**포기 데이터가 제공하는 인사이트:**
+
+| 데이터                                 | 인사이트                                        |
+| -------------------------------------- | ----------------------------------------------- |
+| `content_length_bucket: 's'` 비율 높음 | 작성 시작 단계에서 이탈 → 무엇을 써야 할지 모름 |
+| `content_length_bucket: 'l'` 비율 높음 | 작성 완료 단계에서 이탈 → 제출 과정에 문제      |
+| `has_media: true` 비율 높음            | 이미지 업로드 관련 문제 가능성                  |
+
+### 4. CTA 클릭 및 네비게이션 추적
+
+전환 경로를 파악하기 위해 CTA와 네비게이션 클릭을 각각 추적한다.
+
+```typescript
+// src/pages/home/index.tsx
+function HomePage() {
+  const navigate = useNavigate();
+
+  const handleCtaClick = () => {
+    track('click_cta', { cta_type: 'primary' });
+    navigate(ROUTES.LOGIN);
+  };
+
+  return (
+    <main>
+      <HeroSection>
+        <Button onClick={handleCtaClick}>
+          지금 시작하기
+        </Button>
+      </HeroSection>
+    </main>
+  );
+}
+```
+
+```typescript
+// src/widgets/navigatorsBar/index.tsx
+function NavigatorsBar() {
+  const handleTodayMomentClick = () => {
+    track('click_navigation', { destination: 'today_moment' });
+  };
+
+  const handleTodayCommentClick = () => {
+    track('click_navigation', { destination: 'today_comment' });
+  };
+
+  const handleCollectionClick = () => {
+    track('click_navigation', { destination: 'collection' });
+  };
+
+  return (
+    <nav>
+      <NavButton onClick={handleTodayMomentClick}>오늘의 모멘트</NavButton>
+      <NavButton onClick={handleTodayCommentClick}>오늘의 코멘트</NavButton>
+      <NavButton onClick={handleCollectionClick}>컬렉션</NavButton>
+    </nav>
+  );
+}
+```
+
+### 5. 작성 완료 추적 (publish_moment)
+
+작성이 성공적으로 완료된 경우를 추적한다.
+
+```typescript
+// src/features/moment/api/useMomentsMutation.ts
+export function useMomentsMutation() {
+  return useMutation({
+    mutationFn: postMoment,
+    onSuccess: (_, variables) => {
+      const has_media = Boolean(variables.image);
+      const length = variables.content?.length ?? 0;
+      const content_length_bucket = length <= 60 ? 's' : length <= 140 ? 'm' : 'l';
+
+      track('publish_moment', {
+        has_media,
+        content_length_bucket,
+      });
+    },
+  });
+}
+```
+
+---
+
+# 데이터 분석과 인사이트 도출
+
+### 개선 후 경로 탐색 데이터
+
+2달간 커스텀 이벤트 트래킹을 적용한 후, GA4 경로 탐색 분석에서 수집된 데이터이다:
+
+### 개선 후 경로 탐색 (Path Exploration)
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/0e18d659-5c46-417c-816e-9608f10750f0/image.png)
+
+### CTA 클릭률 계산
+
+GA4 데이터를 기반으로 CTA 클릭률을 다음과 같이 계산했다.
+
+#### 개선 전 (커스텀 이벤트 도입 전)
+
+- page_view: 137
+- CTA 관련 클릭 이벤트가 명확히 정의되지 않음
+- 추정 가능한 전환 클릭 (Click Desktop Auth Button + Click Mobile Auth Button): 약 12건
+- **추정 CTA 클릭률: 12 / 137 ≈ 8.8%**
+
+#### 개선 후 (커스텀 이벤트 도입 및 UX 개선 후)
+
+- page_view: 980
+- click_cta: 166
+- **CTA 클릭률: 166 / 980 ≈ 16.9%**
+
+### 주요 인사이트
+
+#### 1. 스크롤 이후 전환율이 높다
+
+```
+page_view (980) → scroll (229) → click_cta (166)
+```
+
+scroll 이벤트가 발생한 사용자 중 72.5% (166/229)가 CTA를 클릭했다. 이는 **콘텐츠에 관심을 가진 사용자의 전환율이 매우 높다**는 것을 의미한다.
+
+#### 2. scroll_depth로 이탈 지점 파악 가능
+
+scroll_depth 이벤트가 195회 발생했다. 이를 통해 사용자가 페이지의 어느 지점까지 도달했는지 파악할 수 있게 되었다.
+
+#### 3. 작성 포기율 추적 가능
+
+abandon_composer 이벤트가 4회 발생했다. open_composer (44회) 대비 포기율은 약 9%로, 작성을 시작한 사용자의 대부분이 완료한다는 것을 확인했다.
+
+#### 4. 전환 경로 다양화
+
+- click_cta: 166회 (주요 전환 경로)
+- click_auth: 86회 (인증 버튼 직접 클릭)
+- click_navigation: 14회 (네비게이션을 통한 전환)
+
+CTA를 통한 전환이 가장 많지만, 인증 버튼 직접 클릭도 상당한 비중을 차지하고 있음을 확인했다.
+
+---
+
+# UX 개선과 결과
+
+### 데이터 기반 개선 사항
+
+수집된 데이터를 바탕으로 다음과 같은 개선을 진행했다:
+
+#### 1. CTA 위치 최적화
+
+**발견:** scroll 이벤트 발생 후 click_cta 전환율이 72.5%로 매우 높음
+**개선:** CTA를 스크롤 없이 보이는 위치(Above the fold)에 배치하되, 스크롤 시에도 접근 가능한 플로팅 CTA 추가
+
+#### 2. 이벤트 네이밍 표준화
+
+**발견:** 개선 전 데이터에서 "Click Desktop Auth Button", "Click BlackHole Button" 등 일관성 없는 네이밍
+**개선:** `click_cta`, `click_auth`, `click_navigation` 등 체계적인 이벤트 네이밍 도입
+
+#### 3. 작성 진입 경로 다양화
+
+**발견:** open_composer가 44회 발생, 다양한 진입 경로 필요
+**개선:** 네비게이션, CTA, 리마인더 등 다양한 진입점 제공 및 각 경로별 전환율 추적
+
+### 2달간의 결과
+
+커스텀 이벤트 트래킹 도입과 데이터 기반 UX 개선을 통해 다음과 같은 결과를 얻었다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/55776538-57f2-4244-9413-714328b3f633/image.png)
+
+| 지표                    | 개선 전 | 개선 후 | 변화                |
+| ----------------------- | ------- | ------- | ------------------- |
+| 총 세션                 | 150     | 1,038   | +592% (서비스 성장) |
+| page_view               | 137     | 980     | +615%               |
+| CTA 클릭률              | 8.8%    | 16.9%   | **+92%**            |
+| 추적 가능한 이벤트 종류 | 8개     | 15개+   | 체계화              |
+
+**핵심 성과:**
+
+- CTA 클릭률 8.8% → 16.9% (약 92% 개선)
+- 사용자 행동을 정량적으로 측정 가능한 체계 구축
+- 데이터 기반 의사결정 문화 정착
+
+---
+
+# 회고와 교훈
+
+### 잘된 점
+
+#### 1. 타입 안전성 투자가 장기적으로 효과적
+
+초기에 `EventMap` 타입을 정의하는 데 시간이 걸렸지만, 이후 잘못된 이벤트나 파라미터를 컴파일 타임에 잡아내어 디버깅 시간을 크게 줄였다.
+
+#### 2. 버킷화 전략이 분석을 용이하게 함
+
+연속적인 값을 그룹화하여 GA4 리포트에서 바로 의미 있는 비교가 가능했다.
+
+#### 3. 환경 분리가 데이터 품질을 보장
+
+개발/스테이징 환경의 데이터가 프로덕션 데이터를 오염시키지 않아, 수집된 데이터를 신뢰할 수 있었다.
+
+### 개선할 점
+
+#### 1. 실시간 모니터링 부재
+
+배포 후 이벤트가 정상적으로 수집되는지 실시간으로 확인하기 어려웠다. GA4 DebugView를 더 적극적으로 활용했어야 한다.
+
+#### 2. 세션 단위 추적 미흡
+
+개별 이벤트는 추적했지만, 한 사용자의 세션 내 행동 흐름을 추적하기는 어려웠다. GA4의 User-ID 기능을 더 적극적으로 활용했어야 한다.
+
+### 핵심 교훈
+
+> "측정할 수 없으면 개선할 수 없다" - 피터 드러커
+
+이 프로젝트를 통해 데이터 기반 의사결정의 중요성을 체감했다. 감에 의존한 UX 개선은 때로는 맞고, 때로는 틀리다. 하지만 데이터 기반 개선은 최소한 "왜 효과가 있었는지" 또는 "왜 효과가 없었는지"를 설명할 수 있다.
+
+특히 **이탈 지점 파악**이 가장 큰 가치를 제공했다. 단순히 "전환율이 낮다"는 것을 아는 것과 "스크롤 후 CTA 클릭 전환율이 72.5%다"라는 것을 아는 것은 전혀 다른 수준의 인사이트이다.
+
+---
+
+# 10. 마무리
+
+이 글에서 다룬 GA4 커스텀 이벤트 트래킹 체계는 완벽하지 않다. 하지만 "데이터가 전혀 없는 상태"에서 "의사결정에 활용 가능한 데이터가 있는 상태"로 전환한 것만으로도 큰 의미가 있었다.
+
+![](https://velog.velcdn.com/images/eunwoo1341/post/2317c888-f254-475e-9367-dbb4e24a8fea/image.png)
+
+실제로 위 이미지와 같이 GA4를 통한 사용자 데이터를 기반으로 2달동안 CTA를 포함한 핵심 UI의 위치를 조정하고, 작성 흐름을 개선하였다.
+덕분에 결론적으로 CTA 클릭률을 8.8%에서 16.9%로 약 92% 끌어올릴 수 있었던 것 같다.
+
+데이터 기반 의사결정은 한 번의 구축으로 끝나는 것이 아니라, 지속적으로 발전시켜 나가야 하는 여정이다. 이 글이 비슷한 고민을 하고 계신 분들께 도움이 되길 바란다.
+
+---
+
+## 참고 자료
+
+- [GA4 이벤트 설계 가이드](https://support.google.com/analytics/answer/9322688)
+- [react-ga4 라이브러리](https://www.npmjs.com/package/react-ga4)
+- [Google Analytics 4 탐색 보고서](https://support.google.com/analytics/answer/9327972)
